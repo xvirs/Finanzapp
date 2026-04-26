@@ -14,3 +14,8 @@ final class CardsRequested extends CardsEvent {
 final class CardsRefreshRequested extends CardsEvent {
   const CardsRefreshRequested();
 }
+
+/// Refresh disparado por Realtime — sin tocar status (no flash).
+final class CardsSilentRefreshRequested extends CardsEvent {
+  const CardsSilentRefreshRequested();
+}

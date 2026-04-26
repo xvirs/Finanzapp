@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/realtime_service.dart';
 import 'data/bills_repository.dart';
 import 'data/cards_repository.dart';
 import 'data/installments_repository.dart';
@@ -55,6 +56,7 @@ class AppRouter {
                     cardsRepository: ctx.read<CardsRepository>(),
                     installmentsRepository: ctx.read<InstallmentsRepository>(),
                     paymentsRepository: ctx.read<PaymentsRepository>(),
+                    realtimeService: ctx.read<RealtimeService>(),
                   )..add(MonthRequested(PeriodKey.current())),
                   child: const MonthScreen(),
                 ),
@@ -72,6 +74,7 @@ class AppRouter {
                     cardsRepository: ctx.read<CardsRepository>(),
                     installmentsRepository: ctx.read<InstallmentsRepository>(),
                     paymentsRepository: ctx.read<PaymentsRepository>(),
+                    realtimeService: ctx.read<RealtimeService>(),
                   )..add(const CardsRequested()),
                   child: const CardsScreen(),
                 ),
@@ -93,6 +96,7 @@ class AppRouter {
                               ctx.read<InstallmentsRepository>(),
                           billsRepository: ctx.read<BillsRepository>(),
                           paymentsRepository: ctx.read<PaymentsRepository>(),
+                          realtimeService: ctx.read<RealtimeService>(),
                         )..add(CardDetailRequested(id)),
                         child: const CardDetailScreen(),
                       );
@@ -140,6 +144,7 @@ class AppRouter {
                       create: (ctx) => BillsListBloc(
                         billsRepository: ctx.read<BillsRepository>(),
                         cardsRepository: ctx.read<CardsRepository>(),
+                        realtimeService: ctx.read<RealtimeService>(),
                       )..add(const BillsListRequested()),
                       child: const BillsListScreen(),
                     ),

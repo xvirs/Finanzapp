@@ -19,3 +19,8 @@ final class CardDetailRequested extends CardDetailEvent {
 final class CardDetailRefreshRequested extends CardDetailEvent {
   const CardDetailRefreshRequested();
 }
+
+/// Refresh disparado por Realtime — sin tocar status (no flash).
+final class CardDetailSilentRefreshRequested extends CardDetailEvent {
+  const CardDetailSilentRefreshRequested();
+}

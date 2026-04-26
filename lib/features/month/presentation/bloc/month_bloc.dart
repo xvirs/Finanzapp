@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/realtime_service.dart';
 import '../../../../data/bills_repository.dart';
 import '../../../../data/cards_repository.dart';
 import '../../../../data/installments_repository.dart';
@@ -19,6 +22,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     required CardsRepository cardsRepository,
     required InstallmentsRepository installmentsRepository,
     required PaymentsRepository paymentsRepository,
+    required RealtimeService realtimeService,
   })  : _billsRepository = billsRepository,
         _cardsRepository = cardsRepository,
         _installmentsRepository = installmentsRepository,
@@ -26,15 +30,36 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
         super(MonthBlocState()) {
     on<MonthRequested>(_onRequested);
     on<MonthRefreshRequested>(_onRefreshRequested);
+    on<MonthSilentRefreshRequested>(_onSilentRefreshRequested);
     on<MonthOnlyPendingToggled>(_onOnlyPendingToggled);
     on<MonthMarkPaidRequested>(_onMarkPaidRequested);
     on<MonthMarkPendingRequested>(_onMarkPendingRequested);
+
+    // Realtime: cualquier cambio en las 4 tablas → silent refresh
+    // (debounce 250ms para batchear cambios rápidos).
+    _realtimeSubscription = realtimeService.changes.listen((_) {
+      _refreshDebounce?.cancel();
+      _refreshDebounce = Timer(
+        const Duration(milliseconds: 250),
+        () => add(const MonthSilentRefreshRequested()),
+      );
+    });
   }
 
   final BillsRepository _billsRepository;
   final CardsRepository _cardsRepository;
   final InstallmentsRepository _installmentsRepository;
   final PaymentsRepository _paymentsRepository;
+
+  StreamSubscription<RealtimeTable>? _realtimeSubscription;
+  Timer? _refreshDebounce;
+
+  @override
+  Future<void> close() async {
+    _refreshDebounce?.cancel();
+    await _realtimeSubscription?.cancel();
+    return super.close();
+  }
 
   /// Fetch + build helpers — usado por load inicial, navegación de mes,
   /// pull-to-refresh, y refresh post-mutación.
@@ -105,6 +130,14 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     Emitter<MonthBlocState> emit,
   ) async {
     add(MonthRequested(state.period));
+  }
+
+  Future<void> _onSilentRefreshRequested(
+    MonthSilentRefreshRequested event,
+    Emitter<MonthBlocState> emit,
+  ) async {
+    if (state.status != MonthStatus.success) return;
+    await _silentRefresh(emit);
   }
 
   void _onOnlyPendingToggled(

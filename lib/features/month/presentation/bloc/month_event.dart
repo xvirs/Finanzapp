@@ -20,6 +20,12 @@ final class MonthRefreshRequested extends MonthEvent {
   const MonthRefreshRequested();
 }
 
+/// Refresh disparado por un cambio recibido por Realtime (web u otro
+/// dispositivo). NO toca el status — la lista no parpadea.
+final class MonthSilentRefreshRequested extends MonthEvent {
+  const MonthSilentRefreshRequested();
+}
+
 final class MonthOnlyPendingToggled extends MonthEvent {
   const MonthOnlyPendingToggled();
 }

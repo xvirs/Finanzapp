@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'core/realtime_service.dart';
 import 'data/bills_repository.dart';
 import 'data/cards_repository.dart';
 import 'data/installments_repository.dart';
@@ -21,6 +24,8 @@ class _FinanzappAppState extends State<FinanzappApp> {
   late final AuthRepository _authRepository;
   late final AuthBloc _authBloc;
   late final AppRouter _appRouter;
+  late final RealtimeService _realtimeService;
+  StreamSubscription<AuthBlocState>? _authSubscription;
 
   @override
   void initState() {
@@ -28,10 +33,28 @@ class _FinanzappAppState extends State<FinanzappApp> {
     _authRepository = AuthRepository();
     _authBloc = AuthBloc(repository: _authRepository);
     _appRouter = AppRouter(_authBloc);
+    _realtimeService = RealtimeService();
+
+    // Arrancar/parar el canal de realtime según el estado de auth.
+    if (_authBloc.state.status == AuthStatus.authenticated) {
+      _realtimeService.start();
+    }
+    _authSubscription = _authBloc.stream.listen((authState) {
+      switch (authState.status) {
+        case AuthStatus.authenticated:
+          if (!_realtimeService.isActive) _realtimeService.start();
+        case AuthStatus.unauthenticated:
+          if (_realtimeService.isActive) _realtimeService.stop();
+        case AuthStatus.unknown:
+          break;
+      }
+    });
   }
 
   @override
   void dispose() {
+    _authSubscription?.cancel();
+    _realtimeService.dispose();
     _authBloc.close();
     super.dispose();
   }
@@ -41,6 +64,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
     return MultiRepositoryProvider(
       providers: [
         RepositoryProvider.value(value: _authRepository),
+        RepositoryProvider.value(value: _realtimeService),
         RepositoryProvider(create: (_) => BillsRepository()),
         RepositoryProvider(create: (_) => CardsRepository()),
         RepositoryProvider(create: (_) => InstallmentsRepository()),
