@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
+import 'package:timezone/timezone.dart' as tz;
 
 import 'app.dart';
 import 'config/supabase_config.dart';
@@ -18,6 +22,32 @@ Future<void> main() async {
 
   await initializeDateFormatting('es_AR');
 
+  // Timezone: necesario para schedulear notificaciones a una hora local
+  // específica. tzdata trae todas las zonas; flutter_timezone nos dice
+  // cuál es la del dispositivo.
+  tzdata.initializeTimeZones();
+  try {
+    final localTz = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(localTz));
+  } catch (_) {
+    // Fallback a UTC si el SO no devuelve la zona.
+    tz.setLocalLocation(tz.UTC);
+  }
+
+  // Plugin de notificaciones locales — init temprano. El servicio que
+  // las orquesta se construye en app.dart.
+  final notifications = FlutterLocalNotificationsPlugin();
+  await notifications.initialize(
+    const InitializationSettings(
+      android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+      iOS: DarwinInitializationSettings(
+        requestAlertPermission: false,
+        requestBadgePermission: false,
+        requestSoundPermission: false,
+      ),
+    ),
+  );
+
   HydratedBloc.storage = await HydratedStorage.build(
     storageDirectory: await getApplicationDocumentsDirectory(),
   );
@@ -27,5 +57,5 @@ Future<void> main() async {
     anonKey: SupabaseConfig.anonKey,
   );
 
-  runApp(const FinanzappApp());
+  runApp(FinanzappApp(notifications: notifications));
 }

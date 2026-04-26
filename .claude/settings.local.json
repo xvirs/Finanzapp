@@ -10,7 +10,8 @@
       "Bash(flutter analyze *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(flutter build *)"
+      "Bash(flutter build *)",
+      "Bash(find /Users/xavier/.pub-cache/hosted/pub.dev/flutter_local_notifications-* -name \"flutter_local_notifications.dart\" -path \"*/lib/*\")"
     ]
   }
 }

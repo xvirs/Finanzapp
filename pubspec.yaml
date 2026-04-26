@@ -37,6 +37,11 @@ dependencies:
   # Local storage (for hydrated_bloc)
   path_provider: ^2.1.5
 
+  # Local notifications (recordatorios pre-vencimiento)
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4
+  flutter_timezone: ^4.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
