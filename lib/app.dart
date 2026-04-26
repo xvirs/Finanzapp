@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'data/bills_repository.dart';
+import 'data/cards_repository.dart';
+import 'data/installments_repository.dart';
+import 'data/payments_repository.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'router.dart';
@@ -34,8 +38,14 @@ class _FinanzappAppState extends State<FinanzappApp> {
 
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider.value(
-      value: _authRepository,
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider.value(value: _authRepository),
+        RepositoryProvider(create: (_) => BillsRepository()),
+        RepositoryProvider(create: (_) => CardsRepository()),
+        RepositoryProvider(create: (_) => InstallmentsRepository()),
+        RepositoryProvider(create: (_) => PaymentsRepository()),
+      ],
       child: BlocProvider.value(
         value: _authBloc,
         child: MaterialApp.router(

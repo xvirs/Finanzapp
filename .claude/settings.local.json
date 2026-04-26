@@ -8,7 +8,9 @@
       "Read(//Users/xavier/.pub-cache/hosted/pub.dev/**)",
       "Bash(dart run *)",
       "Bash(flutter analyze *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(flutter build *)"
     ]
   }
 }
