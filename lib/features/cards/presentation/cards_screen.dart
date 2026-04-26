@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/format.dart';
 import 'bloc/cards_bloc.dart';
@@ -11,6 +12,17 @@ class CardsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: Builder(
+        builder: (ctx) => FloatingActionButton.extended(
+          onPressed: () async {
+            final bloc = ctx.read<CardsBloc>();
+            final result = await ctx.push<bool>('/cards/new');
+            if (result == true) bloc.add(const CardsRefreshRequested());
+          },
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Nueva'),
+        ),
+      ),
       body: SafeArea(
         bottom: false,
         child: BlocBuilder<CardsBloc, CardsBlocState>(
@@ -47,15 +59,14 @@ class CardsScreen extends StatelessWidget {
                                 return CardListItem(
                                   data: item,
                                   period: state.period,
-                                  onTap: () {
-                                    ScaffoldMessenger.of(ctx).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Detalle disponible en próxima etapa',
-                                        ),
-                                        duration: Duration(seconds: 2),
-                                      ),
+                                  onTap: () async {
+                                    final bloc = ctx.read<CardsBloc>();
+                                    final result = await ctx.push<bool>(
+                                      '/cards/${item.card.id}',
                                     );
+                                    if (result == true) {
+                                      bloc.add(const CardsRefreshRequested());
+                                    }
                                   },
                                 );
                               },
