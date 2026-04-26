@@ -1,3 +1,4 @@
+import '../../../domain/installments.dart';
 import '../../../domain/period.dart';
 import '../../../models/bill.dart';
 import '../../../models/credit_card.dart';
@@ -12,34 +13,6 @@ class _RecentAverage {
   const _RecentAverage(this.average, this.sampleSize);
   final double? average;
   final int sampleSize;
-}
-
-class _ActiveInstallment {
-  const _ActiveInstallment(this.cuotaIndex, this.amount);
-  final int cuotaIndex;
-  final double amount;
-}
-
-_ActiveInstallment? _installmentForPeriod(
-  InstallmentPurchase purchase,
-  PeriodKey target,
-) {
-  final start = PeriodKey.fromIso(purchase.firstPeriod);
-  final diff = start.differenceInMonths(target);
-  if (diff < 0) return null;
-  final cuotaIndex = diff + 1;
-  if (cuotaIndex > purchase.installmentCount) return null;
-  return _ActiveInstallment(cuotaIndex, purchase.installmentAmount);
-}
-
-/// Reproduce 1:1 `lib/installments.ts → installmentForPeriod` para uso fuera
-/// del builder (ej: detalle de tarjeta).
-({int cuotaIndex, double amount})? installmentForPeriod(
-  InstallmentPurchase purchase,
-  PeriodKey target,
-) {
-  final r = _installmentForPeriod(purchase, target);
-  return r == null ? null : (cuotaIndex: r.cuotaIndex, amount: r.amount);
 }
 
 /// Construye los ítems del mes. Reproduce `lib/month.ts → buildMonthChecklist`.
@@ -110,7 +83,7 @@ List<MonthItem> buildMonthChecklist({
     var installmentsTotal = 0.0;
     var installmentsCount = 0;
     for (final p in cardPurchases) {
-      final inMonth = _installmentForPeriod(p, period);
+      final inMonth = installmentForPeriod(p, period);
       if (inMonth != null) {
         installmentsTotal += inMonth.amount;
         installmentsCount++;

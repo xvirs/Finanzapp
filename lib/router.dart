@@ -11,6 +11,7 @@ import 'data/payments_repository.dart';
 import 'domain/period.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/auth/presentation/login_screen.dart';
+import 'features/cards/presentation/bloc/cards_bloc.dart';
 import 'features/cards/presentation/cards_screen.dart';
 import 'features/config_settings/presentation/config_screen.dart';
 import 'features/month/presentation/bloc/month_bloc.dart';
@@ -58,7 +59,15 @@ class AppRouter {
               GoRoute(
                 path: '/cards',
                 name: 'cards',
-                builder: (context, state) => const CardsScreen(),
+                builder: (context, state) => BlocProvider(
+                  create: (ctx) => CardsBloc(
+                    billsRepository: ctx.read<BillsRepository>(),
+                    cardsRepository: ctx.read<CardsRepository>(),
+                    installmentsRepository: ctx.read<InstallmentsRepository>(),
+                    paymentsRepository: ctx.read<PaymentsRepository>(),
+                  )..add(const CardsRequested()),
+                  child: const CardsScreen(),
+                ),
               ),
             ],
           ),
