@@ -17,6 +17,9 @@ import 'features/cards/presentation/card_detail_screen.dart';
 import 'features/cards/presentation/card_form_screen.dart';
 import 'features/cards/presentation/cards_screen.dart';
 import 'features/cards/presentation/installment_form_screen.dart';
+import 'features/config_settings/presentation/bill_form_screen.dart';
+import 'features/config_settings/presentation/bills_list_screen.dart';
+import 'features/config_settings/presentation/bloc/bills_list_bloc.dart';
 import 'features/config_settings/presentation/config_screen.dart';
 import 'features/month/presentation/bloc/month_bloc.dart';
 import 'features/month/presentation/month_screen.dart';
@@ -129,6 +132,33 @@ class AppRouter {
                 path: '/config',
                 name: 'config',
                 builder: (context, state) => const ConfigScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'bills',
+                    name: 'bills-list',
+                    builder: (context, state) => BlocProvider(
+                      create: (ctx) => BillsListBloc(
+                        billsRepository: ctx.read<BillsRepository>(),
+                        cardsRepository: ctx.read<CardsRepository>(),
+                      )..add(const BillsListRequested()),
+                      child: const BillsListScreen(),
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        name: 'bill-new',
+                        builder: (context, state) => const BillFormScreen(),
+                      ),
+                      GoRoute(
+                        path: ':id',
+                        name: 'bill-edit',
+                        builder: (context, state) => BillFormScreen(
+                          billId: state.pathParameters['id'],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),
