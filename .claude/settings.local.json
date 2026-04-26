@@ -5,7 +5,10 @@
       "Bash(flutter --version)",
       "Read(//Users/xavier/.pub-cache/hosted/pub.dev/hydrated_bloc-9.1.5/lib/src/**)",
       "Bash(sysctl -n machdep.cpu.brand_string)",
-      "Read(//Users/xavier/.pub-cache/hosted/pub.dev/**)"
+      "Read(//Users/xavier/.pub-cache/hosted/pub.dev/**)",
+      "Bash(dart run *)",
+      "Bash(flutter analyze *)",
+      "Bash(git add *)"
     ]
   }
 }
