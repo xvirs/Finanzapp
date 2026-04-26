@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/biometric_service.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 
 class ConfigScreen extends StatelessWidget {
@@ -31,6 +32,9 @@ class ConfigScreen extends StatelessWidget {
                 onOpenList: () => context.go('/cards'),
                 onCreate: () => context.push('/cards/new'),
               ),
+              const SizedBox(height: 8),
+              const Divider(height: 1),
+              const _BiometricToggle(),
               const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -133,6 +137,104 @@ class _ConfigRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _BiometricToggle extends StatefulWidget {
+  const _BiometricToggle();
+
+  @override
+  State<_BiometricToggle> createState() => _BiometricToggleState();
+}
+
+class _BiometricToggleState extends State<_BiometricToggle> {
+  late final BiometricService _service;
+  late bool _enabled;
+  bool? _supported;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _service = context.read<BiometricService>();
+    _enabled = _service.enabledCached;
+    _checkSupport();
+  }
+
+  Future<void> _checkSupport() async {
+    final ok = await _service.isAvailable();
+    if (!mounted) return;
+    setState(() => _supported = ok);
+  }
+
+  Future<void> _toggle(bool value) async {
+    if (_busy) return;
+    setState(() => _busy = true);
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      if (value) {
+        // Verificá que el biométrico funcione antes de habilitar.
+        final ok = await _service.authenticate(
+          reason: 'Verificá tu identidad para activar el bloqueo',
+        );
+        if (!ok) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('No se pudo verificar el biométrico.')),
+          );
+          if (mounted) setState(() => _busy = false);
+          return;
+        }
+        await _service.setEnabled(true);
+        if (!mounted) return;
+        setState(() {
+          _enabled = true;
+          _busy = false;
+        });
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Bloqueo biométrico activado.')),
+        );
+      } else {
+        await _service.setEnabled(false);
+        if (!mounted) return;
+        setState(() {
+          _enabled = false;
+          _busy = false;
+        });
+        messenger.showSnackBar(
+          const SnackBar(content: Text('Bloqueo biométrico desactivado.')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+      setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final supported = _supported;
+
+    final subtitle = switch (supported) {
+      null => 'Verificando…',
+      false => 'Tu dispositivo no tiene biometría ni PIN configurado',
+      true => 'Pedir Face ID / huella al abrir o volver a la app',
+    };
+
+    return SwitchListTile.adaptive(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      secondary: Icon(
+        Icons.fingerprint_rounded,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+      title: const Text('Bloqueo biométrico'),
+      subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
+      value: _enabled,
+      onChanged: (supported == true && !_busy) ? _toggle : null,
     );
   }
 }

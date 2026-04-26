@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import 'core/biometric_service.dart';
 import 'core/notification_service.dart';
 import 'core/realtime_service.dart';
 import 'data/bills_repository.dart';
@@ -12,13 +13,19 @@ import 'data/installments_repository.dart';
 import 'data/payments_repository.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/lock/presentation/app_lock_gate.dart';
 import 'router.dart';
 import 'theme/app_theme.dart';
 
 class FinanzappApp extends StatefulWidget {
-  const FinanzappApp({required this.notifications, super.key});
+  const FinanzappApp({
+    required this.notifications,
+    required this.biometricService,
+    super.key,
+  });
 
   final FlutterLocalNotificationsPlugin notifications;
+  final BiometricService biometricService;
 
   @override
   State<FinanzappApp> createState() => _FinanzappAppState();
@@ -100,6 +107,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
       providers: [
         RepositoryProvider.value(value: _authRepository),
         RepositoryProvider.value(value: _realtimeService),
+        RepositoryProvider.value(value: widget.biometricService),
         RepositoryProvider.value(value: _billsRepository),
         RepositoryProvider.value(value: _cardsRepository),
         RepositoryProvider.value(value: _installmentsRepository),
@@ -114,6 +122,10 @@ class _FinanzappAppState extends State<FinanzappApp> {
           darkTheme: AppTheme.dark(),
           themeMode: ThemeMode.system,
           routerConfig: _appRouter.router,
+          builder: (context, child) => AppLockGate(
+            service: widget.biometricService,
+            child: child ?? const SizedBox.shrink(),
+          ),
         ),
       ),
     );

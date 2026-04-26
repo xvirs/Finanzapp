@@ -42,6 +42,10 @@ dependencies:
   timezone: ^0.9.4
   flutter_timezone: ^4.0.0
 
+  # Biometric lock (Face ID / huella)
+  local_auth: ^2.3.0
+  shared_preferences: ^2.3.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

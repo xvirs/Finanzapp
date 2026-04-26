@@ -11,6 +11,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'app.dart';
 import 'config/supabase_config.dart';
+import 'core/biometric_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,5 +58,13 @@ Future<void> main() async {
     anonKey: SupabaseConfig.anonKey,
   );
 
-  runApp(FinanzappApp(notifications: notifications));
+  // Refresh el cache del flag biométrico antes de runApp para que el
+  // AppLockGate pueda decidir sincronicamente si bloquear.
+  final biometricService = BiometricService();
+  await biometricService.refreshEnabledCache();
+
+  runApp(FinanzappApp(
+    notifications: notifications,
+    biometricService: biometricService,
+  ));
 }
