@@ -36,6 +36,44 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
   final InstallmentsRepository _installmentsRepository;
   final PaymentsRepository _paymentsRepository;
 
+  /// Fetch + build helpers — usado por load inicial, navegación de mes,
+  /// pull-to-refresh, y refresh post-mutación.
+  Future<({List<MonthGroup> groups, MonthSummary summary})> _loadMonthData(
+    PeriodKey period,
+  ) async {
+    final periodIso = period.toIso();
+    final windowStartIso = period.subtractMonths(3).toIso();
+
+    final billsFuture = _billsRepository.fetchAllActive();
+    final cardsFuture = _cardsRepository.fetchAllActive();
+    final purchasesFuture = _installmentsRepository.fetchAll();
+    final paymentsFuture = _paymentsRepository.fetchForPeriod(periodIso);
+    final recentFuture = _paymentsRepository.fetchPaidInWindow(
+      startIso: windowStartIso,
+      endIso: periodIso,
+    );
+
+    final bills = await billsFuture;
+    final cards = await cardsFuture;
+    final purchases = await purchasesFuture;
+    final payments = await paymentsFuture;
+    final recentPayments = await recentFuture;
+
+    final items = buildMonthChecklist(
+      period: period,
+      bills: bills,
+      cards: cards,
+      purchases: purchases,
+      payments: payments,
+      recentPayments: recentPayments,
+    );
+
+    return (
+      groups: groupChecklistByCategory(items),
+      summary: summarizeChecklist(items),
+    );
+  }
+
   Future<void> _onRequested(
     MonthRequested event,
     Emitter<MonthBlocState> emit,
@@ -48,41 +86,11 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     ));
 
     try {
-      final period = event.period;
-      final periodIso = period.toIso();
-      final windowStartIso = period.subtractMonths(3).toIso();
-
-      final billsFuture = _billsRepository.fetchAllActive();
-      final cardsFuture = _cardsRepository.fetchAllActive();
-      final purchasesFuture = _installmentsRepository.fetchAll();
-      final paymentsFuture = _paymentsRepository.fetchForPeriod(periodIso);
-      final recentFuture = _paymentsRepository.fetchPaidInWindow(
-        startIso: windowStartIso,
-        endIso: periodIso,
-      );
-
-      final bills = await billsFuture;
-      final cards = await cardsFuture;
-      final purchases = await purchasesFuture;
-      final payments = await paymentsFuture;
-      final recentPayments = await recentFuture;
-
-      final items = buildMonthChecklist(
-        period: period,
-        bills: bills,
-        cards: cards,
-        purchases: purchases,
-        payments: payments,
-        recentPayments: recentPayments,
-      );
-
-      final groups = groupChecklistByCategory(items);
-      final summary = summarizeChecklist(items);
-
+      final data = await _loadMonthData(event.period);
       emit(state.copyWith(
         status: MonthStatus.success,
-        groups: groups,
-        summary: summary,
+        groups: data.groups,
+        summary: data.summary,
       ));
     } catch (error) {
       emit(state.copyWith(
@@ -106,6 +114,26 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     emit(state.copyWith(onlyPending: !state.onlyPending));
   }
 
+  /// Refresh "silencioso" después de mutar: NO toca status, así la lista
+  /// no parpadea con el spinner full-screen. El feedback visual queda
+  /// solamente en el spinner del botón del item modificado (driveado por
+  /// mutatingItemKey).
+  Future<void> _silentRefresh(Emitter<MonthBlocState> emit) async {
+    try {
+      final data = await _loadMonthData(state.period);
+      emit(state.copyWith(
+        groups: data.groups,
+        summary: data.summary,
+        clearMutating: true,
+      ));
+    } catch (error) {
+      emit(state.copyWith(
+        clearMutating: true,
+        errorMessage: error.toString(),
+      ));
+    }
+  }
+
   Future<void> _onMarkPaidRequested(
     MonthMarkPaidRequested event,
     Emitter<MonthBlocState> emit,
@@ -123,7 +151,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
         cardId: item.card?.id,
         amount: event.amount,
       );
-      add(const MonthRefreshRequested());
+      await _silentRefresh(emit);
     } catch (error) {
       emit(state.copyWith(
         clearMutating: true,
@@ -143,7 +171,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     emit(state.copyWith(mutatingItemKey: item.key, clearError: true));
     try {
       await _paymentsRepository.deletePayment(paymentId);
-      add(const MonthRefreshRequested());
+      await _silentRefresh(emit);
     } catch (error) {
       emit(state.copyWith(
         clearMutating: true,

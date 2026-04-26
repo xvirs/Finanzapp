@@ -31,16 +31,16 @@ class _MonthScreenState extends State<MonthScreen> {
               previous.period != current.period ||
               (previous.errorMessage != current.errorMessage &&
                   current.errorMessage != null) ||
-              (previous.status == MonthStatus.loading &&
-                  current.status == MonthStatus.success),
+              (previous.mutatingItemKey != null &&
+                  current.mutatingItemKey == null),
           listener: (context, state) {
-            if (state.errorMessage != null &&
-                state.status == MonthStatus.success) {
+            if (state.errorMessage != null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text(state.errorMessage!)),
               );
             }
-            // Cerrar acordeón al cambiar de período o terminar una mutación.
+            // Cerrar acordeón al cambiar de período o al terminar una
+            // mutación (mutatingItemKey volvió a null).
             if (_expandedKey != null) {
               setState(() => _expandedKey = null);
             }
