@@ -12,17 +12,6 @@ class CardsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: Builder(
-        builder: (ctx) => FloatingActionButton.extended(
-          onPressed: () async {
-            final bloc = ctx.read<CardsBloc>();
-            final result = await ctx.push<bool>('/cards/new');
-            if (result == true) bloc.add(const CardsRefreshRequested());
-          },
-          icon: const Icon(Icons.add_rounded),
-          label: const Text('Nueva'),
-        ),
-      ),
       body: SafeArea(
         bottom: false,
         child: BlocBuilder<CardsBloc, CardsBlocState>(
