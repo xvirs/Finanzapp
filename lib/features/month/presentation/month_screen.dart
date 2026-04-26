@@ -5,15 +5,46 @@ import 'bloc/month_bloc.dart';
 import 'widgets/month_group_section.dart';
 import 'widgets/month_header_section.dart';
 
-class MonthScreen extends StatelessWidget {
+class MonthScreen extends StatefulWidget {
   const MonthScreen({super.key});
+
+  @override
+  State<MonthScreen> createState() => _MonthScreenState();
+}
+
+class _MonthScreenState extends State<MonthScreen> {
+  String? _expandedKey;
+
+  void _toggleExpanded(String key) {
+    setState(() {
+      _expandedKey = _expandedKey == key ? null : key;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
         bottom: false,
-        child: BlocBuilder<MonthBloc, MonthBlocState>(
+        child: BlocConsumer<MonthBloc, MonthBlocState>(
+          listenWhen: (previous, current) =>
+              previous.period != current.period ||
+              (previous.errorMessage != current.errorMessage &&
+                  current.errorMessage != null) ||
+              (previous.status == MonthStatus.loading &&
+                  current.status == MonthStatus.success),
+          listener: (context, state) {
+            if (state.errorMessage != null &&
+                state.status == MonthStatus.success) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(state.errorMessage!)),
+              );
+            }
+            // Cerrar acordeón al cambiar de período o terminar una mutación.
+            if (_expandedKey != null) {
+              setState(() => _expandedKey = null);
+            }
+          },
           builder: (context, state) {
             return Column(
               children: [
@@ -46,6 +77,9 @@ class MonthScreen extends StatelessWidget {
                                 group: state.groups[i],
                                 period: state.period,
                                 onlyPending: state.onlyPending,
+                                expandedKey: _expandedKey,
+                                mutatingItemKey: state.mutatingItemKey,
+                                onToggle: _toggleExpanded,
                               ),
                             ),
                           ),
@@ -74,11 +108,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 48,
-            color: theme.colorScheme.error,
-          ),
+          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
           const SizedBox(height: 12),
           Text(
             'No se pudieron cargar los datos',

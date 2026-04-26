@@ -11,12 +11,18 @@ class MonthGroupSection extends StatelessWidget {
     required this.group,
     required this.period,
     required this.onlyPending,
+    required this.expandedKey,
+    required this.mutatingItemKey,
+    required this.onToggle,
     super.key,
   });
 
   final MonthGroup group;
   final PeriodKey period;
   final bool onlyPending;
+  final String? expandedKey;
+  final String? mutatingItemKey;
+  final ValueChanged<String> onToggle;
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +78,13 @@ class MonthGroupSection extends StatelessWidget {
             ),
           ),
           ...visibleItems.map(
-            (item) => MonthItemCard(item: item, period: period),
+            (item) => MonthItemCard(
+              item: item,
+              period: period,
+              expanded: expandedKey == item.key,
+              isMutating: mutatingItemKey == item.key,
+              onTap: () => onToggle(item.key),
+            ),
           ),
         ],
       ),

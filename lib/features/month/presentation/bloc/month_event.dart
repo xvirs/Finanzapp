@@ -23,3 +23,22 @@ final class MonthRefreshRequested extends MonthEvent {
 final class MonthOnlyPendingToggled extends MonthEvent {
   const MonthOnlyPendingToggled();
 }
+
+final class MonthMarkPaidRequested extends MonthEvent {
+  const MonthMarkPaidRequested({required this.item, required this.amount});
+
+  final MonthItem item;
+  final double amount;
+
+  @override
+  List<Object?> get props => [item.key, amount];
+}
+
+final class MonthMarkPendingRequested extends MonthEvent {
+  const MonthMarkPendingRequested({required this.item});
+
+  final MonthItem item;
+
+  @override
+  List<Object?> get props => [item.key];
+}

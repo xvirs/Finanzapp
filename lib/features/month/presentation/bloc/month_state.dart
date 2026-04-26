@@ -10,6 +10,7 @@ final class MonthBlocState extends Equatable {
     this.summary,
     this.onlyPending = false,
     this.errorMessage,
+    this.mutatingItemKey,
   }) : period = period ?? PeriodKey.current();
 
   final MonthStatus status;
@@ -18,6 +19,7 @@ final class MonthBlocState extends Equatable {
   final MonthSummary? summary;
   final bool onlyPending;
   final String? errorMessage;
+  final String? mutatingItemKey;
 
   bool get isCurrentPeriod => period == PeriodKey.current();
 
@@ -33,6 +35,8 @@ final class MonthBlocState extends Equatable {
     bool? onlyPending,
     String? errorMessage,
     bool clearError = false,
+    String? mutatingItemKey,
+    bool clearMutating = false,
   }) {
     return MonthBlocState(
       status: status ?? this.status,
@@ -41,6 +45,9 @@ final class MonthBlocState extends Equatable {
       summary: summary ?? this.summary,
       onlyPending: onlyPending ?? this.onlyPending,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      mutatingItemKey: clearMutating
+          ? null
+          : (mutatingItemKey ?? this.mutatingItemKey),
     );
   }
 
@@ -52,5 +59,6 @@ final class MonthBlocState extends Equatable {
         summary,
         onlyPending,
         errorMessage,
+        mutatingItemKey,
       ];
 }
