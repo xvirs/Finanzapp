@@ -1,10 +1,9 @@
 // lib/design/theme.dart
 //
 // ThemeData completo construído sobre los tokens de tokens.dart.
-// Las fuentes Geist y Geist Mono se cargan via google_fonts (CDN
-// runtime). En 6.x del paquete no hay métodos estáticos para Geist
-// porque se agregaron recientemente al catálogo, así que usamos el
-// loader genérico getFont / getTextTheme.
+// Tipografía: Inter (sans) y JetBrains Mono (mono) — fallbacks
+// documentados en handoff/AGENTS.md mientras Geist/Geist Mono no estén
+// en el catálogo de google_fonts.
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,13 +50,11 @@ class FzTheme {
         fillColor: FzColors.card,
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        hintStyle: GoogleFonts.getFont(
-          'Geist',
+        hintStyle: GoogleFonts.inter(
           color: FzColors.textMute,
           fontSize: 14,
         ),
-        labelStyle: GoogleFonts.getFont(
-          'Geist Mono',
+        labelStyle: GoogleFonts.jetBrainsMono(
           fontSize: 11,
           fontWeight: FontWeight.w500,
           letterSpacing: 0.66,
@@ -84,8 +81,7 @@ class FzTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(FzRadius.lg),
           ),
-          textStyle: GoogleFonts.getFont(
-            'Geist',
+          textStyle: GoogleFonts.inter(
             fontSize: 14.5,
             fontWeight: FontWeight.w600,
           ),
@@ -100,8 +96,7 @@ class FzTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(FzRadius.lg),
           ),
-          textStyle: GoogleFonts.getFont(
-            'Geist',
+          textStyle: GoogleFonts.inter(
             fontSize: 14.5,
             fontWeight: FontWeight.w600,
           ),
@@ -116,8 +111,7 @@ class FzTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(FzRadius.lg),
           ),
-          textStyle: GoogleFonts.getFont(
-            'Geist',
+          textStyle: GoogleFonts.inter(
             fontSize: 13.5,
             fontWeight: FontWeight.w500,
           ),
@@ -126,10 +120,7 @@ class FzTheme {
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: FzColors.primary,
-          textStyle: GoogleFonts.getFont(
-            'Geist',
-            fontWeight: FontWeight.w500,
-          ),
+          textStyle: GoogleFonts.inter(fontWeight: FontWeight.w500),
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
@@ -144,8 +135,7 @@ class FzTheme {
         backgroundColor: FzColors.bg,
         indicatorColor: FzColors.primarySoft,
         labelTextStyle: WidgetStatePropertyAll(
-          GoogleFonts.getFont(
-            'Geist',
+          GoogleFonts.inter(
             fontSize: 10.5,
             fontWeight: FontWeight.w500,
             color: FzColors.textMute,
@@ -194,14 +184,13 @@ class FzTheme {
   }
 
   static TextTheme _textTheme(Color text, Color dim, Color mute) {
-    final sans = GoogleFonts.getTextTheme('Geist').apply(
+    final sans = GoogleFonts.interTextTheme().apply(
       bodyColor: text,
       displayColor: text,
     );
 
     TextStyle s(double size, FontWeight w, {double letter = 0, Color? color}) {
-      return GoogleFonts.getFont(
-        'Geist',
+      return GoogleFonts.inter(
         fontSize: size,
         fontWeight: w,
         letterSpacing: letter,
@@ -210,8 +199,7 @@ class FzTheme {
     }
 
     TextStyle m(double size, FontWeight w, {double letter = 0, Color? color}) {
-      return GoogleFonts.getFont(
-        'Geist Mono',
+      return GoogleFonts.jetBrainsMono(
         fontSize: size,
         fontWeight: w,
         letterSpacing: letter,

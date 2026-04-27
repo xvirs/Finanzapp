@@ -89,9 +89,14 @@ class FzRadius {
 }
 
 /// Tipografía — familias y feature settings.
+///
+/// El handoff usa Geist y Geist Mono. Como google_fonts todavía no las
+/// tiene en su catálogo, usamos los fallbacks documentados en AGENTS.md:
+/// Inter (sans) y JetBrains Mono (mono). Cuando google_fonts agregue
+/// Geist, basta con cambiar acá los strings.
 class FzType {
-  static const sans = 'Geist';
-  static const mono = 'GeistMono';
+  static const sans = 'Inter';
+  static const mono = 'JetBrainsMono';
   static const tabularNums = [FontFeature.tabularFigures()];
 }
 

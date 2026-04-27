@@ -14,7 +14,9 @@
       "Bash(find /Users/xavier/.pub-cache/hosted/pub.dev/flutter_local_notifications-* -name \"flutter_local_notifications.dart\" -path \"*/lib/*\")",
       "Bash(flutter pub *)",
       "WebFetch(domain:claude.ai)",
-      "Bash(find /Users/xavier/.pub-cache/hosted/pub.dev/google_fonts-* -name \"google_fonts.dart\" -path \"*/lib/*\")"
+      "Bash(find /Users/xavier/.pub-cache/hosted/pub.dev/google_fonts-* -name \"google_fonts.dart\" -path \"*/lib/*\")",
+      "Bash(grep -nB1 -A1 \"getFont\" /Users/xavier/Proyectos/Finanzapp/lib/features/auth/presentation/login_screen.dart)",
+      "Bash(perl -i -0777 -pe \"s/GoogleFonts\\\\.getFont\\\\\\(\\\\s*'Geist',\\\\s*/GoogleFonts.inter\\(/g; s/GoogleFonts\\\\.getFont\\\\\\(\\\\s*'Geist Mono',\\\\s*/GoogleFonts.jetBrainsMono\\(/g\" lib/features/auth/presentation/login_screen.dart)"
     ]
   }
 }

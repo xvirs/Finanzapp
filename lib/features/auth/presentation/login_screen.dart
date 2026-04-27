@@ -105,9 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             'Finanzapp',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.getFont(
-                              'Geist',
-                              fontSize: 30,
+                            style: GoogleFonts.inter(fontSize: 30,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.75,
                               color: FzColors.text,
@@ -118,9 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             'Tus pagos del mes, ordenados.',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.getFont(
-                              'Geist',
-                              fontSize: 14,
+                            style: GoogleFonts.inter(fontSize: 14,
                               color: FzColors.textDim,
                               height: 1.5,
                             ),
@@ -150,9 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             'v2.0 · finanzapp.app',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.getFont(
-                              'Geist Mono',
-                              fontSize: 11.5,
+                            style: GoogleFonts.jetBrainsMono(fontSize: 11.5,
                               letterSpacing: 0.46,
                               color: FzColors.textMute,
                             ),
@@ -246,9 +240,7 @@ class _GoogleButton extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(
                   'Continuar con Google',
-                  style: GoogleFonts.getFont(
-                    'Geist',
-                    fontSize: 14.5,
+                  style: GoogleFonts.inter(fontSize: 14.5,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF1F1F1F),
                   ),
@@ -275,9 +267,7 @@ class _OrDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(
             'O POR EMAIL',
-            style: GoogleFonts.getFont(
-              'Geist Mono',
-              fontSize: 11,
+            style: GoogleFonts.jetBrainsMono(fontSize: 11,
               letterSpacing: 1.1,
               color: FzColors.textMute,
             ),
@@ -313,16 +303,12 @@ class _EmailInput extends StatelessWidget {
             keyboardType: TextInputType.emailAddress,
             autocorrect: false,
             enableSuggestions: false,
-            style: GoogleFonts.getFont(
-              'Geist',
-              fontSize: 14,
+            style: GoogleFonts.inter(fontSize: 14,
               color: FzColors.text,
             ),
             decoration: InputDecoration(
               hintText: 'tu@email.com',
-              hintStyle: GoogleFonts.getFont(
-                'Geist',
-                fontSize: 14,
+              hintStyle: GoogleFonts.inter(fontSize: 14,
                 color: FzColors.textMute,
               ),
               border: InputBorder.none,
@@ -345,9 +331,7 @@ class _EmailInput extends StatelessWidget {
             color: FzColors.bg,
             child: Text(
               'EMAIL',
-              style: GoogleFonts.getFont(
-                'Geist Mono',
-                fontSize: 10.5,
+              style: GoogleFonts.jetBrainsMono(fontSize: 10.5,
                 letterSpacing: 0.53,
                 color: FzColors.textMute,
               ),
@@ -391,9 +375,7 @@ class _PrimaryCta extends StatelessWidget {
                 children: [
                   Text(
                     'Enviarme el link',
-                    style: GoogleFonts.getFont(
-                      'Geist',
-                      fontSize: 14.5,
+                    style: GoogleFonts.inter(fontSize: 14.5,
                       fontWeight: FontWeight.w600,
                       color: FzColors.primaryInk,
                       letterSpacing: -0.07,
