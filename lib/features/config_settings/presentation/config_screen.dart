@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
@@ -174,42 +175,63 @@ class _BiometricToggleState extends State<_BiometricToggle> {
 
     final messenger = ScaffoldMessenger.of(context);
 
+    if (!value) {
+      // Apagar no requiere autenticación.
+      await _service.setEnabled(false);
+      if (!mounted) return;
+      setState(() {
+        _enabled = false;
+        _busy = false;
+      });
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Bloqueo biométrico desactivado.')),
+      );
+      return;
+    }
+
+    // Activar: verificar que el biométrico funcione antes de persistir.
     try {
-      if (value) {
-        // Verificá que el biométrico funcione antes de habilitar.
-        final ok = await _service.authenticate(
-          reason: 'Verificá tu identidad para activar el bloqueo',
-        );
-        if (!ok) {
-          messenger.showSnackBar(
-            const SnackBar(content: Text('No se pudo verificar el biométrico.')),
-          );
-          if (mounted) setState(() => _busy = false);
-          return;
-        }
-        await _service.setEnabled(true);
-        if (!mounted) return;
-        setState(() {
-          _enabled = true;
-          _busy = false;
-        });
+      final ok = await _service.authenticate(
+        reason: 'Verificá tu identidad para activar el bloqueo',
+      );
+      if (!mounted) return;
+
+      if (!ok) {
+        // El usuario canceló el prompt o el scan falló sin excepción.
         messenger.showSnackBar(
-          const SnackBar(content: Text('Bloqueo biométrico activado.')),
+          const SnackBar(
+            content: Text('Verificación cancelada o no autorizada.'),
+          ),
         );
-      } else {
-        await _service.setEnabled(false);
-        if (!mounted) return;
-        setState(() {
-          _enabled = false;
-          _busy = false;
-        });
-        messenger.showSnackBar(
-          const SnackBar(content: Text('Bloqueo biométrico desactivado.')),
-        );
+        setState(() => _busy = false);
+        return;
       }
+
+      await _service.setEnabled(true);
+      if (!mounted) return;
+      setState(() {
+        _enabled = true;
+        _busy = false;
+      });
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Bloqueo biométrico activado.')),
+      );
+    } on PlatformException catch (e) {
+      if (!mounted) return;
+      // Exponer el código real para diagnosticar.
+      // Códigos comunes: NotEnrolled, NotAvailable, LockedOut, no_fragment_activity
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Biométrico [${e.code}]: ${e.message ?? "sin mensaje"}'),
+          duration: const Duration(seconds: 6),
+        ),
+      );
+      setState(() => _busy = false);
     } catch (e) {
       if (!mounted) return;
-      messenger.showSnackBar(SnackBar(content: Text('Error: $e')));
+      messenger.showSnackBar(
+        SnackBar(content: Text('Error inesperado: $e')),
+      );
       setState(() => _busy = false);
     }
   }

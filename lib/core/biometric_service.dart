@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -38,7 +39,8 @@ class BiometricService {
   Future<bool> isAvailable() async {
     try {
       return await _auth.isDeviceSupported();
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[BiometricService] isAvailable error: $e\n$st');
       return false;
     }
   }
@@ -48,26 +50,38 @@ class BiometricService {
   Future<bool> canCheckBiometrics() async {
     try {
       return await _auth.canCheckBiometrics;
-    } catch (_) {
+    } catch (e, st) {
+      debugPrint('[BiometricService] canCheckBiometrics error: $e\n$st');
       return false;
+    }
+  }
+
+  /// Lista de biométricos enrolados (face / fingerprint / strong / weak).
+  /// En Android suele devolver `[strong]` o `[weak]` cuando hay huella.
+  Future<List<BiometricType>> availableBiometrics() async {
+    try {
+      return await _auth.getAvailableBiometrics();
+    } catch (e, st) {
+      debugPrint('[BiometricService] availableBiometrics error: $e\n$st');
+      return const [];
     }
   }
 
   /// Pide autenticar al usuario. Con [biometricOnly]=false (default), si
   /// no hay biométrico disponible cae al PIN/passcode del dispositivo.
+  ///
+  /// Las excepciones de plataforma (PlatformException) PROPAGAN al caller
+  /// para que pueda mostrar el código/mensaje real. Solo errores no-platform
+  /// se loguean y devuelven false.
   Future<bool> authenticate({
     String reason = 'Desbloqueá para acceder a Finanzapp',
   }) async {
-    try {
-      return await _auth.authenticate(
-        localizedReason: reason,
-        options: const AuthenticationOptions(
-          stickyAuth: true,
-          biometricOnly: false,
-        ),
-      );
-    } catch (_) {
-      return false;
-    }
+    return _auth.authenticate(
+      localizedReason: reason,
+      options: const AuthenticationOptions(
+        stickyAuth: true,
+        biometricOnly: false,
+      ),
+    );
   }
 }
