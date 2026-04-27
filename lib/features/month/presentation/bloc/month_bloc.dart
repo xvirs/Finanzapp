@@ -31,7 +31,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     on<MonthRequested>(_onRequested);
     on<MonthRefreshRequested>(_onRefreshRequested);
     on<MonthSilentRefreshRequested>(_onSilentRefreshRequested);
-    on<MonthOnlyPendingToggled>(_onOnlyPendingToggled);
+    on<MonthFilterChanged>(_onFilterChanged);
     on<MonthMarkPaidRequested>(_onMarkPaidRequested);
     on<MonthMarkPendingRequested>(_onMarkPendingRequested);
 
@@ -140,11 +140,11 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     await _silentRefresh(emit);
   }
 
-  void _onOnlyPendingToggled(
-    MonthOnlyPendingToggled event,
+  void _onFilterChanged(
+    MonthFilterChanged event,
     Emitter<MonthBlocState> emit,
   ) {
-    emit(state.copyWith(onlyPending: !state.onlyPending));
+    emit(state.copyWith(filter: event.filter));
   }
 
   /// Refresh "silencioso" después de mutar: NO toca status, así la lista

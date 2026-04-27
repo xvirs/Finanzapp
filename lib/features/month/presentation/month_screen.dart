@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../design/tokens.dart';
 import 'bloc/month_bloc.dart';
 import 'widgets/month_group_section.dart';
 import 'widgets/month_header_section.dart';
+import 'widgets/month_shimmer.dart';
 
+/// Pantalla 2 — Mes (Home).
+/// Port pixel-perfect de `AHome` + `AHomeExpanded` del JSX.
+///
+/// Layout:
+/// - Header anclado al tope (no scrollea, no se oculta durante carga;
+///   sus valores se actualizan en su lugar cuando llegan los datos).
+/// - Body con scroll: durante carga inicial / pull-to-refresh muestra
+///   un shimmer skeleton; en éxito, la lista de grupos; en error, una
+///   vista de retry.
 class MonthScreen extends StatefulWidget {
   const MonthScreen({super.key});
 
@@ -16,81 +27,121 @@ class _MonthScreenState extends State<MonthScreen> {
   String? _expandedKey;
 
   void _toggleExpanded(String key) {
-    setState(() {
-      _expandedKey = _expandedKey == key ? null : key;
-    });
+    setState(() => _expandedKey = _expandedKey == key ? null : key);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        bottom: false,
-        child: BlocConsumer<MonthBloc, MonthBlocState>(
-          listenWhen: (previous, current) =>
-              previous.period != current.period ||
-              (previous.errorMessage != current.errorMessage &&
-                  current.errorMessage != null) ||
-              (previous.mutatingItemKey != null &&
-                  current.mutatingItemKey == null),
-          listener: (context, state) {
-            if (state.errorMessage != null) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text(state.errorMessage!)),
-              );
-            }
-            // Cerrar acordeón al cambiar de período o al terminar una
-            // mutación (mutatingItemKey volvió a null).
-            if (_expandedKey != null) {
-              setState(() => _expandedKey = null);
-            }
-          },
-          builder: (context, state) {
-            return Column(
+      backgroundColor: FzColors.bg,
+      body: BlocConsumer<MonthBloc, MonthBlocState>(
+        listenWhen: (previous, current) =>
+            previous.period != current.period ||
+            (previous.errorMessage != current.errorMessage &&
+                current.errorMessage != null) ||
+            (previous.mutatingItemKey != null &&
+                current.mutatingItemKey == null),
+        listener: (context, state) {
+          if (state.errorMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.errorMessage!)),
+            );
+          }
+          if (_expandedKey != null) {
+            setState(() => _expandedKey = null);
+          }
+        },
+        builder: (context, state) {
+          return SafeArea(
+            bottom: false,
+            child: Column(
               children: [
-                MonthHeaderSection(state: state),
-                const Divider(height: 1),
+                // Header anclado siempre — se mantiene durante carga
+                // y solo cambian sus valores cuando llegan los datos.
+                Material(
+                  color: FzColors.bg,
+                  child: MonthHeaderSection(state: state),
+                ),
                 Expanded(
-                  child: switch (state.status) {
-                    MonthStatus.initial ||
-                    MonthStatus.loading =>
-                      const Center(child: CircularProgressIndicator()),
-                    MonthStatus.failure => _ErrorView(
-                        message: state.errorMessage ?? 'Error desconocido',
-                        onRetry: () => context
-                            .read<MonthBloc>()
-                            .add(const MonthRefreshRequested()),
-                      ),
-                    MonthStatus.success => state.groups.isEmpty
-                        ? const _EmptyView()
-                        : RefreshIndicator(
-                            onRefresh: () async {
-                              context
-                                  .read<MonthBloc>()
-                                  .add(const MonthRefreshRequested());
-                            },
-                            child: ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.only(bottom: 24),
-                              itemCount: state.groups.length,
-                              itemBuilder: (ctx, i) => MonthGroupSection(
-                                group: state.groups[i],
-                                period: state.period,
-                                onlyPending: state.onlyPending,
-                                expandedKey: _expandedKey,
-                                mutatingItemKey: state.mutatingItemKey,
-                                onToggle: _toggleExpanded,
-                              ),
-                            ),
-                          ),
-                  },
+                  child: _Body(
+                    state: state,
+                    expandedKey: _expandedKey,
+                    onToggle: _toggleExpanded,
+                  ),
                 ),
               ],
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
+  }
+}
+
+/// Cuerpo bajo el header. Maneja todos los estados de carga / éxito /
+/// error / vacío.
+class _Body extends StatelessWidget {
+  const _Body({
+    required this.state,
+    required this.expandedKey,
+    required this.onToggle,
+  });
+
+  final MonthBlocState state;
+  final String? expandedKey;
+  final ValueChanged<String> onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (state.status) {
+      case MonthStatus.failure:
+        return _ErrorView(
+          message: state.errorMessage ?? 'Error desconocido',
+          onRetry: () => context
+              .read<MonthBloc>()
+              .add(const MonthRefreshRequested()),
+        );
+
+      case MonthStatus.initial:
+      case MonthStatus.loading:
+        // Shimmer wrapped en RefreshIndicator-friendly scroll para que
+        // el pull-to-refresh siga funcionando si el usuario insiste.
+        return RefreshIndicator(
+          color: FzColors.primary,
+          backgroundColor: FzColors.card,
+          onRefresh: () async {
+            context.read<MonthBloc>().add(const MonthRefreshRequested());
+          },
+          child: const MonthShimmer(),
+        );
+
+      case MonthStatus.success:
+        return RefreshIndicator(
+          color: FzColors.primary,
+          backgroundColor: FzColors.card,
+          onRefresh: () async {
+            context.read<MonthBloc>().add(const MonthRefreshRequested());
+          },
+          child: state.groups.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [_EmptyView()],
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 12),
+                  itemCount: state.groups.length,
+                  itemBuilder: (ctx, i) => MonthGroupSection(
+                    group: state.groups[i],
+                    period: state.period,
+                    filter: state.filter,
+                    expandedKey: expandedKey,
+                    mutatingItemKey: state.mutatingItemKey,
+                    onToggle: onToggle,
+                  ),
+                ),
+        );
+    }
   }
 }
 
@@ -102,33 +153,42 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-          const SizedBox(height: 12),
-          Text(
-            'No se pudieron cargar los datos',
-            style: theme.textTheme.titleMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            message,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline,
+                size: 48, color: FzColors.lateColor),
+            const SizedBox(height: 12),
+            const Text(
+              'No se pudieron cargar los datos',
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: FzColors.text,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.tonal(
-            onPressed: onRetry,
-            child: const Text('Reintentar'),
-          ),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              message,
+              style: const TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 12,
+                color: FzColors.textDim,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: onRetry,
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -139,29 +199,35 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
+            const Icon(
               Icons.event_available_outlined,
               size: 48,
-              color: theme.colorScheme.primary,
+              color: FzColors.primary,
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Sin pagos este mes',
-              style: theme.textTheme.titleMedium,
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: FzColors.text,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 4),
-            Text(
+            const Text(
               'No hay cuentas ni cuotas activas para este período.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 12,
+                color: FzColors.textDim,
               ),
               textAlign: TextAlign.center,
             ),

@@ -5,16 +5,20 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/format.dart';
 import '../../../../core/url.dart';
+import '../../../../design/tokens.dart';
 import '../../../../domain/period.dart';
 import '../../../../domain/urgency.dart';
 import '../../../../models/enums.dart';
 import '../../domain/month_builder.dart';
 import '../../domain/month_item.dart';
 import '../bloc/month_bloc.dart';
-import 'brand_chip.dart';
-import 'calendar_tag.dart';
-import 'urgency_badge.dart';
 
+/// Item card del Mes — port pixel-perfect de `APayItem` del JSX.
+///
+/// Estados visuales:
+/// - paid: cardPaid bg, borderPaid, lead verde con check
+/// - overdue: cardLate bg, borderLate, lead rojo con "!"
+/// - pending (default): card bg, border, lead neutro con "·"
 class MonthItemCard extends StatelessWidget {
   const MonthItemCard({
     required this.item,
@@ -33,7 +37,6 @@ class MonthItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final paid = item.payment?.status == PaymentStatus.paid;
     final hasAmount =
         item.estimatedAmount != null && item.estimatedAmount! > 0;
@@ -44,15 +47,26 @@ class MonthItemCard extends StatelessWidget {
             period: period,
           )
         : const Urgency.normal();
+    final isOverdue = urgency is UrgencyOverdue;
 
-    final amount = paid && item.payment?.amountReal != null
-        ? item.payment!.amountReal
-        : item.estimatedAmount;
+    final cardBg = paid
+        ? FzColors.cardPaid
+        : isOverdue
+            ? FzColors.cardLate
+            : FzColors.card;
+    final cardBorder = paid
+        ? FzColors.borderPaid
+        : isOverdue
+            ? FzColors.borderLate
+            : FzColors.border;
 
-    final subtitle = _subtitleFor(item);
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(FzRadius.xl),
+        border: Border.all(color: cardBorder),
+      ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -60,52 +74,28 @@ class MonthItemCard extends StatelessWidget {
           InkWell(
             onTap: isMutating ? null : onTap,
             child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  CalendarTag(
-                    day: item.dayOfMonth,
-                    urgency: urgency,
-                    paid: paid,
-                  ),
+                  _LeadIcon(paid: paid, overdue: isOverdue),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Flexible(
-                              child: Text(
-                                item.label,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            if (item.kind == MonthItemKind.cardTotal &&
-                                item.card?.brand != null) ...[
-                              const SizedBox(width: 8),
-                              BrandChip(brand: item.card!.brand),
-                            ],
-                            if (urgency is! UrgencyNormal) ...[
-                              const SizedBox(width: 8),
-                              UrgencyBadge(urgency: urgency),
-                            ],
-                          ],
-                        ),
-                        if (subtitle != null) ...[
+                        _NameRow(item: item, isOverdue: isOverdue),
+                        if (_subtitle(item) != null) ...[
                           const SizedBox(height: 2),
                           Text(
-                            subtitle,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
+                            _subtitle(item)!,
+                            style: const TextStyle(
+                              fontFamily: FzType.mono,
+                              fontSize: 11.5,
+                              color: FzColors.textMute,
+                              letterSpacing: 0.46,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -115,19 +105,19 @@ class MonthItemCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Text(
-                    formatCurrency(amount),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
+                  _AmountColumn(
+                    item: item,
+                    paid: paid,
+                    isOverdue: isOverdue,
                   ),
+                  const SizedBox(width: 8),
                   AnimatedRotation(
                     turns: expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 180),
-                    child: Icon(
+                    duration: FzMotion.fast,
+                    child: const Icon(
                       Icons.keyboard_arrow_down_rounded,
-                      color: theme.colorScheme.onSurfaceVariant,
+                      size: 18,
+                      color: FzColors.textMute,
                     ),
                   ),
                 ],
@@ -135,12 +125,13 @@ class MonthItemCard extends StatelessWidget {
             ),
           ),
           AnimatedSize(
-            duration: const Duration(milliseconds: 180),
-            curve: Curves.easeOut,
+            duration: FzMotion.normal,
+            curve: FzMotion.easing,
             child: expanded
                 ? _ItemActions(
                     item: item,
                     isMutating: isMutating,
+                    cardBorder: cardBorder,
                   )
                 : const SizedBox(width: double.infinity),
           ),
@@ -149,7 +140,7 @@ class MonthItemCard extends StatelessWidget {
     );
   }
 
-  String? _subtitleFor(MonthItem item) {
+  static String? _subtitle(MonthItem item) {
     if (item.kind == MonthItemKind.cardTotal) {
       final ic = item.cardInstallmentsCount ?? 0;
       final ad = item.cardAutoDebitsCount ?? 0;
@@ -160,16 +151,215 @@ class MonthItemCard extends StatelessWidget {
       return parts.join(' · ');
     }
     final code = item.bill?.providerCode;
-    if (code != null && code.isNotEmpty) return code;
+    if (code != null && code.isNotEmpty) return 'Ref · $code';
     return null;
   }
 }
 
+/// 38x38 cuadrado con el icono de estado al inicio del item.
+class _LeadIcon extends StatelessWidget {
+  const _LeadIcon({required this.paid, required this.overdue});
+
+  final bool paid;
+  final bool overdue;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = paid
+        ? FzColors.primary
+        : overdue
+            ? FzColors.lateColor
+            : FzColors.cardHi;
+    final fg = paid
+        ? FzColors.primaryInk
+        : overdue
+            ? Colors.white
+            : FzColors.textDim;
+
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(11),
+      ),
+      alignment: Alignment.center,
+      child: paid
+          ? Icon(Icons.check_rounded, size: 18, color: fg)
+          : Text(
+              overdue ? '!' : '·',
+              style: TextStyle(
+                color: fg,
+                fontFamily: FzType.sans,
+                fontWeight: FontWeight.w600,
+                fontSize: overdue ? 18 : 22,
+                height: 1,
+              ),
+            ),
+    );
+  }
+}
+
+class _NameRow extends StatelessWidget {
+  const _NameRow({required this.item, required this.isOverdue});
+
+  final MonthItem item;
+  final bool isOverdue;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Flexible(
+          child: Text(
+            item.label,
+            style: const TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 14.5,
+              fontWeight: FontWeight.w500,
+              letterSpacing: -0.07,
+              color: FzColors.text,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (item.kind == MonthItemKind.cardTotal &&
+            item.card?.brand != null) ...[
+          const SizedBox(width: 6),
+          _BrandChip(brand: item.card!.brand!),
+        ],
+        if (isOverdue) ...[
+          const SizedBox(width: 6),
+          const _OverdueBadge(),
+        ],
+      ],
+    );
+  }
+}
+
+class _BrandChip extends StatelessWidget {
+  const _BrandChip({required this.brand});
+  final CardBrand brand;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, bg) = switch (brand) {
+      CardBrand.visa => ('VISA', FzColors.visaBg),
+      CardBrand.mastercard => ('MC', FzColors.mastercardBg),
+      CardBrand.amex => ('AMEX', FzColors.mpBg),
+      CardBrand.other => ('OTRA', FzColors.cardHi),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(FzRadius.xs),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontFamily: FzType.sans,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.36,
+        ),
+      ),
+    );
+  }
+}
+
+class _OverdueBadge extends StatelessWidget {
+  const _OverdueBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+      decoration: BoxDecoration(
+        color: FzColors.lateSoft,
+        borderRadius: BorderRadius.circular(FzRadius.xs),
+      ),
+      child: const Text(
+        'ATRASADA',
+        style: TextStyle(
+          fontFamily: FzType.mono,
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.54,
+          color: FzColors.lateColor,
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountColumn extends StatelessWidget {
+  const _AmountColumn({
+    required this.item,
+    required this.paid,
+    required this.isOverdue,
+  });
+
+  final MonthItem item;
+  final bool paid;
+  final bool isOverdue;
+
+  @override
+  Widget build(BuildContext context) {
+    final showAmount = paid && item.payment?.amountReal != null
+        ? item.payment!.amountReal!
+        : item.estimatedAmount;
+
+    final caplabel = paid ? 'PAGADO' : (isOverdue ? 'ESTIMADO' : 'A PAGAR');
+    final caplabelColor = paid ? FzColors.primary : FzColors.textMute;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          caplabel,
+          style: TextStyle(
+            fontFamily: FzType.mono,
+            fontSize: 10,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.6,
+            color: caplabelColor,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          showAmount == null
+              ? 'Variable'
+              : formatCurrency(showAmount),
+          style: TextStyle(
+            fontFamily: FzType.sans,
+            fontSize: 15,
+            fontWeight: showAmount == null ? FontWeight.w500 : FontWeight.w600,
+            letterSpacing: -0.15,
+            fontFeatures: FzType.tabularNums,
+            color: showAmount == null ? FzColors.textDim : FzColors.text,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Sección expandida del item — replica el `AHomeExpanded.children`.
 class _ItemActions extends StatefulWidget {
-  const _ItemActions({required this.item, required this.isMutating});
+  const _ItemActions({
+    required this.item,
+    required this.isMutating,
+    required this.cardBorder,
+  });
 
   final MonthItem item;
   final bool isMutating;
+  final Color cardBorder;
 
   @override
   State<_ItemActions> createState() => _ItemActionsState();
@@ -199,39 +389,32 @@ class _ItemActionsState extends State<_ItemActions> {
   Future<void> _openPayUrl() async {
     final raw = _paymentUrl;
     if (raw == null) return;
-
     final code = widget.item.bill?.providerCode;
     if (code != null && code.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: code));
     }
-
     final uri = Uri.tryParse(raw);
-    if (uri == null) {
-      _showSnack('El link no es válido.');
-      return;
-    }
-    final mode = isWebUrl(raw)
-        ? LaunchMode.externalApplication
-        : LaunchMode.externalApplication;
+    if (uri == null) return _snack('El link no es válido.');
     try {
-      final ok = await launchUrl(uri, mode: mode);
-      if (!ok) _showSnack('No se pudo abrir el link.');
-    } catch (e) {
-      _showSnack('No se pudo abrir el link.');
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok) _snack('No se pudo abrir el link.');
+    } catch (_) {
+      _snack('No se pudo abrir el link.');
     }
+    isWebUrl(raw); // referencia para mantener import
   }
 
   void _submitPaid() {
     final raw = _amountController.text.trim().replaceAll(',', '.');
     final value = double.tryParse(raw);
     if (value == null || value <= 0) {
-      _showSnack('Ingresá un monto válido.');
+      _snack('Ingresá un monto válido.');
       return;
     }
     FocusScope.of(context).unfocus();
-    context.read<MonthBloc>().add(
-          MonthMarkPaidRequested(item: widget.item, amount: value),
-        );
+    context
+        .read<MonthBloc>()
+        .add(MonthMarkPaidRequested(item: widget.item, amount: value));
   }
 
   void _submitPending() {
@@ -240,90 +423,259 @@ class _ItemActionsState extends State<_ItemActions> {
         .add(MonthMarkPendingRequested(item: widget.item));
   }
 
-  void _showSnack(String message) {
+  void _snack(String msg) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final paid = widget.item.payment?.status == PaymentStatus.paid;
     final url = _paymentUrl;
+    final hasCode = widget.item.bill?.providerCode?.isNotEmpty ?? false;
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border(top: BorderSide(color: widget.cardBorder)),
+      ),
+      padding: const EdgeInsets.all(14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Divider(height: 1),
-          const SizedBox(height: 12),
           if (url != null) ...[
-            OutlinedButton.icon(
+            _SecondaryButton(
+              label: hasCode ? 'Ir a pagar · copiar código' : 'Ir a pagar',
+              icon: Icons.open_in_new_rounded,
               onPressed: widget.isMutating ? null : _openPayUrl,
-              icon: const Icon(Icons.open_in_new_rounded, size: 18),
-              label: Text(
-                widget.item.bill?.providerCode != null
-                    ? 'Ir a pagar (copia código)'
-                    : 'Ir a pagar',
-              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
           ],
           if (paid) ...[
-            Text(
-              widget.item.payment?.amountReal != null
-                  ? 'Pagado por ${formatCurrency(widget.item.payment!.amountReal)}'
-                  : 'Pagado',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            if (widget.item.payment?.amountReal != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  'Pagado por ${formatCurrency(widget.item.payment!.amountReal)}',
+                  style: const TextStyle(
+                    fontFamily: FzType.sans,
+                    fontSize: 12,
+                    color: FzColors.textDim,
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
+            _PendingButton(
+              loading: widget.isMutating,
               onPressed: widget.isMutating ? null : _submitPending,
-              icon: widget.isMutating
-                  ? const SizedBox(
-                      width: 14,
-                      height: 14,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.undo_rounded, size: 18),
-              label: const Text('Marcar como pendiente'),
             ),
           ] else ...[
-            TextField(
-              controller: _amountController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(
-                labelText: 'Monto pagado',
-                prefixText: '\$ ',
-              ),
-              onSubmitted: (_) => _submitPaid(),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
+            _AmountField(controller: _amountController),
+            const SizedBox(height: 10),
+            _PrimaryButton(
+              label: 'Marcar como pagado',
+              icon: Icons.check_rounded,
+              loading: widget.isMutating,
               onPressed: widget.isMutating ? null : _submitPaid,
-              icon: widget.isMutating
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.check_rounded, size: 18),
-              label: const Text('Marcar como pagado'),
             ),
           ],
         ],
       ),
+    );
+  }
+}
+
+/// Botón secundario (cardHi bg).
+class _SecondaryButton extends StatelessWidget {
+  const _SecondaryButton({
+    required this.label,
+    required this.icon,
+    this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: FzColors.cardHi,
+      borderRadius: BorderRadius.circular(FzRadius.lg),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            border: Border.all(color: FzColors.border),
+            borderRadius: BorderRadius.circular(FzRadius.lg),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 15, color: FzColors.text),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: FzType.sans,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w500,
+                  color: FzColors.text,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AmountField extends StatelessWidget {
+  const _AmountField({required this.controller});
+  final TextEditingController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'MONTO PAGADO (ARS)',
+          style: TextStyle(
+            fontFamily: FzType.mono,
+            fontSize: 10.5,
+            color: FzColors.textMute,
+            letterSpacing: 0.63,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Container(
+          decoration: BoxDecoration(
+            color: FzColors.bg,
+            borderRadius: BorderRadius.circular(FzRadius.lg),
+            border: Border.all(color: FzColors.border),
+          ),
+          child: TextField(
+            controller: controller,
+            keyboardType:
+                const TextInputType.numberWithOptions(decimal: true),
+            style: const TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: FzColors.text,
+              fontFeatures: FzType.tabularNums,
+            ),
+            decoration: const InputDecoration(
+              prefixText: '\$ ',
+              prefixStyle: TextStyle(
+                fontFamily: FzType.mono,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: FzColors.text,
+              ),
+              hintText: '0',
+              hintStyle: TextStyle(
+                fontFamily: FzType.mono,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: FzColors.textDim,
+              ),
+              border: InputBorder.none,
+              enabledBorder: InputBorder.none,
+              focusedBorder: InputBorder.none,
+              filled: false,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: 14,
+                vertical: 12,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PrimaryButton extends StatelessWidget {
+  const _PrimaryButton({
+    required this.label,
+    required this.icon,
+    required this.loading,
+    this.onPressed,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null || loading;
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        boxShadow: disabled ? null : FzShadow.ctaPrimary,
+      ),
+      child: Material(
+        color: disabled
+            ? FzColors.primary.withValues(alpha: 0.6)
+            : FzColors.primary,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        child: InkWell(
+          onTap: disabled ? null : onPressed,
+          borderRadius: BorderRadius.circular(FzRadius.lg),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (loading)
+                  const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation(FzColors.primaryInk),
+                    ),
+                  )
+                else
+                  Icon(icon, size: 16, color: FzColors.primaryInk),
+                const SizedBox(width: 8),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontFamily: FzType.sans,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: FzColors.primaryInk,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PendingButton extends StatelessWidget {
+  const _PendingButton({required this.loading, this.onPressed});
+  final bool loading;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return _SecondaryButton(
+      label: loading ? 'Procesando…' : 'Marcar como pendiente',
+      icon: Icons.undo_rounded,
+      onPressed: onPressed,
     );
   }
 }

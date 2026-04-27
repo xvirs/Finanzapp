@@ -26,8 +26,13 @@ final class MonthSilentRefreshRequested extends MonthEvent {
   const MonthSilentRefreshRequested();
 }
 
-final class MonthOnlyPendingToggled extends MonthEvent {
-  const MonthOnlyPendingToggled();
+final class MonthFilterChanged extends MonthEvent {
+  const MonthFilterChanged(this.filter);
+
+  final MonthFilter filter;
+
+  @override
+  List<Object?> get props => [filter];
 }
 
 final class MonthMarkPaidRequested extends MonthEvent {
