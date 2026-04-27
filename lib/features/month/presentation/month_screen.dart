@@ -55,6 +55,7 @@ class _MonthScreenState extends State<MonthScreen> {
           return SafeArea(
             bottom: false,
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Header anclado siempre — se mantiene durante carga
                 // y solo cambian sus valores cuando llegan los datos.

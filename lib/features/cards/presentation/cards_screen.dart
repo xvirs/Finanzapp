@@ -3,65 +3,39 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/format.dart';
+import '../../../design/tokens.dart';
+import '../../../domain/period.dart';
 import 'bloc/cards_bloc.dart';
 import 'widgets/card_list_item.dart';
+import 'widgets/cards_shimmer.dart';
 
+/// Pantalla 4 — Tarjetas (lista).
+/// Port pixel-perfect del JSX `ACardsList` (handoff/screens-a-cards.jsx).
+///
+/// Layout:
+/// - Header anclado: título h1 "Tarjetas" + caplabel mono "abril de 2026"
+///   + caplabel "TOTAL DEL MES" + monto display 32px.
+/// - Body con scroll: cards grandes (1 por tarjeta).
 class CardsScreen extends StatelessWidget {
   const CardsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: FzColors.bg,
       body: SafeArea(
         bottom: false,
         child: BlocBuilder<CardsBloc, CardsBlocState>(
           builder: (context, state) {
             return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _CardsHeader(state: state),
-                const Divider(height: 1),
+                Material(
+                  color: FzColors.bg,
+                  child: _CardsHeader(state: state),
+                ),
                 Expanded(
-                  child: switch (state.status) {
-                    CardsStatus.initial ||
-                    CardsStatus.loading =>
-                      const Center(child: CircularProgressIndicator()),
-                    CardsStatus.failure => _ErrorView(
-                        message: state.errorMessage ?? 'Error desconocido',
-                        onRetry: () => context
-                            .read<CardsBloc>()
-                            .add(const CardsRefreshRequested()),
-                      ),
-                    CardsStatus.success => state.items.isEmpty
-                        ? const _EmptyView()
-                        : RefreshIndicator(
-                            onRefresh: () async {
-                              context
-                                  .read<CardsBloc>()
-                                  .add(const CardsRefreshRequested());
-                            },
-                            child: ListView.builder(
-                              physics: const AlwaysScrollableScrollPhysics(),
-                              padding: const EdgeInsets.only(top: 4, bottom: 24),
-                              itemCount: state.items.length,
-                              itemBuilder: (ctx, i) {
-                                final item = state.items[i];
-                                return CardListItem(
-                                  data: item,
-                                  period: state.period,
-                                  onTap: () async {
-                                    final bloc = ctx.read<CardsBloc>();
-                                    final result = await ctx.push<bool>(
-                                      '/cards/${item.card.id}',
-                                    );
-                                    if (result == true) {
-                                      bloc.add(const CardsRefreshRequested());
-                                    }
-                                  },
-                                );
-                              },
-                            ),
-                          ),
-                  },
+                  child: _Body(state: state),
                 ),
               ],
             );
@@ -72,6 +46,71 @@ class CardsScreen extends StatelessWidget {
   }
 }
 
+class _Body extends StatelessWidget {
+  const _Body({required this.state});
+
+  final CardsBlocState state;
+
+  @override
+  Widget build(BuildContext context) {
+    switch (state.status) {
+      case CardsStatus.failure:
+        return _ErrorView(
+          message: state.errorMessage ?? 'Error desconocido',
+          onRetry: () => context
+              .read<CardsBloc>()
+              .add(const CardsRefreshRequested()),
+        );
+
+      case CardsStatus.initial:
+      case CardsStatus.loading:
+        return RefreshIndicator(
+          color: FzColors.primary,
+          backgroundColor: FzColors.card,
+          onRefresh: () async {
+            context.read<CardsBloc>().add(const CardsRefreshRequested());
+          },
+          child: const CardsShimmer(),
+        );
+
+      case CardsStatus.success:
+        return RefreshIndicator(
+          color: FzColors.primary,
+          backgroundColor: FzColors.card,
+          onRefresh: () async {
+            context.read<CardsBloc>().add(const CardsRefreshRequested());
+          },
+          child: state.items.isEmpty
+              ? ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: const [_EmptyView()],
+                )
+              : ListView.builder(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(top: 14, bottom: 12),
+                  itemCount: state.items.length,
+                  itemBuilder: (ctx, i) {
+                    final item = state.items[i];
+                    return CardListItem(
+                      data: item,
+                      period: state.period,
+                      onTap: () async {
+                        final bloc = ctx.read<CardsBloc>();
+                        final result = await ctx.push<bool>(
+                          '/cards/${item.card.id}',
+                        );
+                        if (result == true) {
+                          bloc.add(const CardsRefreshRequested());
+                        }
+                      },
+                    );
+                  },
+                ),
+        );
+    }
+  }
+}
+
 class _CardsHeader extends StatelessWidget {
   const _CardsHeader({required this.state});
 
@@ -79,57 +118,64 @@ class _CardsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Material(
-      color: theme.colorScheme.surface,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Tarjetas',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: FzColors.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Tarjetas',
+            style: TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 26,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.65,
+              color: FzColors.text,
             ),
-            const SizedBox(height: 2),
-            Text(
-              state.period.formatLong(),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _formatLowerMonth(state.period),
+            style: const TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 12,
+              color: FzColors.textDim,
+              letterSpacing: 0.24,
             ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Total del mes',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      formatCurrency(state.totalForPeriod),
-                      style: theme.textTheme.headlineMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          ),
+          const SizedBox(height: 14),
+          const Text(
+            'TOTAL DEL MES',
+            style: TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.66,
+              color: FzColors.textMute,
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            formatCurrency(state.totalForPeriod),
+            style: const TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 32,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.8,
+              fontFeatures: FzType.tabularNums,
+              color: FzColors.text,
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  // "abril de 2026" lowercase como en el JSX.
+  String _formatLowerMonth(PeriodKey p) => p.formatLong().toLowerCase();
 }
 
 class _ErrorView extends StatelessWidget {
@@ -140,30 +186,42 @@ class _ErrorView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
-          const SizedBox(height: 12),
-          Text(
-            'No se pudieron cargar las tarjetas',
-            style: theme.textTheme.titleMedium,
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            message,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline,
+                size: 48, color: FzColors.lateColor),
+            const SizedBox(height: 12),
+            const Text(
+              'No se pudieron cargar las tarjetas',
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: FzColors.text,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.tonal(onPressed: onRetry, child: const Text('Reintentar')),
-        ],
+            const SizedBox(height: 4),
+            Text(
+              message,
+              style: const TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 12,
+                color: FzColors.textDim,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.tonal(
+              onPressed: onRetry,
+              child: const Text('Reintentar'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -174,29 +232,35 @@ class _EmptyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: const [
             Icon(
               Icons.credit_card_off_outlined,
               size: 48,
-              color: theme.colorScheme.primary,
+              color: FzColors.primary,
             ),
-            const SizedBox(height: 12),
+            SizedBox(height: 12),
             Text(
               'No tenés tarjetas activas',
-              style: theme.textTheme.titleMedium,
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: FzColors.text,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: 4),
             Text(
-              'Vas a poder crearlas en la próxima etapa.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+              'Creá una desde Config → Tarjetas → +.',
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 12,
+                color: FzColors.textDim,
               ),
               textAlign: TextAlign.center,
             ),

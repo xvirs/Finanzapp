@@ -2,20 +2,19 @@ import 'package:intl/intl.dart';
 
 import '../models/enums.dart';
 
-final NumberFormat _currencyAr = NumberFormat.currency(
-  locale: 'es_AR',
-  symbol: '\$',
-  decimalDigits: 0,
-);
+// Formato custom: separador de miles con punto (es_AR) pero el símbolo
+// "$" al PRINCIPIO (no al final como el default es_AR de intl), para
+// alinear con el handoff del diseño que usa "$1.629.560".
+final NumberFormat _amountFormatter = NumberFormat('#,##0', 'es_AR');
 
 String formatCurrency(num? value) {
   if (value == null) return '—';
-  return _currencyAr.format(value);
+  return '\$${_amountFormatter.format(value)}';
 }
 
 String formatCurrencyOrVariable(num? value) {
   if (value == null) return 'Variable';
-  return _currencyAr.format(value);
+  return '\$${_amountFormatter.format(value)}';
 }
 
 String formatMonthYear(DateTime date) =>

@@ -247,9 +247,9 @@ class _BrandChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final (label, bg) = switch (brand) {
       CardBrand.visa => ('VISA', FzColors.visaBg),
-      CardBrand.mastercard => ('MC', FzColors.mastercardBg),
+      CardBrand.mastercard => ('Mastercard', FzColors.mastercardBg),
       CardBrand.amex => ('AMEX', FzColors.mpBg),
-      CardBrand.other => ('OTRA', FzColors.cardHi),
+      CardBrand.other => ('Otra', FzColors.cardHi),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

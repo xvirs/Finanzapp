@@ -399,9 +399,9 @@ class FzBrandChip extends StatelessWidget {
   factory FzBrandChip.visa() =>
       const FzBrandChip(label: 'VISA', bg: FzColors.visaBg);
   factory FzBrandChip.mc() =>
-      const FzBrandChip(label: 'MC', bg: FzColors.mastercardBg);
+      const FzBrandChip(label: 'Mastercard', bg: FzColors.mastercardBg);
   factory FzBrandChip.mp() =>
-      const FzBrandChip(label: 'MP', bg: FzColors.mpBg);
+      const FzBrandChip(label: 'MercadoPago', bg: FzColors.mpBg);
 
   @override
   Widget build(BuildContext context) {

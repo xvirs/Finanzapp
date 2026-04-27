@@ -2,14 +2,19 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/format.dart';
+import '../../../../design/tokens.dart';
 import '../../../../domain/period.dart';
 import '../../../../domain/urgency.dart';
 import '../../../../models/enums.dart';
-import '../../../month/presentation/widgets/brand_chip.dart';
-import '../../../month/presentation/widgets/calendar_tag.dart';
-import '../../../month/presentation/widgets/urgency_badge.dart';
 import '../../domain/card_list_item_data.dart';
 
+/// Card grande de la lista de tarjetas — port pixel-perfect del item
+/// dentro de `ACardsList` (handoff/screens-a-cards.jsx).
+///
+/// Layout vertical:
+///   Row 1: lead 38x38 (day or ✓) + nombre + brand chip + ATRASADA badge
+///   Row 2: monto 24 px + caplabel mono ("PAGADO" / "VENCE DÍA 15")
+///   Row 3: botón "Ir a pagar" outline
 class CardListItem extends StatelessWidget {
   const CardListItem({
     required this.data,
@@ -24,7 +29,6 @@ class CardListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final card = data.card;
     final paid = data.payment?.status == PaymentStatus.paid;
     final hasAmount = data.total > 0;
@@ -35,122 +39,152 @@ class CardListItem extends StatelessWidget {
             period: period,
           )
         : const Urgency.normal();
+    final isOverdue = urgency is UrgencyOverdue;
+    final isEmpty = !paid && !hasAmount;
 
-    final amount = paid && data.payment?.amountReal != null
+    final cardBg = paid
+        ? FzColors.cardPaid
+        : isOverdue
+            ? FzColors.cardLate
+            : FzColors.card;
+    final cardBorder = paid
+        ? FzColors.borderPaid
+        : isOverdue
+            ? FzColors.borderLate
+            : FzColors.border;
+
+    final amountForDisplay = paid && data.payment?.amountReal != null
         ? data.payment!.amountReal!
         : data.total;
 
     final url = card.url;
 
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.35),
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  CalendarTag(
-                    day: card.dueDay,
-                    urgency: urgency,
-                    paid: paid,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
-                              child: Text(
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(FzRadius.xxl),
+          border: Border.all(color: cardBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Row 1
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    _LeadBox(
+                      day: card.dueDay,
+                      paid: paid,
+                      overdue: isOverdue,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 6,
+                            runSpacing: 4,
+                            children: [
+                              Text(
                                 card.name,
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                                style: const TextStyle(
+                                  fontFamily: FzType.sans,
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: -0.07,
+                                  color: FzColors.text,
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
                               ),
-                            ),
-                            if (card.brand != null) ...[
-                              const SizedBox(width: 8),
-                              BrandChip(brand: card.brand),
+                              if (card.brand != null)
+                                _BrandChip(brand: card.brand!),
                             ],
-                          ],
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _subtitleFor(data),
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                        if (urgency is! UrgencyNormal) ...[
-                          const SizedBox(height: 6),
-                          UrgencyBadge(urgency: urgency),
+                          const SizedBox(height: 2),
+                          Text(
+                            _subtitle(data),
+                            style: const TextStyle(
+                              fontFamily: FzType.mono,
+                              fontSize: 11.5,
+                              color: FzColors.textMute,
+                              letterSpacing: 0.46,
+                            ),
+                          ),
                         ],
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    formatCurrency(amount),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      fontFeatures: const [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                  const Spacer(),
-                  if (card.dueDay != null && !paid && hasAmount)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        'Vence día ${card.dueDay}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
                       ),
                     ),
-                  if (paid)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 4),
-                      child: Text(
-                        'Pagado',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              if (url != null) ...[
-                const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () => _openPayUrl(context, url),
-                  icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                  label: const Text('Ir a pagar'),
+                    if (isOverdue) ...[
+                      const SizedBox(width: 8),
+                      const _OverdueBadge(),
+                    ],
+                  ],
                 ),
+                const SizedBox(height: 12),
+
+                // Row 2
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      formatCurrency(amountForDisplay),
+                      style: TextStyle(
+                        fontFamily: FzType.sans,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.48,
+                        fontFeatures: FzType.tabularNums,
+                        color: isEmpty
+                            ? FzColors.textDim
+                            : paid
+                                ? FzColors.primaryHi
+                                : FzColors.text,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      _rightCaplabel(
+                        paid: paid,
+                        isOverdue: isOverdue,
+                        dueDay: card.dueDay,
+                      ),
+                      style: TextStyle(
+                        fontFamily: FzType.mono,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.44,
+                        color: paid ? FzColors.primary : FzColors.textMute,
+                      ),
+                    ),
+                  ],
+                ),
+
+                // Row 3 — botón "Ir a pagar" si hay url
+                if (url != null) ...[
+                  const SizedBox(height: 12),
+                  _PayButton(
+                    url: url,
+                    cardBorder: cardBorder,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  String _subtitleFor(CardListItemData data) {
+  static String _subtitle(CardListItemData data) {
     if (!data.hasCharges) return 'Sin cargos este mes';
     final parts = <String>[];
     if (data.installmentsCount > 0) {
@@ -166,27 +200,183 @@ class CardListItem extends StatelessWidget {
     return parts.join(' · ');
   }
 
-  Future<void> _openPayUrl(BuildContext context, String url) async {
+  static String _rightCaplabel({
+    required bool paid,
+    required bool isOverdue,
+    required int? dueDay,
+  }) {
+    if (paid) return 'PAGADO';
+    if (isOverdue) return 'ATRASADA';
+    if (dueDay != null) return 'VENCE DÍA $dueDay';
+    return '';
+  }
+}
+
+class _LeadBox extends StatelessWidget {
+  const _LeadBox({
+    required this.day,
+    required this.paid,
+    required this.overdue,
+  });
+
+  final int? day;
+  final bool paid;
+  final bool overdue;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = paid
+        ? FzColors.primary
+        : overdue
+            ? FzColors.lateSoft
+            : FzColors.cardHi;
+    final fg = paid
+        ? FzColors.primaryInk
+        : overdue
+            ? FzColors.lateInk
+            : FzColors.textDim;
+
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(FzRadius.md),
+        border: overdue
+            ? Border.all(color: FzColors.lateColor.withValues(alpha: 0.4))
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: paid
+          ? Icon(Icons.check_rounded, size: 18, color: fg)
+          : Text(
+              day?.toString() ?? '·',
+              style: TextStyle(
+                fontFamily: FzType.mono,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: fg,
+                fontFeatures: FzType.tabularNums,
+              ),
+            ),
+    );
+  }
+}
+
+class _BrandChip extends StatelessWidget {
+  const _BrandChip({required this.brand});
+  final CardBrand brand;
+
+  @override
+  Widget build(BuildContext context) {
+    final (label, bg) = switch (brand) {
+      CardBrand.visa => ('VISA', FzColors.visaBg),
+      CardBrand.mastercard => ('Mastercard', FzColors.mastercardBg),
+      CardBrand.amex => ('AMEX', FzColors.mpBg),
+      CardBrand.other => ('Otra', FzColors.cardHi),
+    };
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(FzRadius.xs),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: Colors.white,
+          fontFamily: FzType.sans,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.36,
+        ),
+      ),
+    );
+  }
+}
+
+class _OverdueBadge extends StatelessWidget {
+  const _OverdueBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: FzColors.lateSoft,
+        borderRadius: BorderRadius.circular(FzRadius.xs),
+      ),
+      child: const Text(
+        'ATRASADA',
+        style: TextStyle(
+          fontFamily: FzType.mono,
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.54,
+          color: FzColors.lateInk,
+        ),
+      ),
+    );
+  }
+}
+
+class _PayButton extends StatelessWidget {
+  const _PayButton({required this.url, required this.cardBorder});
+
+  final String url;
+  final Color cardBorder;
+
+  Future<void> _open(BuildContext context) async {
     final uri = Uri.tryParse(url);
     if (uri == null) {
-      _showSnack(context, 'El link no es válido.');
+      _snack(context, 'El link no es válido.');
       return;
     }
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok && context.mounted) {
-        _showSnack(context, 'No se pudo abrir el link.');
-      }
+      if (!ok && context.mounted) _snack(context, 'No se pudo abrir el link.');
     } catch (_) {
-      if (context.mounted) {
-        _showSnack(context, 'No se pudo abrir el link.');
-      }
+      if (context.mounted) _snack(context, 'No se pudo abrir el link.');
     }
   }
 
-  void _showSnack(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+  void _snack(BuildContext context, String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(FzRadius.md),
+      child: InkWell(
+        onTap: () => _open(context),
+        borderRadius: BorderRadius.circular(FzRadius.md),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+          decoration: BoxDecoration(
+            border: Border.all(color: cardBorder),
+            borderRadius: BorderRadius.circular(FzRadius.md),
+          ),
+          child: const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.open_in_new_rounded, size: 14, color: FzColors.text),
+              SizedBox(width: 8),
+              Text(
+                'Ir a pagar',
+                style: TextStyle(
+                  fontFamily: FzType.sans,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: FzColors.text,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
