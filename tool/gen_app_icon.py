@@ -1,0 +1,102 @@
+#!/usr/bin/env python3
+"""
+Genera el PNG del logo de Finanzapp para usarlo como icono de app y
+splash. Replica el FzLogo del design system (handoff/flutter/lib/design):
+cuadrado verde #1FB87A con esquinas redondeadas (~26% del lado) y
+símbolo "$" blanco extra-bold centrado.
+
+Uso:
+    python3 tool/gen_app_icon.py
+    # genera assets/icons/app_icon.png (1024x1024)
+"""
+from PIL import Image, ImageDraw, ImageFont
+import os
+import sys
+
+# Tokens del design system (lib/design/tokens.dart)
+BG_COLOR = (0x1F, 0xB8, 0x7A, 255)   # primary verde
+FG_COLOR = (0xFF, 0xFF, 0xFF, 255)   # blanco para el $
+SIZE = 1024                            # canvas (target source para
+                                       # flutter_launcher_icons)
+RADIUS_RATIO = 0.26                    # esquinas como en FzLogo
+FONT_RATIO = 0.55                      # tamaño del $ vs canvas
+
+# Fuentes candidatas (macOS first, fallbacks). PIL no maneja Inter
+# o Geist por default, pero Helvetica/Arial bold se parece visualmente
+# al $ del FzLogo.
+FONT_CANDIDATES = [
+    "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
+    "/System/Library/Fonts/Helvetica.ttc",
+    "/System/Library/Fonts/Avenir Next.ttc",
+    "/Library/Fonts/Arial Bold.ttf",
+]
+
+
+def find_font(size):
+    for path in FONT_CANDIDATES:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except Exception:
+                continue
+    return ImageFont.load_default()
+
+
+def draw_logo(canvas_size=SIZE, transparent_bg=False):
+    """Devuelve una imagen RGBA con el logo. Si transparent_bg=True
+    omite el cuadrado verde (útil para foreground de adaptive icon)."""
+    img = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    if not transparent_bg:
+        radius = int(canvas_size * RADIUS_RATIO)
+        draw.rounded_rectangle(
+            [(0, 0), (canvas_size, canvas_size)],
+            radius=radius,
+            fill=BG_COLOR,
+        )
+
+    # Dibujar el "$" centrado.
+    font_size = int(canvas_size * FONT_RATIO)
+    font = find_font(font_size)
+    text = "$"
+
+    # Textbbox da (left, top, right, bottom).
+    bbox = draw.textbbox((0, 0), text, font=font)
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
+    x = (canvas_size - text_w) / 2 - bbox[0]
+    # Ajuste vertical: el $ tiene mucho whitespace abajo del baseline,
+    # así que centramos por bbox no por baseline.
+    y = (canvas_size - text_h) / 2 - bbox[1]
+
+    draw.text((x, y), text, fill=FG_COLOR, font=font)
+    return img
+
+
+def main():
+    here = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(here)
+    out_dir = os.path.join(project_root, "assets", "icons")
+    os.makedirs(out_dir, exist_ok=True)
+
+    icon = draw_logo(SIZE)
+    icon_path = os.path.join(out_dir, "app_icon.png")
+    icon.save(icon_path, "PNG")
+    print(f"Wrote {icon_path} ({SIZE}x{SIZE})")
+
+    # Adaptive icon foreground (sin bg, con padding extra para que el
+    # OS pueda croppear sin cortar el $).
+    fg = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
+    fg_draw = ImageDraw.Draw(fg)
+    inner_size = int(SIZE * 0.62)  # bastante padding (Android crop ~33%)
+    inner = draw_logo(inner_size)
+    offset = (SIZE - inner_size) // 2
+    fg.paste(inner, (offset, offset), inner)
+    fg_path = os.path.join(out_dir, "app_icon_foreground.png")
+    fg.save(fg_path, "PNG")
+    print(f"Wrote {fg_path} ({SIZE}x{SIZE}, padded)")
+
+
+if __name__ == "__main__":
+    sys.exit(main())

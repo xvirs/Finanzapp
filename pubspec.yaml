@@ -60,6 +60,32 @@ dev_dependencies:
   freezed: ^2.5.7
   json_serializable: ^6.8.0
 
+  # App icon (Android + iOS) generado desde assets/icons/app_icon.png
+  flutter_launcher_icons: ^0.14.2
+  # Splash screen
+  flutter_native_splash: ^2.4.3
+
+# Genera iconos nativos para Android + iOS:
+#   flutter pub run flutter_launcher_icons
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#1FB87A"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+  min_sdk_android: 21
+
+# Genera splash screen para Android + iOS:
+#   flutter pub run flutter_native_splash:create
+flutter_native_splash:
+  color: "#0B0F0D"
+  image: "assets/icons/app_icon.png"
+  android_12:
+    color: "#0B0F0D"
+    image: "assets/icons/app_icon.png"
+    icon_background_color: "#0B0F0D"
+
 flutter:
   uses-material-design: true
   assets:
