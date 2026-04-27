@@ -14,10 +14,17 @@ import os
 import sys
 
 # Tokens del design system (lib/design/tokens.dart)
-BG_COLOR = (0x1F, 0xB8, 0x7A, 255)   # primary verde
-FG_COLOR = (0xFF, 0xFF, 0xFF, 255)   # blanco para el $
-SIZE = 1024                            # canvas (target source para
-                                       # flutter_launcher_icons)
+BG_COLOR = (0x1F, 0xB8, 0x7A, 255)   # FzColors.primary verde
+FG_COLOR = (0x04, 0x13, 0x0C, 255)   # FzColors.primaryInk (NO blanco!
+                                       # el FzLogo del design system usa
+                                       # primaryInk como fg, casi negro
+                                       # con un toque verde — eso es lo
+                                       # que se ve en el login).
+SIZE = 1024                            # target output size (estándar
+                                       # para flutter_launcher_icons)
+SUPERSAMPLE = 4                        # renderiza 4x más grande y
+                                       # downsamplea con LANCZOS para
+                                       # bordes lisos
 RADIUS_RATIO = 0.26                    # esquinas como en FzLogo
 FONT_RATIO = 0.55                      # tamaño del $ vs canvas
 
@@ -43,35 +50,39 @@ def find_font(size):
 
 
 def draw_logo(canvas_size=SIZE, transparent_bg=False):
-    """Devuelve una imagen RGBA con el logo. Si transparent_bg=True
-    omite el cuadrado verde (útil para foreground de adaptive icon)."""
-    img = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
+    """Devuelve una imagen RGBA con el logo. Renderiza a SUPERSAMPLE x
+    el tamaño final y downsamplea con LANCZOS para bordes lisos en el $
+    y en las esquinas redondeadas. Si transparent_bg=True omite el
+    cuadrado verde (útil para foreground de adaptive icon)."""
+    big = canvas_size * SUPERSAMPLE
+    img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
     if not transparent_bg:
-        radius = int(canvas_size * RADIUS_RATIO)
+        radius = int(big * RADIUS_RATIO)
         draw.rounded_rectangle(
-            [(0, 0), (canvas_size, canvas_size)],
+            [(0, 0), (big, big)],
             radius=radius,
             fill=BG_COLOR,
         )
 
     # Dibujar el "$" centrado.
-    font_size = int(canvas_size * FONT_RATIO)
+    font_size = int(big * FONT_RATIO)
     font = find_font(font_size)
     text = "$"
 
-    # Textbbox da (left, top, right, bottom).
+    # textbbox da (left, top, right, bottom).
     bbox = draw.textbbox((0, 0), text, font=font)
     text_w = bbox[2] - bbox[0]
     text_h = bbox[3] - bbox[1]
-    x = (canvas_size - text_w) / 2 - bbox[0]
+    x = (big - text_w) / 2 - bbox[0]
     # Ajuste vertical: el $ tiene mucho whitespace abajo del baseline,
     # así que centramos por bbox no por baseline.
-    y = (canvas_size - text_h) / 2 - bbox[1]
+    y = (big - text_h) / 2 - bbox[1]
 
     draw.text((x, y), text, fill=FG_COLOR, font=font)
-    return img
+    # Downsamplea con filtro LANCZOS para máxima nitidez.
+    return img.resize((canvas_size, canvas_size), Image.LANCZOS)
 
 
 def main():
