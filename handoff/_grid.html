@@ -1,0 +1,54 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>FZ Grid</title>
+<style>
+  html,body{margin:0;padding:0;background:#1a1a1a;font-family:'Geist',system-ui;}
+  .grid{display:grid;grid-template-columns:repeat(4,360px);gap:32px 24px;padding:32px;}
+  .cell{display:flex;flex-direction:column;gap:10px;}
+  .cell .lbl{color:#9CA3AF;font-family:'Geist Mono',monospace;font-size:12px;letter-spacing:.04em;}
+  .cell .lbl b{color:#F3F4F6;font-weight:600;font-family:'Geist',sans-serif;font-size:13px;}
+  .frame{width:360px;height:760px;border-radius:24px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.06);}
+  .frame.light{background:#F6F5F1;}
+  .frame.dark{background:#0B0F0D;}
+</style>
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<style>@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap');</style>
+</head>
+<body>
+<div class="grid" id="grid"></div>
+<script type="text/babel" src="fz-logo.jsx"></script>
+<script type="text/babel" src="screens-a.jsx"></script>
+<script type="text/babel" src="screens-a-light.jsx"></script>
+<script type="text/babel" src="screens-a-cards.jsx"></script>
+<script type="text/babel" src="screens-a-config.jsx"></script>
+<script type="text/babel">
+const list = [
+  ['01 · Login',                'dark',  <ALogin/>],
+  ['02 · Mes (Home)',           'dark',  <AHome/>],
+  ['03 · Item expandido',       'dark',  <AHomeExpanded/>],
+  ['04 · Tarjetas',             'dark',  <ACardsList/>],
+  ['05 · Detalle MercadoPago',  'dark',  <ACardDetail/>],
+  ['06 · Nueva compra (cuotas)','dark',  <ANewPurchase/>],
+  ['07 · Editar tarjeta',       'dark',  <AEditCard/>],
+  ['08 · Configuración',        'dark',  <AConfig/>],
+  ['09 · Cuentas fijas',        'dark',  <AFixedAccounts/>],
+  ['10 · Nueva cuenta fija',    'dark',  <ANewFixedAccount/>],
+  ['11 · Editar cuenta',        'dark',  <AEditFixedAccount/>],
+  ['12 · Login (claro)',        'light', <ALLogin/>],
+  ['13 · Mes (claro)',          'light', <ALHome/>],
+  ['14 · Expandido (claro)',    'light', <ALHomeExpanded/>],
+];
+const Grid = () => (
+  <>
+    {list.map(([lbl, theme, comp], i) => (
+      <div className="cell" key={i}>
+        <div className="lbl"><b>{lbl}</b></div>
+        <div className={`frame ${theme}`}>{comp}</div>
+      </div>
+    ))}
+  </>
+);
+ReactDOM.createRoot(document.getElementById('grid')).render(<Grid/>);
+</script>
+</body></html>

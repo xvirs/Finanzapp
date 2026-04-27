@@ -11,11 +11,11 @@ import 'data/bills_repository.dart';
 import 'data/cards_repository.dart';
 import 'data/installments_repository.dart';
 import 'data/payments_repository.dart';
+import 'design/theme.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
 import 'features/lock/presentation/app_lock_gate.dart';
 import 'router.dart';
-import 'theme/app_theme.dart';
 
 class FinanzappApp extends StatefulWidget {
   const FinanzappApp({
@@ -118,9 +118,9 @@ class _FinanzappAppState extends State<FinanzappApp> {
         child: MaterialApp.router(
           title: 'Finanzapp',
           debugShowCheckedModeBanner: false,
-          theme: AppTheme.light(),
-          darkTheme: AppTheme.dark(),
-          themeMode: ThemeMode.system,
+          theme: FzTheme.dark(),
+          darkTheme: FzTheme.dark(),
+          themeMode: ThemeMode.dark,
           routerConfig: _appRouter.router,
           builder: (context, child) => AppLockGate(
             service: widget.biometricService,
