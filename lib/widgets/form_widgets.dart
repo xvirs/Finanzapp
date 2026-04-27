@@ -41,18 +41,21 @@ class FormCaplabel extends StatelessWidget {
   }
 }
 
-/// Layout vertical: caplabel arriba + child input debajo.
+/// Layout vertical: caplabel arriba + child input debajo + hint italic
+/// opcional debajo del input (patrón ACField del handoff).
 class FormFieldWrap extends StatelessWidget {
   const FormFieldWrap({
     required this.label,
     required this.child,
     this.required = false,
+    this.hint,
     super.key,
   });
 
   final String label;
   final Widget child;
   final bool required;
+  final String? hint;
 
   @override
   Widget build(BuildContext context) {
@@ -61,6 +64,19 @@ class FormFieldWrap extends StatelessWidget {
       children: [
         FormCaplabel(text: label, required: required),
         child,
+        if (hint != null) ...[
+          const SizedBox(height: 5),
+          Text(
+            hint!,
+            style: const TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 11,
+              color: FzColors.textMute,
+              fontStyle: FontStyle.italic,
+              height: 1.4,
+            ),
+          ),
+        ],
       ],
     );
   }
