@@ -6,14 +6,18 @@ import 'package:go_router/go_router.dart';
 import '../../../core/format.dart';
 import '../../../core/url.dart';
 import '../../../data/cards_repository.dart';
+import '../../../design/tokens.dart';
+import '../../../design/widgets.dart';
+import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
+import '../../../widgets/form_widgets.dart';
 
+/// Pantalla 7 — Editar tarjeta (o crear nueva si cardId == null).
+/// Port del JSX `AEditCard` (handoff/screens-a-cards.jsx).
 class CardFormScreen extends StatefulWidget {
   const CardFormScreen({this.cardId, super.key});
 
-  /// Si es null, el form crea una tarjeta nueva. Si tiene id, edita la
-  /// existente (carga al iniciar).
   final String? cardId;
 
   bool get isEditing => cardId != null;
@@ -36,9 +40,13 @@ class _CardFormScreenState extends State<CardFormScreen> {
   bool _saving = false;
   String? _loadError;
 
+  // Para mostrar el preview en vivo
+  CreditCard? _editingCard;
+
   @override
   void initState() {
     super.initState();
+    _nameController.addListener(_onNameChanged);
     if (widget.isEditing) {
       _load();
     }
@@ -46,13 +54,17 @@ class _CardFormScreenState extends State<CardFormScreen> {
 
   @override
   void dispose() {
-    _nameController.dispose();
+    _nameController
+      ..removeListener(_onNameChanged)
+      ..dispose();
     _issuerController.dispose();
     _closingDayController.dispose();
     _dueDayController.dispose();
     _urlController.dispose();
     super.dispose();
   }
+
+  void _onNameChanged() => setState(() {});
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -66,6 +78,7 @@ class _CardFormScreenState extends State<CardFormScreen> {
         });
         return;
       }
+      _editingCard = card;
       _nameController.text = card.name;
       _issuerController.text = card.issuer ?? '';
       _closingDayController.text = card.closingDay?.toString() ?? '';
@@ -95,8 +108,7 @@ class _CardFormScreenState extends State<CardFormScreen> {
       String? normalizedUrl;
       final rawUrl = _urlController.text.trim();
       if (rawUrl.isNotEmpty) {
-        final result = normalizeUrl(rawUrl);
-        normalizedUrl = result.url;
+        normalizedUrl = normalizeUrl(rawUrl).url;
       }
 
       await repo.saveCard(
@@ -140,7 +152,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
     try {
       await repo.deleteCard(widget.cardId!);
       if (!mounted) return;
-      // Volver al listado, no al detalle (que ya no existe).
       router.go('/cards');
     } catch (error) {
       if (!mounted) return;
@@ -154,129 +165,141 @@ class _CardFormScreenState extends State<CardFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEditing ? 'Editar tarjeta' : 'Nueva tarjeta'),
+      backgroundColor: FzColors.bg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FzAppBar(
+              title: widget.isEditing ? 'Editar tarjeta' : 'Nueva tarjeta',
+            ),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _loadError != null
+                      ? _ErrorView(message: _loadError!, onRetry: _load)
+                      : _buildForm(),
+            ),
+          ],
+        ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _loadError != null
-              ? _ErrorView(message: _loadError!, onRetry: _load)
-              : _buildForm(),
     );
   }
 
   Widget _buildForm() {
-    final theme = Theme.of(context);
     return AbsorbPointer(
       absorbing: _saving,
       child: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           children: [
-            TextFormField(
-              controller: _nameController,
-              decoration: const InputDecoration(labelText: 'Nombre *'),
-              textInputAction: TextInputAction.next,
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Ingresá un nombre'
-                  : null,
+            if (widget.isEditing) ...[
+              _PreviewCard(
+                name: _nameController.text.isEmpty
+                    ? (_editingCard?.name ?? 'Tarjeta')
+                    : _nameController.text,
+                brand: _brand,
+                closingDay:
+                    int.tryParse(_closingDayController.text.trim()),
+                dueDay: int.tryParse(_dueDayController.text.trim()),
+                active: _active,
+              ),
+              const SizedBox(height: 14),
+            ],
+            FormFieldWrap(
+              label: 'Nombre',
+              required: true,
+              child: FormTextField(
+                controller: _nameController,
+                hint: 'Ej. Galicia VISA',
+                textInputAction: TextInputAction.next,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Ingresá un nombre'
+                    : null,
+              ),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _issuerController,
-              decoration: const InputDecoration(labelText: 'Banco / emisor'),
-              textInputAction: TextInputAction.next,
+            const SizedBox(height: 14),
+            FormFieldWrap(
+              label: 'Banco / emisor',
+              child: FormTextField(
+                controller: _issuerController,
+                hint: 'Ej. Banco Galicia',
+                textInputAction: TextInputAction.next,
+              ),
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<CardBrand?>(
-              initialValue: _brand,
-              decoration: const InputDecoration(labelText: 'Marca'),
-              items: [
-                const DropdownMenuItem(value: null, child: Text('—')),
-                ...CardBrand.values.map(
-                  (b) => DropdownMenuItem(
-                    value: b,
-                    child: Text(kCardBrandLabels[b]!),
-                  ),
-                ),
-              ],
-              onChanged: (value) => setState(() => _brand = value),
+            const SizedBox(height: 14),
+            FormFieldWrap(
+              label: 'Marca',
+              child: _BrandSelector(
+                value: _brand,
+                onChanged: (v) => setState(() => _brand = v),
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: _closingDayController,
-                    decoration: const InputDecoration(labelText: 'Día cierre'),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: _validateDay,
+                  child: FormFieldWrap(
+                    label: 'Día cierre',
+                    child: FormTextField(
+                      controller: _closingDayController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      mono: true,
+                      hint: '10',
+                      validator: _validateDay,
+                      onChanged: (_) => setState(() {}),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
-                  child: TextFormField(
-                    controller: _dueDayController,
-                    decoration: const InputDecoration(labelText: 'Día venc.'),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: _validateDay,
+                  child: FormFieldWrap(
+                    label: 'Día vencimiento',
+                    child: FormTextField(
+                      controller: _dueDayController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      mono: true,
+                      hint: '15',
+                      validator: _validateDay,
+                      onChanged: (_) => setState(() {}),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _urlController,
-              decoration: const InputDecoration(
-                labelText: 'Link para pagar',
-                hintText: 'https://… o app://…',
+            const SizedBox(height: 14),
+            FormFieldWrap(
+              label: 'Link para pagar',
+              child: FormTextField(
+                controller: _urlController,
+                hint: 'https://… o app://…',
+                mono: true,
+                keyboardType: TextInputType.url,
               ),
-              keyboardType: TextInputType.url,
-              autocorrect: false,
             ),
             if (widget.isEditing) ...[
-              const SizedBox(height: 16),
-              SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
+              const SizedBox(height: 14),
+              FormActiveToggle(
                 value: _active,
                 onChanged: (v) => setState(() => _active = v),
-                title: const Text('Activa'),
-                subtitle: Text(
-                  _active
-                      ? 'La tarjeta aparece en el Mes y Tarjetas'
-                      : 'La tarjeta queda oculta',
-                  style: theme.textTheme.bodySmall,
-                ),
               ),
             ],
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _saving ? null : _submit,
-              icon: _saving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.save_rounded, size: 18),
-              label: Text(widget.isEditing ? 'Guardar' : 'Crear tarjeta'),
+            const SizedBox(height: 20),
+            FormSaveButton(
+              label: widget.isEditing ? 'Guardar cambios' : 'Crear tarjeta',
+              loading: _saving,
+              onPressed: _submit,
             ),
             if (widget.isEditing) ...[
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
+              const SizedBox(height: 10),
+              FormDeleteButton(
+                label: 'Eliminar tarjeta',
                 onPressed: _saving ? null : _delete,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                  side: BorderSide(color: theme.colorScheme.error),
-                ),
-                icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                label: const Text('Eliminar tarjeta'),
               ),
             ],
           ],
@@ -294,6 +317,253 @@ class _CardFormScreenState extends State<CardFormScreen> {
   }
 }
 
+/// Preview card (en modo edición) con avatar de marca + nombre +
+/// cierre/vence + ACTIVA/INACTIVA badge.
+class _PreviewCard extends StatelessWidget {
+  const _PreviewCard({
+    required this.name,
+    required this.brand,
+    required this.closingDay,
+    required this.dueDay,
+    required this.active,
+  });
+
+  final String name;
+  final CardBrand? brand;
+  final int? closingDay;
+  final int? dueDay;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    final brandColor = brand == null
+        ? FzColors.cardHi
+        : switch (brand!) {
+            CardBrand.visa => FzColors.visaBg,
+            CardBrand.mastercard => FzColors.mastercardBg,
+            CardBrand.amex => FzColors.mpBg,
+            CardBrand.other => FzColors.cardHi,
+          };
+    final brandLabel = brand == null
+        ? '?'
+        : switch (brand!) {
+            CardBrand.visa => 'V',
+            CardBrand.mastercard => 'M',
+            CardBrand.amex => 'A',
+            CardBrand.other => '·',
+          };
+    final subtitle = [
+      if (closingDay != null) 'cierre $closingDay',
+      if (dueDay != null) 'vence $dueDay',
+    ].join(' · ');
+
+    return FormFieldShell(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: brandColor,
+              borderRadius: BorderRadius.circular(FzRadius.md),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              brandLabel,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: FzType.sans,
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  style: const TextStyle(
+                    fontFamily: FzType.sans,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: FzColors.text,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (subtitle.isNotEmpty) ...[
+                  const SizedBox(height: 1),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontFamily: FzType.mono,
+                      fontSize: 11,
+                      color: FzColors.textMute,
+                      letterSpacing: 0.44,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(width: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+            decoration: BoxDecoration(
+              color: active ? FzColors.primarySoft : FzColors.cardHi,
+              borderRadius: BorderRadius.circular(FzRadius.xs),
+            ),
+            child: Text(
+              active ? 'ACTIVA' : 'INACTIVA',
+              style: TextStyle(
+                fontFamily: FzType.mono,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.54,
+                color: active ? FzColors.primary : FzColors.textDim,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Selector de marca: input estilo card + texto + chevron, abre un
+/// menú con las opciones (cada una con swatch del color de la marca).
+class _BrandSelector extends StatelessWidget {
+  const _BrandSelector({required this.value, required this.onChanged});
+
+  final CardBrand? value;
+  final ValueChanged<CardBrand?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return FormFieldShell(
+      onTap: () async {
+        final picked = await showModalBottomSheet<CardBrand?>(
+          context: context,
+          backgroundColor: FzColors.card,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => _BrandSheet(selected: value),
+        );
+        // El sheet devuelve null si se cancela. Para "limpiar" usamos
+        // un sentinel — no lo soportamos por ahora; null = cancel.
+        if (picked != null) onChanged(picked);
+      },
+      child: Row(
+        children: [
+          _BrandSwatch(brand: value),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              _label(value),
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 14,
+                color: value == null ? FzColors.textMute : FzColors.text,
+              ),
+            ),
+          ),
+          const Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 18,
+            color: FzColors.textDim,
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _label(CardBrand? b) {
+    if (b == null) return 'Sin marca';
+    return kCardBrandLabels[b] ?? '—';
+  }
+}
+
+class _BrandSwatch extends StatelessWidget {
+  const _BrandSwatch({required this.brand});
+  final CardBrand? brand;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = brand == null
+        ? FzColors.cardHi
+        : switch (brand!) {
+            CardBrand.visa => FzColors.visaBg,
+            CardBrand.mastercard => FzColors.mastercardBg,
+            CardBrand.amex => FzColors.mpBg,
+            CardBrand.other => FzColors.cardHi,
+          };
+    return Container(
+      width: 22,
+      height: 14,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(3),
+        border: brand == null
+            ? Border.all(color: FzColors.border)
+            : null,
+      ),
+    );
+  }
+}
+
+class _BrandSheet extends StatelessWidget {
+  const _BrandSheet({this.selected});
+  final CardBrand? selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final brands = [null, ...CardBrand.values];
+    return SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 8, bottom: 12),
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: FzColors.borderHi,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          for (final b in brands)
+            ListTile(
+              leading: _BrandSwatch(brand: b),
+              title: Text(
+                _BrandSelector._label(b),
+                style: TextStyle(
+                  fontFamily: FzType.sans,
+                  fontSize: 14,
+                  fontWeight:
+                      b == selected ? FontWeight.w600 : FontWeight.w400,
+                  color: FzColors.text,
+                ),
+              ),
+              trailing: b == selected
+                  ? const Icon(Icons.check_rounded,
+                      color: FzColors.primary, size: 20)
+                  : null,
+              onTap: () => Navigator.of(context).pop(b),
+            ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.message, required this.onRetry});
 
@@ -307,11 +577,23 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48),
+          const Icon(Icons.error_outline,
+              size: 48, color: FzColors.lateColor),
           const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 13,
+              color: FzColors.text,
+            ),
+          ),
           const SizedBox(height: 16),
-          FilledButton.tonal(onPressed: onRetry, child: const Text('Reintentar')),
+          FilledButton.tonal(
+            onPressed: onRetry,
+            child: const Text('Reintentar'),
+          ),
         ],
       ),
     );

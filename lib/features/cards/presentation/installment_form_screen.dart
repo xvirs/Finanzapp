@@ -5,10 +5,18 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/format.dart';
+import '../../../data/cards_repository.dart';
 import '../../../data/installments_repository.dart';
+import '../../../design/tokens.dart';
+import '../../../design/widgets.dart';
 import '../../../domain/period.dart';
+import '../../../models/credit_card.dart';
+import '../../../models/enums.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
+import '../../../widgets/form_widgets.dart';
 
+/// Pantalla 6 — Nueva/Editar compra en cuotas.
+/// Port del JSX `ANewPurchase` (handoff/screens-a-cards.jsx).
 class InstallmentFormScreen extends StatefulWidget {
   const InstallmentFormScreen({
     required this.cardId,
@@ -33,7 +41,8 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
   final _notesController = TextEditingController();
 
   PeriodKey _firstPeriod = PeriodKey.current();
-  bool _loading = false;
+  CreditCard? _card;
+  bool _loading = true;
   bool _saving = false;
   String? _loadError;
 
@@ -42,9 +51,7 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
     super.initState();
     _amountController.addListener(_recompute);
     _countController.addListener(_recompute);
-    if (widget.isEditing) {
-      _load();
-    }
+    _load();
   }
 
   @override
@@ -59,7 +66,8 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
   void _recompute() => setState(() {});
 
   double? get _liveTotal {
-    final amount = double.tryParse(_amountController.text.trim().replaceAll(',', '.'));
+    final amount = double.tryParse(
+        _amountController.text.trim().replaceAll(',', '.'));
     final count = int.tryParse(_countController.text.trim());
     if (amount == null || count == null || count <= 0 || amount <= 0) {
       return null;
@@ -68,23 +76,41 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() {
+      _loading = true;
+      _loadError = null;
+    });
     try {
-      final repo = context.read<InstallmentsRepository>();
-      final purchase = await repo.fetchById(widget.installmentId!);
-      if (purchase == null) {
+      final cardsRepo = context.read<CardsRepository>();
+      final installmentsRepo = context.read<InstallmentsRepository>();
+
+      final cardFuture = cardsRepo.fetchById(widget.cardId);
+      final purchaseFuture = widget.isEditing
+          ? installmentsRepo.fetchById(widget.installmentId!)
+          : Future.value(null);
+
+      final card = await cardFuture;
+      final purchase = await purchaseFuture;
+
+      if (widget.isEditing && purchase == null) {
         setState(() {
           _loadError = 'No se encontró la compra.';
           _loading = false;
         });
         return;
       }
-      _descriptionController.text = purchase.description;
-      _amountController.text =
-          purchase.installmentAmount.toStringAsFixed(0);
-      _countController.text = purchase.installmentCount.toString();
-      _notesController.text = purchase.notes ?? '';
-      _firstPeriod = PeriodKey.fromIso(purchase.firstPeriod);
+
+      _card = card;
+
+      if (purchase != null) {
+        _descriptionController.text = purchase.description;
+        _amountController.text =
+            purchase.installmentAmount.toStringAsFixed(0);
+        _countController.text = purchase.installmentCount.toString();
+        _notesController.text = purchase.notes ?? '';
+        _firstPeriod = PeriodKey.fromIso(purchase.firstPeriod);
+      }
+
       setState(() => _loading = false);
     } catch (e) {
       setState(() {
@@ -95,14 +121,11 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
   }
 
   Future<void> _pickPeriod() async {
-    final theme = Theme.of(context);
     final selected = await showDialog<PeriodKey>(
       context: context,
-      builder: (ctx) => _MonthYearPicker(initial: _firstPeriod, theme: theme),
+      builder: (ctx) => _MonthYearPicker(initial: _firstPeriod),
     );
-    if (selected != null) {
-      setState(() => _firstPeriod = selected);
-    }
+    if (selected != null) setState(() => _firstPeriod = selected);
   }
 
   Future<void> _submit() async {
@@ -168,142 +191,151 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.isEditing ? 'Editar compra' : 'Nueva compra'),
+      backgroundColor: FzColors.bg,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FzAppBar(
+              title: widget.isEditing ? 'Editar compra' : 'Nueva compra',
+            ),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _loadError != null
+                      ? _ErrorView(message: _loadError!, onRetry: _load)
+                      : _buildForm(),
+            ),
+          ],
+        ),
       ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _loadError != null
-              ? _ErrorView(message: _loadError!, onRetry: _load)
-              : _buildForm(),
     );
   }
 
   Widget _buildForm() {
-    final theme = Theme.of(context);
-    final total = _liveTotal;
-
     return AbsorbPointer(
       absorbing: _saving,
       child: Form(
         key: _formKey,
         child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
           children: [
-            TextFormField(
-              controller: _descriptionController,
-              decoration: const InputDecoration(labelText: 'Descripción *'),
-              textInputAction: TextInputAction.next,
-              validator: (v) => (v == null || v.trim().isEmpty)
-                  ? 'Ingresá una descripción'
-                  : null,
+            if (_card != null) ...[
+              _ContextCard(card: _card!),
+              const SizedBox(height: 14),
+            ],
+            FormFieldWrap(
+              label: 'Descripción',
+              required: true,
+              child: FormTextField(
+                controller: _descriptionController,
+                hint: 'Ej. Heladera Whirlpool',
+                textInputAction: TextInputAction.next,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Ingresá una descripción'
+                    : null,
+              ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: _amountController,
-                    decoration: const InputDecoration(
-                      labelText: 'Monto por cuota *',
-                      prefixText: '\$ ',
+                  child: FormFieldWrap(
+                    label: 'Monto por cuota',
+                    required: true,
+                    child: FormTextField(
+                      controller: _amountController,
+                      hint: '0',
+                      prefix: '\$ ',
+                      mono: true,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      validator: (v) {
+                        final raw = (v ?? '').trim().replaceAll(',', '.');
+                        final n = double.tryParse(raw);
+                        if (n == null || n <= 0) return 'Inválido';
+                        return null;
+                      },
                     ),
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    validator: (v) {
-                      final raw = (v ?? '').trim().replaceAll(',', '.');
-                      final n = double.tryParse(raw);
-                      if (n == null || n <= 0) return 'Monto inválido';
-                      return null;
-                    },
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextFormField(
-                    controller: _countController,
-                    decoration: const InputDecoration(labelText: 'Cuotas *'),
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    validator: (v) {
-                      final n = int.tryParse((v ?? '').trim());
-                      if (n == null || n <= 0) return 'Cuotas inválidas';
-                      return null;
-                    },
+                const SizedBox(width: 10),
+                SizedBox(
+                  width: 96,
+                  child: FormFieldWrap(
+                    label: 'Cuotas',
+                    required: true,
+                    child: FormTextField(
+                      controller: _countController,
+                      hint: '12',
+                      suffix: 'x',
+                      mono: true,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [
+                        FilteringTextInputFormatter.digitsOnly,
+                      ],
+                      validator: (v) {
+                        final n = int.tryParse((v ?? '').trim());
+                        if (n == null || n <= 0) return 'Inválido';
+                        return null;
+                      },
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            Card(
-              elevation: 0,
-              color: theme.colorScheme.surfaceContainerLow,
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+            const SizedBox(height: 14),
+            _TotalCalculated(amount: _liveTotal),
+            const SizedBox(height: 14),
+            FormFieldWrap(
+              label: 'Mes de la primera cuota',
+              required: true,
+              child: FormFieldShell(
+                onTap: _pickPeriod,
                 child: Row(
                   children: [
-                    Text(
-                      'Total de la compra',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
+                    Expanded(
+                      child: Text(
+                        _capitalize(_firstPeriod.formatLong()),
+                        style: const TextStyle(
+                          fontFamily: FzType.sans,
+                          fontSize: 14,
+                          color: FzColors.text,
+                        ),
                       ),
                     ),
-                    const Spacer(),
-                    Text(
-                      total == null ? '—' : formatCurrency(total),
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        fontFeatures: const [FontFeature.tabularFigures()],
-                      ),
+                    const Icon(
+                      Icons.calendar_month_outlined,
+                      size: 16,
+                      color: FzColors.textDim,
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            InkWell(
-              onTap: _pickPeriod,
-              borderRadius: BorderRadius.circular(12),
-              child: InputDecorator(
-                decoration: const InputDecoration(
-                  labelText: 'Mes de la primera cuota *',
-                  suffixIcon: Icon(Icons.calendar_month_outlined),
-                ),
-                child: Text(_firstPeriod.formatLong()),
+            const SizedBox(height: 14),
+            FormFieldWrap(
+              label: 'Notas',
+              child: FormTextField(
+                controller: _notesController,
+                hint: 'Opcional. Ej. "compra en black friday"',
+                maxLines: 4,
               ),
             ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: _notesController,
-              decoration: const InputDecoration(labelText: 'Notas'),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 24),
-            FilledButton.icon(
-              onPressed: _saving ? null : _submit,
-              icon: _saving
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.save_rounded, size: 18),
-              label: Text(widget.isEditing ? 'Guardar' : 'Crear compra'),
+            const SizedBox(height: 20),
+            FormSaveButton(
+              label: widget.isEditing ? 'Guardar cambios' : 'Crear compra',
+              loading: _saving,
+              onPressed: _submit,
             ),
             if (widget.isEditing) ...[
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
+              const SizedBox(height: 10),
+              FormDeleteButton(
+                label: 'Eliminar compra',
                 onPressed: _saving ? null : _delete,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: theme.colorScheme.error,
-                  side: BorderSide(color: theme.colorScheme.error),
-                ),
-                icon: const Icon(Icons.delete_outline_rounded, size: 18),
-                label: const Text('Eliminar compra'),
               ),
             ],
           ],
@@ -311,13 +343,155 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
       ),
     );
   }
+
+  String _capitalize(String s) {
+    if (s.isEmpty) return s;
+    return s[0].toUpperCase() + s.substring(1);
+  }
+}
+
+/// Card de contexto: muestra "en `CardName`" con un chip de marca.
+class _ContextCard extends StatelessWidget {
+  const _ContextCard({required this.card});
+  final CreditCard card;
+
+  @override
+  Widget build(BuildContext context) {
+    final brand = card.brand;
+    final brandColor = brand == null
+        ? FzColors.cardHi
+        : switch (brand) {
+            CardBrand.visa => FzColors.visaBg,
+            CardBrand.mastercard => FzColors.mastercardBg,
+            CardBrand.amex => FzColors.mpBg,
+            CardBrand.other => FzColors.cardHi,
+          };
+    final brandLabel = brand == null
+        ? '?'
+        : switch (brand) {
+            CardBrand.visa => 'V',
+            CardBrand.mastercard => 'M',
+            CardBrand.amex => 'A',
+            CardBrand.other => '·',
+          };
+    return FormFieldShell(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      child: Row(
+        children: [
+          Container(
+            width: 26,
+            height: 26,
+            decoration: BoxDecoration(
+              color: brandColor,
+              borderRadius: BorderRadius.circular(6),
+            ),
+            alignment: Alignment.center,
+            child: Text(
+              brandLabel,
+              style: const TextStyle(
+                color: Colors.white,
+                fontFamily: FzType.sans,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                style: const TextStyle(
+                  fontFamily: FzType.sans,
+                  fontSize: 12.5,
+                  color: FzColors.textDim,
+                ),
+                children: [
+                  const TextSpan(text: 'en '),
+                  TextSpan(
+                    text: card.name,
+                    style: const TextStyle(
+                      color: FzColors.text,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Card destacada que muestra el total calculado (monto cuota * cantidad).
+class _TotalCalculated extends StatelessWidget {
+  const _TotalCalculated({required this.amount});
+  final double? amount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: FzColors.primarySoft,
+        borderRadius: BorderRadius.circular(FzRadius.xl),
+        border: Border.all(color: FzColors.borderPaid),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'TOTAL DE LA COMPRA',
+                  style: TextStyle(
+                    fontFamily: FzType.mono,
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.63,
+                    color: FzColors.primary,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'se calcula automáticamente',
+                  style: TextStyle(
+                    fontFamily: FzType.sans,
+                    fontSize: 11,
+                    color: FzColors.textDim,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Text(
+            amount == null ? '—' : formatCurrency(amount),
+            style: TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.44,
+              fontFeatures: FzType.tabularNums,
+              color: amount == null
+                  ? FzColors.textDim
+                  : FzColors.primaryHi,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _MonthYearPicker extends StatefulWidget {
-  const _MonthYearPicker({required this.initial, required this.theme});
-
+  const _MonthYearPicker({required this.initial});
   final PeriodKey initial;
-  final ThemeData theme;
 
   @override
   State<_MonthYearPicker> createState() => _MonthYearPickerState();
@@ -341,22 +515,32 @@ class _MonthYearPickerState extends State<_MonthYearPicker> {
     final months = List.generate(12, (i) => i + 1);
 
     return AlertDialog(
-      title: const Text('Mes de la primera cuota'),
+      backgroundColor: FzColors.card,
+      title: const Text(
+        'Mes de la primera cuota',
+        style: TextStyle(
+          fontFamily: FzType.sans,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: FzColors.text,
+        ),
+      ),
       content: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Expanded(
             child: DropdownButtonFormField<int>(
               initialValue: _monthOneIndexed,
-              decoration: const InputDecoration(labelText: 'Mes'),
+              decoration: const InputDecoration(labelText: 'MES'),
               items: months
-                  .map((m) => DropdownMenuItem(
-                        value: m,
-                        child: Text(
-                          DateFormat.MMMM('es_AR')
-                              .format(DateTime(2000, m, 1)),
-                        ),
-                      ))
+                  .map(
+                    (m) => DropdownMenuItem(
+                      value: m,
+                      child: Text(
+                        DateFormat.MMMM('es_AR').format(DateTime(2000, m, 1)),
+                      ),
+                    ),
+                  )
                   .toList(),
               onChanged: (v) => setState(() => _monthOneIndexed = v!),
             ),
@@ -366,7 +550,7 @@ class _MonthYearPickerState extends State<_MonthYearPicker> {
             width: 110,
             child: DropdownButtonFormField<int>(
               initialValue: _year,
-              decoration: const InputDecoration(labelText: 'Año'),
+              decoration: const InputDecoration(labelText: 'AÑO'),
               items: years
                   .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
                   .toList(),
@@ -405,11 +589,23 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline, size: 48),
+          const Icon(Icons.error_outline,
+              size: 48, color: FzColors.lateColor),
           const SizedBox(height: 12),
-          Text(message, textAlign: TextAlign.center),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 13,
+              color: FzColors.text,
+            ),
+          ),
           const SizedBox(height: 16),
-          FilledButton.tonal(onPressed: onRetry, child: const Text('Reintentar')),
+          FilledButton.tonal(
+            onPressed: onRetry,
+            child: const Text('Reintentar'),
+          ),
         ],
       ),
     );
