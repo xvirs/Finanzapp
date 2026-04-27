@@ -4,6 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/format.dart';
 import '../../../../design/tokens.dart';
 import '../../../../domain/period.dart';
+import '../../../../widgets/animated_amount.dart';
+import '../../../../widgets/animated_progress_bar.dart';
 import '../bloc/month_bloc.dart';
 
 /// Header del Mes — port pixel-perfect de `ATopMonth` del JSX.
@@ -198,8 +200,8 @@ class _SummaryCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            formatCurrency(amount),
+          AnimatedCurrency(
+            value: amount,
             style: TextStyle(
               fontFamily: FzType.sans,
               fontSize: 22,
@@ -264,24 +266,7 @@ class _ProgressRow extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 6),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(2),
-          child: Container(
-            height: 4,
-            color: FzColors.card,
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: ratio == 0 ? 0.001 : ratio,
-              child: const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [FzColors.primary, FzColors.primaryHi],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+        AnimatedProgressBar(value: ratio),
       ],
     );
   }

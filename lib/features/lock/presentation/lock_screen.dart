@@ -1,10 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/biometric_service.dart';
+import '../../../design/tokens.dart';
+import '../../../widgets/confirm_delete_dialog.dart';
+import '../../auth/presentation/bloc/auth_bloc.dart';
 
 /// Pantalla bloqueante que se muestra cuando el biométrico está activo.
+///
 /// Auto-dispara el prompt biométrico al aparecer; si el usuario lo cancela
 /// queda visible un botón "Desbloquear" para reintentar.
+///
+/// Failsafe iOS: en iOS no hay back gesture ni botón system para salir.
+/// Si el biométrico se rompe (cambio de huella, falla de hardware), el
+/// usuario queda atrapado. Por eso al pie hay un link "¿Problemas?
+/// Cerrar sesión" que limpia la sesión y manda al login.
 class LockScreen extends StatefulWidget {
   const LockScreen({
     required this.service,
@@ -21,12 +31,11 @@ class LockScreen extends StatefulWidget {
 
 class _LockScreenState extends State<LockScreen> {
   bool _attempting = false;
+  bool _signingOut = false;
 
   @override
   void initState() {
     super.initState();
-    // Lanzar el prompt en cuanto el frame se pinta para que el OS se
-    // superponga a esta pantalla.
     WidgetsBinding.instance.addPostFrameCallback((_) => _attempt());
   }
 
@@ -42,56 +51,102 @@ class _LockScreenState extends State<LockScreen> {
     setState(() => _attempting = false);
   }
 
+  Future<void> _exit() async {
+    final confirmed = await showConfirmDeleteDialog(
+      context,
+      title: 'Cerrar sesión',
+      message:
+          'Vas a tener que volver a loguearte. Tus datos en la nube no se borran.',
+      confirmLabel: 'Cerrar sesión',
+    );
+    if (!confirmed || !mounted) return;
+
+    setState(() => _signingOut = true);
+    context.read<AuthBloc>().add(const AuthSignOutRequested());
+    // Desbloqueamos el gate para que el router pueda redireccionar a
+    // /login (el AuthBloc cambió a unauthenticated).
+    widget.onUnlock();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final busy = _attempting || _signingOut;
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.lock_outline_rounded,
-                  size: 56,
-                  color: theme.colorScheme.primary,
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Stack(
+            children: [
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.lock_outline_rounded,
+                      size: 56,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Finanzapp',
+                      style: theme.textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _attempting
+                          ? 'Esperando autenticación…'
+                          : 'Desbloqueá para acceder a tus datos',
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    FilledButton.icon(
+                      onPressed: busy ? null : _attempt,
+                      icon: _attempting
+                          ? const SizedBox(
+                              height: 16,
+                              width: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor:
+                                    AlwaysStoppedAnimation(Colors.white),
+                              ),
+                            )
+                          : const Icon(Icons.fingerprint_rounded, size: 20),
+                      label: const Text('Desbloquear'),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                Text(
-                  'Finanzapp',
-                  style: theme.textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
+              ),
+              // Failsafe al pie: si el biométrico se rompe, salida via
+              // logout (especialmente importante en iOS donde no hay
+              // hardware back).
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: TextButton(
+                  onPressed: busy ? null : _exit,
+                  style: TextButton.styleFrom(
+                    foregroundColor: FzColors.textMute,
+                  ),
+                  child: Text(
+                    _signingOut
+                        ? 'Cerrando sesión…'
+                        : '¿Problemas? Cerrar sesión',
+                    style: const TextStyle(
+                      fontFamily: FzType.mono,
+                      fontSize: 11,
+                      letterSpacing: 0.44,
+                      color: FzColors.textMute,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _attempting
-                      ? 'Esperando autenticación…'
-                      : 'Desbloqueá para acceder a tus datos',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                FilledButton.icon(
-                  onPressed: _attempting ? null : _attempt,
-                  icon: _attempting
-                      ? const SizedBox(
-                          height: 16,
-                          width: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.fingerprint_rounded, size: 20),
-                  label: const Text('Desbloquear'),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

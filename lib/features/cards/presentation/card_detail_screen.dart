@@ -7,6 +7,7 @@ import '../../../core/format.dart';
 import '../../../design/tokens.dart';
 import '../../../models/bill.dart';
 import '../../../models/enums.dart';
+import '../../../widgets/animated_amount.dart';
 import '../../../widgets/shimmer_box.dart';
 import 'bloc/card_detail_bloc.dart';
 import 'widgets/installment_progress_tag.dart';
@@ -313,8 +314,8 @@ class _HeroCard extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 4),
-                  Text(
-                    formatCurrency(amount),
+                  AnimatedCurrency(
+                    value: amount,
                     style: TextStyle(
                       fontFamily: FzType.sans,
                       fontSize: 36,

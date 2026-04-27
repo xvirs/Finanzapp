@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/format.dart';
 import '../../../design/tokens.dart';
 import '../../../domain/period.dart';
+import '../../../widgets/animated_amount.dart';
 import 'bloc/cards_bloc.dart';
 import 'widgets/card_list_item.dart';
 import 'widgets/cards_shimmer.dart';
@@ -158,8 +158,8 @@ class _CardsHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          Text(
-            formatCurrency(state.totalForPeriod),
+          AnimatedCurrency(
+            value: state.totalForPeriod,
             style: const TextStyle(
               fontFamily: FzType.sans,
               fontSize: 32,
