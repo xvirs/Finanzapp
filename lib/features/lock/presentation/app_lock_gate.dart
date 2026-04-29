@@ -78,7 +78,19 @@ class _AppLockGateState extends State<AppLockGate>
   @override
   Widget build(BuildContext context) {
     if (_locked) {
-      return LockScreen(service: widget.service, onUnlock: _unlock);
+      // Navigator propio: el AppLockGate se monta desde el `builder` de
+      // MaterialApp.router, que está ARRIBA del Navigator del router.
+      // Sin este Navigator, `showDialog` desde LockScreen no encuentra
+      // un Navigator ancestor y crashea con "Navigator operation
+      // requested with a context that does not include a Navigator".
+      return Navigator(
+        onGenerateRoute: (_) => PageRouteBuilder<void>(
+          pageBuilder: (_, __, ___) =>
+              LockScreen(service: widget.service, onUnlock: _unlock),
+          transitionDuration: Duration.zero,
+          reverseTransitionDuration: Duration.zero,
+        ),
+      );
     }
     return widget.child;
   }

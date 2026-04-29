@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 import 'core/biometric_service.dart';
 import 'core/notification_service.dart';
@@ -90,6 +91,16 @@ class _FinanzappAppState extends State<FinanzappApp> {
   Future<void> _shutdownSession() async {
     await _notificationService.stop();
     if (_realtimeService.isActive) await _realtimeService.stop();
+
+    // Cleanup post-signout (lo dispara cualquier camino: Config, LockScreen
+    // failsafe, expiración de sesión en Supabase). Si esto NO se hace:
+    //   1. El flag de biometric queda en disco → al reabrir la app sin
+    //      sesión, AppLockGate igual muestra el LockScreen.
+    //   2. Los blocs hydrated devuelven datos del usuario anterior al
+    //      próximo login (otro user en el mismo device, o el mismo
+    //      después de una sesión vencida).
+    await widget.biometricService.setEnabled(false);
+    await HydratedBloc.storage.clear();
   }
 
   @override

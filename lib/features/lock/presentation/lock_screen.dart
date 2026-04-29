@@ -4,7 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/biometric_service.dart';
 import '../../../design/tokens.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
-import '../../auth/presentation/bloc/auth_bloc.dart';
+import '../../auth/data/auth_repository.dart';
 
 /// Pantalla bloqueante que se muestra cuando el biométrico está activo.
 ///
@@ -42,7 +42,17 @@ class _LockScreenState extends State<LockScreen> {
   Future<void> _attempt() async {
     if (_attempting) return;
     setState(() => _attempting = true);
-    final ok = await widget.service.authenticate();
+    var ok = false;
+    try {
+      ok = await widget.service.authenticate();
+    } catch (_) {
+      // PlatformException (no enrollado, lockout, etc) — tratamos
+      // como fallo silencioso y dejamos al usuario reintentar o
+      // usar el failsafe "Cerrar sesión". Sin este try/catch, una
+      // excepción dejaba `_attempting=true` y trababa el botón
+      // de exit.
+      ok = false;
+    }
     if (!mounted) return;
     if (ok) {
       widget.onUnlock();
@@ -62,10 +72,26 @@ class _LockScreenState extends State<LockScreen> {
     if (!confirmed || !mounted) return;
 
     setState(() => _signingOut = true);
-    context.read<AuthBloc>().add(const AuthSignOutRequested());
-    // Desbloqueamos el gate para que el router pueda redireccionar a
-    // /login (el AuthBloc cambió a unauthenticated).
-    widget.onUnlock();
+    final repo = context.read<AuthRepository>();
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      // AWAIT del signout: esperamos que Supabase confirme antes de
+      // desbloquear. Si falla, el usuario queda en la lock screen
+      // con un error visible (en vez de "salir" pero seguir
+      // autenticado). El AuthBloc detecta el cambio de sesión via
+      // su subscripción a authStateChanges y emite unauthenticated;
+      // el router redirecciona a /login.
+      await repo.signOut();
+      if (!mounted) return;
+      widget.onUnlock();
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(content: Text('No se pudo cerrar sesión: $e')),
+      );
+      setState(() => _signingOut = false);
+    }
   }
 
   @override
