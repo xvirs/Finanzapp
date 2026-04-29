@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Reglas de extracción de datos para Android 12+ (API 31+).
+  En combinación con android:allowBackup="false" en el manifest,
+  bloquea tanto el cloud backup automático como el device-to-device
+  transfer. Importante porque los datos sensibles que vivirían en
+  un backup son: el refresh token de Supabase (SharedPreferences),
+  el flag de biometric lock, y los datos hidratados de Bloc. Todos
+  esos datos están en la cloud — no hay nada que perder al
+  desactivar el backup local, y eliminamos el vector de filtrado
+  via adb backup / Google One.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+        <exclude domain="file" />
+        <exclude domain="database" />
+        <exclude domain="sharedpref" />
+        <exclude domain="external" />
+    </device-transfer>
+</data-extraction-rules>

@@ -12,6 +12,7 @@ import 'package:timezone/timezone.dart' as tz;
 import 'app.dart';
 import 'config/supabase_config.dart';
 import 'core/biometric_service.dart';
+import 'core/secure_storage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -56,6 +57,18 @@ Future<void> main() async {
   await Supabase.initialize(
     url: SupabaseConfig.url,
     anonKey: SupabaseConfig.anonKey,
+    // Override del storage default (SharedPreferences en plaintext)
+    // por flutter_secure_storage:
+    //   - iOS: Keychain.
+    //   - Android: EncryptedSharedPreferences.
+    // Importa: con esto, users que vienen de versiones previas
+    // (que usaban SharedPreferences) van a quedar deslogueados al
+    // actualizar — la primera vez tienen que re-autenticar. Como es
+    // la primera release, no hay base instalada; aceptable.
+    authOptions: FlutterAuthClientOptions(
+      localStorage: SecureLocalStorage(),
+      pkceAsyncStorage: SecureGotrueAsyncStorage(),
+    ),
   );
 
   // Refresh el cache del flag biométrico antes de runApp para que el
