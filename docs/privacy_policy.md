@@ -37,12 +37,24 @@ Finanzapp es un proyecto personal sin fines comerciales orientado a usuarios ind
 - **Fecha de creación y de última modificación** de cada registro.
 - **Tokens de sesión** (access token + refresh token) emitidos por nuestro proveedor de autenticación, almacenados de forma cifrada en tu dispositivo.
 
-### 2.3. Datos que NO recolectamos
+### 2.3. Datos de diagnóstico y uso (Firebase)
 
-- No usamos analytics, tracking ni publicidad (no Firebase Analytics, no Google Ads, no Meta SDK, no AppsFlyer).
+Para mejorar la app y detectar errores, usamos los siguientes servicios de Google Firebase:
+
+- **Firebase Crashlytics**: cuando la app crashea, se envía a Google el stack trace, modelo de dispositivo, versión de OS y de la app. **No** se incluyen tus datos financieros, email ni nombre. Los crashes están agrupados por similitud y nos permiten arreglar bugs antes que afecten a más usuarios.
+- **Firebase Analytics**: se registran eventos anónimos de uso (qué pantallas visitás, cuándo creás una cuenta o marcás un pago, etc.) asociados a tu UUID interno. **No** registramos los nombres de tus servicios, montos ni notas.
+
+Ambos servicios pueden recolectar identificadores publicitarios del dispositivo según la configuración del sistema operativo. Si querés deshabilitarlos podés:
+- Android: Configuración → Google → Anuncios → "Excluirme de la personalización de anuncios".
+- iOS: Configuración → Privacidad → Seguimiento → desactivar "Permitir solicitudes de seguimiento".
+
+### 2.4. Datos que NO recolectamos
+
+- **No usamos publicidad** (no Google Ads, no Meta SDK, no AppsFlyer, no UnityAds).
 - No accedemos a tu agenda de contactos, fotos, micrófono, ubicación ni calendarios.
 - No leemos tus SMS ni notificaciones de otras apps.
 - No recolectamos información de pagos reales — los montos que cargás son estimaciones tuyas, no transacciones procesadas.
+- Los datos financieros que cargás manualmente (nombres de servicios, montos, notas, marcas de tarjetas) **NO** se envían a Firebase Analytics ni Crashlytics, solo a Supabase para sincronización entre tus dispositivos.
 
 ---
 
@@ -76,6 +88,11 @@ Finanzapp depende de los siguientes servicios para funcionar:
 ### 4.3. Google Play Services (notificaciones y entrega vía Google Play)
 - **Qué hace:** infraestructura del sistema operativo Android.
 - **Política de privacidad:** https://policies.google.com/privacy
+
+### 4.4. Google Firebase (Crashlytics + Analytics)
+- **Qué hace:** registra crashes para diagnóstico y eventos anónimos de uso para mejorar la app.
+- **Dónde:** servidores de Google.
+- **Política de privacidad:** https://firebase.google.com/support/privacy
 
 **No vendemos ni cedemos tus datos a anunciantes, brokers ni terceros distintos a los listados arriba.**
 

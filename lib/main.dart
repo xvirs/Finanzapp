@@ -12,10 +12,18 @@ import 'package:timezone/timezone.dart' as tz;
 import 'app.dart';
 import 'config/supabase_config.dart';
 import 'core/biometric_service.dart';
+import 'core/firebase_init.dart';
 import 'core/secure_storage.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Init Firebase + hooks de Crashlytics ANTES que cualquier otra cosa,
+  // así capturamos crashes que ocurran durante el resto de la
+  // inicialización (Supabase, hydrated bloc, timezone, etc). Si el
+  // proyecto Firebase no fue configurado todavía, esta función falla
+  // silencioso y la app arranca sin tracking.
+  final firebase = await initFirebase();
 
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -80,6 +88,7 @@ Future<void> main() async {
     FinanzappApp(
       notifications: notifications,
       biometricService: biometricService,
+      firebase: firebase,
     ),
   );
 }

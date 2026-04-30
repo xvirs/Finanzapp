@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 
 import 'core/biometric_service.dart';
+import 'core/firebase_init.dart';
 import 'core/notification_service.dart';
 import 'core/realtime_service.dart';
 import 'data/bills_repository.dart';
@@ -22,11 +23,13 @@ class FinanzappApp extends StatefulWidget {
   const FinanzappApp({
     required this.notifications,
     required this.biometricService,
+    required this.firebase,
     super.key,
   });
 
   final FlutterLocalNotificationsPlugin notifications;
   final BiometricService biometricService;
+  final FirebaseSetup firebase;
 
   @override
   State<FinanzappApp> createState() => _FinanzappAppState();
@@ -123,6 +126,11 @@ class _FinanzappAppState extends State<FinanzappApp> {
         RepositoryProvider.value(value: _cardsRepository),
         RepositoryProvider.value(value: _installmentsRepository),
         RepositoryProvider.value(value: _paymentsRepository),
+        // FirebaseSetup expuesto para que cualquier screen llame
+        // `context.read<FirebaseSetup>().analytics?.logEvent(...)`.
+        // Si Firebase no fue configurado todavía, los nullable getters
+        // devuelven null y los call sites son no-op.
+        RepositoryProvider.value(value: widget.firebase),
       ],
       child: BlocProvider.value(
         value: _authBloc,

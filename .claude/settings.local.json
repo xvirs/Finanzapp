@@ -43,7 +43,8 @@
       "Bash(python3 tool/gen_feature_graphic.py)",
       "Bash(awk '{print $2}')",
       "Bash(python3)",
-      "Bash(python3 tool/gen_app_icon.py)"
+      "Bash(python3 tool/gen_app_icon.py)",
+      "Bash(curl -s https://pub.dev/api/packages/__TRACKED_VAR__)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"

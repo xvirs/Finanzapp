@@ -144,8 +144,36 @@ Este formulario es **crítico** — Google rechaza el listing si las respuestas 
 #### Photos and videos
 - ❌ Foto de perfil de Google → no la guardamos en backend, solo se muestra en runtime desde la URL de Google
 
-#### App activity, App info, Device IDs, etc.
-- ❌ NADA. No tracking, no analytics, no advertising IDs, no diagnostics.
+#### App activity (Firebase Analytics)
+- ✅ **App interactions** (eventos anónimos: bill_created, bill_paid, screen_view, etc.)
+  - Collected: Yes
+  - Shared: No (con third parties; va a Google Firebase, que es nuestro processor)
+  - Processed ephemerally: No
+  - Required or optional: **Optional** (el user puede deshabilitar tracking de anuncios en su OS)
+  - Why collected: **Analytics** y **App functionality**
+
+#### App info and performance (Firebase Crashlytics)
+- ✅ **Crash logs**
+  - Collected: Yes
+  - Shared: No
+  - Processed ephemerally: No
+  - Required or optional: **Required** (para diagnóstico de bugs)
+  - Why collected: **Analytics** (en el form de Google "Analytics" engloba diagnóstico)
+
+- ✅ **Diagnostics** (versión OS, modelo device, versión app)
+  - Collected: Yes
+  - Shared: No
+  - Why collected: **Analytics**
+
+#### Device or other IDs
+- ✅ **Device or other IDs** (Firebase instance ID, Advertising ID si el OS lo permite)
+  - Collected: Yes
+  - Shared: No
+  - Required or optional: **Optional**
+  - Why collected: **Analytics**
+
+#### Otras categorías
+- ❌ Ads / Advertising — **NO**, no usamos publicidad ni perfilamiento.
 
 ### Encryption in transit
 - ✅ **Yes** — todos los requests usan HTTPS (TLS) hacia Supabase y Google.

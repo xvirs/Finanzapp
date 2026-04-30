@@ -187,12 +187,25 @@
             <li><strong>Tokens de sesión</strong> (access token + refresh token) emitidos por nuestro proveedor de autenticación, almacenados de forma cifrada en tu dispositivo.</li>
         </ul>
 
-        <h3>2.3. Datos que NO recolectamos</h3>
+        <h3>2.3. Datos de diagnóstico y uso (Firebase)</h3>
+        <p>Para mejorar la app y detectar errores, usamos los siguientes servicios de Google Firebase:</p>
         <ul>
-            <li>No usamos analytics, tracking ni publicidad (no Firebase Analytics, no Google Ads, no Meta SDK, no AppsFlyer).</li>
+            <li><strong>Firebase Crashlytics</strong>: cuando la app crashea, se envía a Google el stack trace, modelo de dispositivo, versión de OS y de la app. <strong>No</strong> se incluyen tus datos financieros, email ni nombre.</li>
+            <li><strong>Firebase Analytics</strong>: se registran eventos anónimos de uso (qué pantallas visitás, cuándo creás una cuenta o marcás un pago, etc.) asociados a tu UUID interno. <strong>No</strong> registramos los nombres de tus servicios, montos ni notas.</li>
+        </ul>
+        <p>Ambos servicios pueden recolectar identificadores publicitarios del dispositivo según la configuración del sistema operativo. Para deshabilitarlos:</p>
+        <ul>
+            <li>Android: Configuración → Google → Anuncios → "Excluirme de la personalización de anuncios".</li>
+            <li>iOS: Configuración → Privacidad → Seguimiento → desactivar "Permitir solicitudes de seguimiento".</li>
+        </ul>
+
+        <h3>2.4. Datos que NO recolectamos</h3>
+        <ul>
+            <li><strong>No usamos publicidad</strong> (no Google Ads, no Meta SDK, no AppsFlyer, no UnityAds).</li>
             <li>No accedemos a tu agenda de contactos, fotos, micrófono, ubicación ni calendarios.</li>
             <li>No leemos tus SMS ni notificaciones de otras apps.</li>
             <li>No recolectamos información de pagos reales — los montos que cargás son estimaciones tuyas, no transacciones procesadas.</li>
+            <li>Los datos financieros que cargás manualmente (nombres de servicios, montos, notas, marcas de tarjetas) <strong>NO</strong> se envían a Firebase Analytics ni Crashlytics, solo a Supabase para sincronización entre tus dispositivos.</li>
         </ul>
 
         <h2>3. Para qué usamos tus datos</h2>
@@ -230,6 +243,13 @@
         <ul>
             <li><strong>Qué hace:</strong> infraestructura del sistema operativo Android (notificaciones, entrega vía Google Play).</li>
             <li><strong>Política de privacidad:</strong> <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></li>
+        </ul>
+
+        <h3>4.4. Google Firebase (Crashlytics + Analytics)</h3>
+        <ul>
+            <li><strong>Qué hace:</strong> registra crashes para diagnóstico y eventos anónimos de uso para mejorar la app.</li>
+            <li><strong>Dónde:</strong> servidores de Google.</li>
+            <li><strong>Política de privacidad:</strong> <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener">firebase.google.com/support/privacy</a></li>
         </ul>
 
         <p><strong>No vendemos ni cedemos tus datos a anunciantes, brokers ni terceros distintos a los listados arriba.</strong></p>

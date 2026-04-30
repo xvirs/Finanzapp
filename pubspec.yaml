@@ -57,6 +57,15 @@ dependencies:
   # plaintext.
   flutter_secure_storage: ^9.2.2
 
+  # Firebase: Crashlytics (crashes en producción con stack traces) +
+  # Analytics (uso real de la app, retention, screen views). Init
+  # opcional/silencioso — si firebase_options.dart no fue generado
+  # via `flutterfire configure`, la app igual arranca sin tracking.
+  # Ver docs/firebase_setup.md para activar.
+  firebase_core: ^4.7.0
+  firebase_crashlytics: ^5.2.0
+  firebase_analytics: ^12.3.0
+
   # Design system: fuentes Geist + GeistMono (CDN runtime via google_fonts)
   google_fonts: ^6.2.1
   # SVG (logo Google y otros iconos vectoriales del design)
