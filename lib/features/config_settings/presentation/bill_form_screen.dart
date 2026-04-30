@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics_service.dart';
 import '../../../core/format.dart';
 import '../../../core/url.dart';
 import '../../../data/bills_repository.dart';
@@ -119,6 +122,8 @@ class _BillFormScreenState extends State<BillFormScreen> {
     setState(() => _saving = true);
 
     final repo = context.read<BillsRepository>();
+    final analytics = context.read<AnalyticsService>();
+    final isNew = widget.billId == null;
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
@@ -150,6 +155,10 @@ class _BillFormScreenState extends State<BillFormScreen> {
         autoDebitCardId: _autoDebitCardId,
         url: normalizedUrl,
       );
+
+      if (isNew) {
+        unawaited(analytics.billCreated(kind: _kind.name));
+      }
 
       if (!mounted) return;
       router.pop(true);

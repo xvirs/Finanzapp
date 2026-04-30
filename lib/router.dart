@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import 'core/analytics_service.dart';
 import 'core/realtime_service.dart';
 import 'data/bills_repository.dart';
 import 'data/cards_repository.dart';
@@ -57,6 +58,7 @@ class AppRouter {
                     installmentsRepository: ctx.read<InstallmentsRepository>(),
                     paymentsRepository: ctx.read<PaymentsRepository>(),
                     realtimeService: ctx.read<RealtimeService>(),
+                    analytics: ctx.read<AnalyticsService>(),
                   )..add(MonthRequested(PeriodKey.current())),
                   child: const MonthScreen(),
                 ),

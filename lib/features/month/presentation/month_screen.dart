@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/analytics_service.dart';
 import '../../../design/tokens.dart';
 import 'bloc/month_bloc.dart';
 import 'widgets/month_group_section.dart';
@@ -25,6 +26,15 @@ class MonthScreen extends StatefulWidget {
 
 class _MonthScreenState extends State<MonthScreen> {
   String? _expandedKey;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AnalyticsService>().screenView('mes');
+    });
+  }
 
   void _toggleExpanded(String key) {
     setState(() => _expandedKey = _expandedKey == key ? null : key);

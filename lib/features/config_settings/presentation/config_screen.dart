@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics_service.dart';
 import '../../../core/biometric_service.dart';
 import '../../../data/bills_repository.dart';
 import '../../../data/cards_repository.dart';
@@ -29,6 +32,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
   void initState() {
     super.initState();
     _loadCounts();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AnalyticsService>().screenView('config');
+    });
   }
 
   Future<void> _loadCounts() async {
@@ -444,8 +451,10 @@ class _BiometricCardState extends State<_BiometricCard> {
     setState(() => _busy = true);
 
     final messenger = ScaffoldMessenger.of(context);
+    final analytics = context.read<AnalyticsService>();
     if (!value) {
       await _service.setEnabled(false);
+      unawaited(analytics.biometricToggled(enabled: false));
       if (!mounted) return;
       setState(() {
         _enabled = false;
@@ -470,6 +479,7 @@ class _BiometricCardState extends State<_BiometricCard> {
         return;
       }
       await _service.setEnabled(true);
+      unawaited(analytics.biometricToggled(enabled: true));
       if (!mounted) return;
       setState(() {
         _enabled = true;

@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics_service.dart';
 import '../../../core/format.dart';
 import '../../../core/url.dart';
 import '../../../data/cards_repository.dart';
@@ -101,6 +104,8 @@ class _CardFormScreenState extends State<CardFormScreen> {
     setState(() => _saving = true);
 
     final repo = context.read<CardsRepository>();
+    final analytics = context.read<AnalyticsService>();
+    final isNew = widget.cardId == null;
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
@@ -123,6 +128,10 @@ class _CardFormScreenState extends State<CardFormScreen> {
         active: _active,
         url: normalizedUrl,
       );
+
+      if (isNew) {
+        unawaited(analytics.cardCreated(brand: _brand?.name ?? 'unknown'));
+      }
 
       if (!mounted) return;
       router.pop(true);

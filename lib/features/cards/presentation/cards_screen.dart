@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/analytics_service.dart';
 import '../../../design/tokens.dart';
 import '../../../domain/period.dart';
 import '../../../widgets/animated_amount.dart';
@@ -16,8 +17,22 @@ import 'widgets/cards_shimmer.dart';
 /// - Header anclado: título h1 "Tarjetas" + caplabel mono "abril de 2026"
 ///   + caplabel "TOTAL DEL MES" + monto display 32px.
 /// - Body con scroll: cards grandes (1 por tarjeta).
-class CardsScreen extends StatelessWidget {
+class CardsScreen extends StatefulWidget {
   const CardsScreen({super.key});
+
+  @override
+  State<CardsScreen> createState() => _CardsScreenState();
+}
+
+class _CardsScreenState extends State<CardsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<AnalyticsService>().screenView('tarjetas');
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

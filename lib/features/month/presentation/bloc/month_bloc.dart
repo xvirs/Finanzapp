@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/analytics_service.dart';
 import '../../../../core/realtime_service.dart';
 import '../../../../data/bills_repository.dart';
 import '../../../../data/cards_repository.dart';
@@ -23,10 +24,12 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     required InstallmentsRepository installmentsRepository,
     required PaymentsRepository paymentsRepository,
     required RealtimeService realtimeService,
+    required AnalyticsService analytics,
   }) : _billsRepository = billsRepository,
        _cardsRepository = cardsRepository,
        _installmentsRepository = installmentsRepository,
        _paymentsRepository = paymentsRepository,
+       _analytics = analytics,
        super(MonthBlocState()) {
     on<MonthRequested>(_onRequested);
     on<MonthRefreshRequested>(_onRefreshRequested);
@@ -50,6 +53,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
   final CardsRepository _cardsRepository;
   final InstallmentsRepository _installmentsRepository;
   final PaymentsRepository _paymentsRepository;
+  final AnalyticsService _analytics;
 
   StreamSubscription<RealtimeTable>? _realtimeSubscription;
   Timer? _refreshDebounce;
@@ -177,6 +181,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     Emitter<MonthBlocState> emit,
   ) async {
     final item = event.item;
+    final isFirstPaymentOfThisItem = item.payment == null;
     emit(state.copyWith(mutatingItemKey: item.key, clearError: true));
     try {
       await _paymentsRepository.savePaidPayment(
@@ -189,6 +194,17 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
         cardId: item.card?.id,
         amount: event.amount,
       );
+      // Solo trackeamos cuando es la primera marca de pagado del item
+      // del mes (no edición de monto). Y solo bills — para cardTotal
+      // tenemos el caso pero no lo modelamos como evento separado por
+      // ahora; si más adelante hace falta agregamos `cardPaid`.
+      if (isFirstPaymentOfThisItem &&
+          item.kind == MonthItemKind.bill &&
+          item.bill != null) {
+        unawaited(
+          _analytics.billPaid(kind: item.bill!.kind.name, amount: event.amount),
+        );
+      }
       await _silentRefresh(emit);
     } catch (error) {
       emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));

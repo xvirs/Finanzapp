@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/analytics_service.dart';
 import '../../../core/format.dart';
 import '../../../data/cards_repository.dart';
 import '../../../data/installments_repository.dart';
@@ -134,6 +137,9 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
     setState(() => _saving = true);
 
     final repo = context.read<InstallmentsRepository>();
+    final analytics = context.read<AnalyticsService>();
+    final isNew = widget.installmentId == null;
+    final installmentCount = int.parse(_countController.text.trim());
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
@@ -142,7 +148,7 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
         existingId: widget.installmentId,
         creditCardId: widget.cardId,
         description: _descriptionController.text.trim(),
-        installmentCount: int.parse(_countController.text.trim()),
+        installmentCount: installmentCount,
         installmentAmount: double.parse(
           _amountController.text.trim().replaceAll(',', '.'),
         ),
@@ -151,6 +157,13 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
             ? null
             : _notesController.text.trim(),
       );
+
+      if (isNew) {
+        unawaited(
+          analytics.installmentCreated(totalInstallments: installmentCount),
+        );
+      }
+
       if (!mounted) return;
       router.pop(true);
     } catch (error) {
