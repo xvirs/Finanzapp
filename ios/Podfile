@@ -1,6 +1,8 @@
-# iOS deployment target. Match con google_sign_in_ios 6.2.5 (>= 13.0)
-# y con IPHONEOS_DEPLOYMENT_TARGET en project.pbxproj.
-platform :ios, '13.0'
+# iOS deployment target. Bumped a 15.0 porque firebase_analytics 12.x
+# y firebase_crashlytics 5.x lo requieren. Cubre >95% del market share
+# iOS al día de hoy. Match con IPHONEOS_DEPLOYMENT_TARGET en
+# project.pbxproj.
+platform :ios, '15.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'

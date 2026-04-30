@@ -1,7 +1,10 @@
+import 'dart:io' show Platform;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../../../design/tokens.dart';
 import '../../../design/widgets.dart';
@@ -51,6 +54,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _submitGoogle() {
     context.read<AuthBloc>().add(const AuthGoogleSignInRequested());
+  }
+
+  void _submitApple() {
+    context.read<AuthBloc>().add(const AuthAppleSignInRequested());
   }
 
   @override
@@ -120,6 +127,16 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           ),
                           const SizedBox(height: 44),
+                          // Botón "Continuar con Apple" — solo iOS.
+                          // Apple Review Guideline 4.8 lo exige cuando
+                          // ofrecemos Google Sign-In. En Android no lo
+                          // mostramos para no agregar fricción.
+                          if (Platform.isIOS) ...[
+                            _AppleButton(
+                              onPressed: isLoading ? null : _submitApple,
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                           // Botón Google (blanco)
                           _GoogleButton(
                             onPressed: isLoading ? null : _submitGoogle,
@@ -249,6 +266,31 @@ class _GoogleButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Botón "Continuar con Apple" — usa el widget oficial del package
+/// para cumplir las Apple HIG (color, logo, espaciado son estrictos).
+/// Forzamos height para matchear visualmente con _GoogleButton (46pt)
+/// y estilo black porque nuestro theme es dark.
+class _AppleButton extends StatelessWidget {
+  const _AppleButton({required this.onPressed});
+
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final disabled = onPressed == null;
+    return SizedBox(
+      width: double.infinity,
+      child: SignInWithAppleButton(
+        onPressed: disabled ? () {} : onPressed!,
+        text: 'Continuar con Apple',
+        height: 46,
+        style: SignInWithAppleButtonStyle.black,
+        borderRadius: BorderRadius.circular(FzRadius.xl),
       ),
     );
   }

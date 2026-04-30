@@ -47,7 +47,9 @@
       "Bash(curl -s https://pub.dev/api/packages/__TRACKED_VAR__)",
       "Bash(export PATH=\"$PATH:$HOME/.pub-cache/bin\")",
       "Bash(flutterfire configure *)",
-      "Bash(gem list *)"
+      "Bash(gem list *)",
+      "Bash(curl -s \"https://pub.dev/api/packages/sign_in_with_apple\")",
+      "Bash(python3 -c \"import json,sys; print\\('latest:', json.load\\(sys.stdin\\)['latest']['version']\\)\")"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"

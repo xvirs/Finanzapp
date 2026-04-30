@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:crypto/crypto.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../config/supabase_config.dart';
@@ -79,6 +80,50 @@ class AuthRepository {
 
     await supabase.auth.signInWithIdToken(
       provider: OAuthProvider.google,
+      idToken: idToken,
+      nonce: rawNonce,
+    );
+  }
+
+  /// Login nativo con Apple + Supabase signInWithIdToken.
+  ///
+  /// **Solo iOS** (la UI debe mostrar el botón con `Platform.isIOS`).
+  /// Apple Review Guideline 4.8 lo exige cuando se ofrece Google
+  /// Sign-In. El flow del nonce es análogo al de Google:
+  ///
+  ///   1. Generamos `rawNonce` random.
+  ///   2. `hashedNonce = SHA256(rawNonce)`.
+  ///   3. Pasamos `hashedNonce` a `getAppleIDCredential(nonce: ...)`.
+  ///      Apple lo embebe en el identityToken como claim `nonce`.
+  ///   4. Le damos `rawNonce` a Supabase para verificar.
+  Future<void> signInWithApple() async {
+    final rawNonce = _generateRawNonce();
+    final hashedNonce = sha256.convert(utf8.encode(rawNonce)).toString();
+
+    final AuthorizationCredentialAppleID credential;
+    try {
+      credential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+    } on SignInWithAppleAuthorizationException catch (e) {
+      // Cancelación del usuario: silencio. El resto propaga.
+      if (e.code == AuthorizationErrorCode.canceled) return;
+      rethrow;
+    }
+
+    final idToken = credential.identityToken;
+    if (idToken == null) {
+      throw const AuthException(
+        'No se pudo obtener el identity token de Apple.',
+      );
+    }
+
+    await supabase.auth.signInWithIdToken(
+      provider: OAuthProvider.apple,
       idToken: idToken,
       nonce: rawNonce,
     );

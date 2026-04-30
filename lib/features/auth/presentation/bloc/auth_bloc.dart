@@ -17,6 +17,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
     on<AuthSessionChanged>(_onSessionChanged);
     on<AuthMagicLinkRequested>(_onMagicLinkRequested);
     on<AuthGoogleSignInRequested>(_onGoogleSignInRequested);
+    on<AuthAppleSignInRequested>(_onAppleSignInRequested);
     on<AuthSignOutRequested>(_onSignOutRequested);
 
     add(const AuthSubscriptionRequested());
@@ -106,6 +107,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
     );
     try {
       await _repository.signInWithGoogle();
+      emit(state.copyWith(actionStatus: AuthActionStatus.idle));
+    } catch (error) {
+      emit(
+        state.copyWith(
+          actionStatus: AuthActionStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onAppleSignInRequested(
+    AuthAppleSignInRequested event,
+    Emitter<AuthBlocState> emit,
+  ) async {
+    emit(
+      state.copyWith(actionStatus: AuthActionStatus.loading, clearError: true),
+    );
+    try {
+      await _repository.signInWithApple();
       emit(state.copyWith(actionStatus: AuthActionStatus.idle));
     } catch (error) {
       emit(

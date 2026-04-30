@@ -217,26 +217,70 @@ Mismo checklist que Android pero en iOS:
 
 ---
 
-## 7. ⚠️ Heads-up: "Sign in with Apple" puede ser obligatorio
+## 7. Sign in with Apple — código ya agregado ✅, falta config server
 
-Apple **exige Sign in with Apple** si tu app ofrece login con Google/Facebook/etc. (es para dar al usuario una alternativa que respete su privacidad). Esto es App Store Review Guideline 4.8.
+Apple **exige Sign in with Apple** si tu app ofrece login con Google/Facebook/etc. (App Store Review Guideline 4.8). Para evitar rechazo, ya está implementado en código:
 
-Lo más probable es que el reviewer te rechace la primera submission con: *"Apps that use a third-party or social login service to set up or authenticate the user's primary account with the app must also offer Sign in with Apple."*
+- ✅ Package `sign_in_with_apple: ^7.0.1` en `pubspec.yaml`.
+- ✅ `auth_repository.signInWithApple()` con nonce flow (igual que Google).
+- ✅ Evento `AuthAppleSignInRequested` en el bloc.
+- ✅ Botón "Continuar con Apple" en login screen — **solo iOS** (`Platform.isIOS`).
+- ✅ `ios/Runner/Runner.entitlements` con `com.apple.developer.applesignin = Default`.
+- ✅ `CODE_SIGN_ENTITLEMENTS` apuntando al entitlements file en Debug/Release/Profile.
 
-### Solución (preventivo o reactivo)
+**Lo que falta para que funcione en runtime** (lo hacés cuando tengas la cuenta Apple Developer activa):
 
-**Si querés evitar el rechazo de antemano:**
-1. Agregar el package `sign_in_with_apple: ^6.1.4` (o última versión).
-2. Capability `Sign in with Apple` en App ID (paso 2.1).
-3. Botón "Continuar con Apple" en login screen (al lado de Google).
-4. En Supabase: habilitar Apple provider en Auth → Providers.
-5. Refactor menor en `auth_repository.dart`.
+### 7.1 Habilitar capability en App ID
 
-**Si querés submitear sin Apple Sign-In y ver si Apple lo deja pasar:**
-- A veces apps con Google Sign-In + Magic Link "pasan" porque Magic Link cuenta como alternativa privacy-friendly. Es 50/50.
-- Si te rechazan, agregás Apple Sign-In y resubmiteás. Cada review es 24-48h.
+1. https://developer.apple.com/account → **Identifiers** → click en `com.xavier.finanzapp`.
+2. Scroll a **Capabilities** → marcar **✅ Sign in with Apple**.
+3. **Configure** (botón al lado del checkbox) → dejar como "Enable as a primary App ID" → Save.
+4. **Save** abajo.
 
-**Mi recomendación**: agregar Apple Sign-In **antes** de la primera submission. Te ahorra una iteración. Lo podemos hacer cuando tengas la cuenta Apple activa (~1 hora de trabajo mío).
+### 7.2 Crear Service ID + Key para Supabase
+
+Supabase necesita validar el `identityToken` que Apple emite. Para eso requiere:
+- Tu **Team ID** (10 chars, en Membership).
+- Un **Service ID** (lo creás vos para el server-side flow).
+- Una **Key ID** + **Private Key (.p8)** firmada por Apple.
+
+Pasos:
+
+1. **Service ID**: developer.apple.com → Identifiers → `+` → tipo **Services IDs** → Continue.
+   - Description: `Finanzapp Auth (Supabase)`.
+   - Identifier: `com.xavier.finanzapp.auth` (distinto al Bundle ID).
+   - Continue → Register.
+   - Re-abrirlo después → **Sign in with Apple** ✅ marcado → **Configure**.
+     - Primary App ID: `com.xavier.finanzapp`.
+     - Domains and Subdomains: el dominio de tu Supabase (ej `iyuhohfbfhjuiyyrmasj.supabase.co`).
+     - Return URLs: `https://iyuhohfbfhjuiyyrmasj.supabase.co/auth/v1/callback`.
+     - Save → Continue → Save.
+
+2. **Key**: developer.apple.com → **Keys** → `+`.
+   - Name: `Finanzapp Apple Sign-In`.
+   - ✅ Marcar **Sign in with Apple** → Configure → Primary App ID = `com.xavier.finanzapp` → Save.
+   - Continue → Register.
+   - **Download** el `.p8` ahora — Apple no lo deja descargar dos veces. Anotate el **Key ID** (10 chars).
+
+### 7.3 Configurar Apple provider en Supabase
+
+1. https://supabase.com/dashboard/project/iyuhohfbfhjuiyyrmasj/auth/providers
+2. Apple → toggle ON.
+3. Llenar:
+   - **Service ID**: `com.xavier.finanzapp.auth` (el del paso 7.2.1).
+   - **Team ID**: tu Team ID.
+   - **Key ID**: el del paso 7.2.2.
+   - **Secret Key (.p8)**: pegar el contenido del archivo `.p8` (incluye `-----BEGIN PRIVATE KEY-----` y `-----END PRIVATE KEY-----`).
+4. Save.
+
+### 7.4 Probar
+
+1. Build iOS y abrí en device.
+2. Tap **Continuar con Apple** en login.
+3. Sale el sheet nativo de Apple → autenticás con Touch ID / Face ID / password de tu Apple ID.
+4. La sesión Supabase queda creada con provider `apple`.
+
+Si algo falla, mirá los logs de Supabase en Auth → Logs.
 
 ---
 

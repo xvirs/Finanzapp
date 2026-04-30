@@ -33,6 +33,10 @@ final class AuthGoogleSignInRequested extends AuthEvent {
   const AuthGoogleSignInRequested();
 }
 
+final class AuthAppleSignInRequested extends AuthEvent {
+  const AuthAppleSignInRequested();
+}
+
 final class AuthSignOutRequested extends AuthEvent {
   const AuthSignOutRequested();
 }

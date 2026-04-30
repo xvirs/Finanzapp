@@ -34,6 +34,11 @@ dependencies:
   # iOS embebe nonce en el id_token automáticamente y Supabase exige
   # que se le pase el rawNonce para verificarlo).
   crypto: ^3.0.5
+  # Sign in with Apple — REQUERIDO por Apple Review Guideline 4.8 si
+  # ofrecemos Google Sign-In. El botón se muestra solo en iOS
+  # (`Platform.isIOS`). En Android el plugin existe pero no lo usamos
+  # para no agregar ruido a un user que probablemente no tiene Apple ID.
+  sign_in_with_apple: ^7.0.1
 
   # Utilities
   url_launcher: ^6.3.1
