@@ -83,7 +83,10 @@ flutter_launcher_icons:
   ios: true
   image_path: "assets/icons/app_icon.png"
   remove_alpha_ios: true
-  adaptive_icon_background: "#1FB87A"
+  # Match con el FzLogo del login: cuadrado verde sobre fondo dark.
+  # Con bg oscuro hay contraste — el cuadrado verde foreground se ve
+  # nítidamente. Con bg verde el cuadrado se mezcla y solo se ve el $.
+  adaptive_icon_background: "#0B0F0D"
   adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
   min_sdk_android: 21
 

@@ -96,17 +96,16 @@ def main():
     icon.save(icon_path, "PNG")
     print(f"Wrote {icon_path} ({SIZE}x{SIZE})")
 
-    # Adaptive icon foreground (sin bg, con padding extra para que el
-    # OS pueda croppear sin cortar el $).
-    fg = Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
-    fg_draw = ImageDraw.Draw(fg)
-    inner_size = int(SIZE * 0.62)  # bastante padding (Android crop ~33%)
-    inner = draw_logo(inner_size)
-    offset = (SIZE - inner_size) // 2
-    fg.paste(inner, (offset, offset), inner)
+    # Adaptive icon foreground: cuadrado verde fullbleed sobre canvas
+    # transparente. El padding lo agrega el `inset 16%` que
+    # flutter_launcher_icons declara en el adaptive-icon XML — eso ya
+    # cubre la safe zone de Android (Material crop ~16% por lado).
+    # Si pongo padding también acá, los paddings se suman y el cuadrado
+    # verde queda demasiado chico (no parecido al FzLogo del login).
+    fg = draw_logo(SIZE)
     fg_path = os.path.join(out_dir, "app_icon_foreground.png")
     fg.save(fg_path, "PNG")
-    print(f"Wrote {fg_path} ({SIZE}x{SIZE}, padded)")
+    print(f"Wrote {fg_path} ({SIZE}x{SIZE}, fullbleed)")
 
 
 if __name__ == "__main__":
