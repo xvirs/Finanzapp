@@ -74,14 +74,14 @@ final class CardDetailBlocState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        cardId,
-        card,
-        purchases,
-        autoDebitBills,
-        payment,
-        summary,
-        period,
-        errorMessage,
-      ];
+    status,
+    cardId,
+    card,
+    purchases,
+    autoDebitBills,
+    payment,
+    summary,
+    period,
+    errorMessage,
+  ];
 }

@@ -64,8 +64,5 @@ PeriodKey purchaseFinalPeriod(InstallmentPurchase purchase) {
   final start = PeriodKey.fromIso(purchase.firstPeriod);
   final lastIndex = purchase.installmentCount - 1;
   final totalMonth = start.month + lastIndex;
-  return PeriodKey(
-    year: start.year + totalMonth ~/ 12,
-    month: totalMonth % 12,
-  );
+  return PeriodKey(year: start.year + totalMonth ~/ 12, month: totalMonth % 12);
 }

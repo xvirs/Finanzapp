@@ -12,19 +12,19 @@ class UrgencyBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (urgency) {
       UrgencyOverdue _ => _Pill(
-          label: 'Atrasada',
-          fg: AppColors.urgencyOverdue,
-          bg: AppColors.urgencyOverdueBg,
-        ),
+        label: 'Atrasada',
+        fg: AppColors.urgencyOverdue,
+        bg: AppColors.urgencyOverdueBg,
+      ),
       UrgencyDueSoon(:final daysUntil) => _Pill(
-          label: switch (daysUntil) {
-            0 => 'Vence hoy',
-            1 => 'Mañana',
-            _ => 'En $daysUntil días',
-          },
-          fg: AppColors.urgencyDueSoon,
-          bg: AppColors.urgencyDueSoonBg,
-        ),
+        label: switch (daysUntil) {
+          0 => 'Vence hoy',
+          1 => 'Mañana',
+          _ => 'En $daysUntil días',
+        },
+        fg: AppColors.urgencyDueSoon,
+        bg: AppColors.urgencyDueSoonBg,
+      ),
       UrgencyNormal _ => const SizedBox.shrink(),
     };
   }
@@ -47,11 +47,7 @@ class _Pill extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(
-          color: fg,
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-        ),
+        style: TextStyle(color: fg, fontSize: 11, fontWeight: FontWeight.w600),
       ),
     );
   }

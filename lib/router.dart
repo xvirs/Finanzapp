@@ -92,8 +92,8 @@ class AppRouter {
                       return BlocProvider(
                         create: (ctx) => CardDetailBloc(
                           cardsRepository: ctx.read<CardsRepository>(),
-                          installmentsRepository:
-                              ctx.read<InstallmentsRepository>(),
+                          installmentsRepository: ctx
+                              .read<InstallmentsRepository>(),
                           billsRepository: ctx.read<BillsRepository>(),
                           paymentsRepository: ctx.read<PaymentsRepository>(),
                           realtimeService: ctx.read<RealtimeService>(),
@@ -105,9 +105,8 @@ class AppRouter {
                       GoRoute(
                         path: 'edit',
                         name: 'card-edit',
-                        builder: (context, state) => CardFormScreen(
-                          cardId: state.pathParameters['id'],
-                        ),
+                        builder: (context, state) =>
+                            CardFormScreen(cardId: state.pathParameters['id']),
                       ),
                       GoRoute(
                         path: 'installments/new',
@@ -157,9 +156,8 @@ class AppRouter {
                       GoRoute(
                         path: ':id',
                         name: 'bill-edit',
-                        builder: (context, state) => BillFormScreen(
-                          billId: state.pathParameters['id'],
-                        ),
+                        builder: (context, state) =>
+                            BillFormScreen(billId: state.pathParameters['id']),
                       ),
                     ],
                   ),

@@ -28,27 +28,25 @@ class FzCard extends StatelessWidget {
     Key? key,
     required Widget child,
     EdgeInsetsGeometry? padding,
-  }) =>
-      FzCard(
-        key: key,
-        padding: padding ?? const EdgeInsets.all(16),
-        bg: FzColors.cardPaid,
-        border: FzColors.borderPaid,
-        child: child,
-      );
+  }) => FzCard(
+    key: key,
+    padding: padding ?? const EdgeInsets.all(16),
+    bg: FzColors.cardPaid,
+    border: FzColors.borderPaid,
+    child: child,
+  );
 
   factory FzCard.late_({
     Key? key,
     required Widget child,
     EdgeInsetsGeometry? padding,
-  }) =>
-      FzCard(
-        key: key,
-        padding: padding ?? const EdgeInsets.all(16),
-        bg: FzColors.cardLate,
-        border: FzColors.borderLate,
-        child: child,
-      );
+  }) => FzCard(
+    key: key,
+    padding: padding ?? const EdgeInsets.all(16),
+    bg: FzColors.cardLate,
+    border: FzColors.borderLate,
+    child: child,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -358,8 +356,11 @@ class FzAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
             child: IconButton(
               padding: EdgeInsets.zero,
-              icon: const Icon(Icons.arrow_back,
-                  size: 18, color: FzColors.text),
+              icon: const Icon(
+                Icons.arrow_back,
+                size: 18,
+                color: FzColors.text,
+              ),
               onPressed: onBack ?? () => Navigator.of(context).maybePop(),
             ),
           ),

@@ -10,11 +10,7 @@ import 'lock_screen.dart';
 /// La decisión se basa en el estado SINCRÓNICO de [BiometricService.enabledCached]
 /// — main.dart se asegura de refrescarlo antes de runApp.
 class AppLockGate extends StatefulWidget {
-  const AppLockGate({
-    required this.service,
-    required this.child,
-    super.key,
-  });
+  const AppLockGate({required this.service, required this.child, super.key});
 
   final BiometricService service;
   final Widget child;
@@ -23,8 +19,7 @@ class AppLockGate extends StatefulWidget {
   State<AppLockGate> createState() => _AppLockGateState();
 }
 
-class _AppLockGateState extends State<AppLockGate>
-    with WidgetsBindingObserver {
+class _AppLockGateState extends State<AppLockGate> with WidgetsBindingObserver {
   static const _lockAfterBackground = Duration(seconds: 60);
 
   bool _locked = false;

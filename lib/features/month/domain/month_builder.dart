@@ -61,25 +61,28 @@ List<MonthItem> buildMonthChecklist({
       (p) => p.kind == PaymentKind.bill && p.billId == bill.id,
     );
 
-    items.add(MonthItem(
-      key: 'bill:${bill.id}',
-      kind: MonthItemKind.bill,
-      bill: bill,
-      label: bill.name,
-      estimatedAmount: bill.defaultAmount,
-      dayOfMonth: bill.dayOfMonth,
-      payment: payment,
-      recentAverage: avg.average,
-      recentSampleSize: avg.sampleSize,
-    ));
+    items.add(
+      MonthItem(
+        key: 'bill:${bill.id}',
+        kind: MonthItemKind.bill,
+        bill: bill,
+        label: bill.name,
+        estimatedAmount: bill.defaultAmount,
+        dayOfMonth: bill.dayOfMonth,
+        payment: payment,
+        recentAverage: avg.average,
+        recentSampleSize: avg.sampleSize,
+      ),
+    );
   }
 
   // 2. Tarjetas: total = cuotas activas + bills auto-debit en esa tarjeta
   for (final card in cards) {
     if (!card.active) continue;
 
-    final cardPurchases =
-        purchases.where((p) => p.creditCardId == card.id).toList();
+    final cardPurchases = purchases
+        .where((p) => p.creditCardId == card.id)
+        .toList();
     var installmentsTotal = 0.0;
     var installmentsCount = 0;
     for (final p in cardPurchases) {
@@ -109,19 +112,21 @@ List<MonthItem> buildMonthChecklist({
       (p) => p.kind == PaymentKind.cardTotal && p.cardId == card.id,
     );
 
-    items.add(MonthItem(
-      key: 'card:${card.id}',
-      kind: MonthItemKind.cardTotal,
-      card: card,
-      cardInstallmentsCount: installmentsCount,
-      cardAutoDebitsCount: cardAutoDebits.length,
-      label: card.name,
-      estimatedAmount: installmentsTotal + autoDebitsTotal,
-      dayOfMonth: card.dueDay,
-      payment: payment,
-      recentAverage: avg.average,
-      recentSampleSize: avg.sampleSize,
-    ));
+    items.add(
+      MonthItem(
+        key: 'card:${card.id}',
+        kind: MonthItemKind.cardTotal,
+        card: card,
+        cardInstallmentsCount: installmentsCount,
+        cardAutoDebitsCount: cardAutoDebits.length,
+        label: card.name,
+        estimatedAmount: installmentsTotal + autoDebitsTotal,
+        dayOfMonth: card.dueDay,
+        payment: payment,
+        recentAverage: avg.average,
+        recentSampleSize: avg.sampleSize,
+      ),
+    );
   }
 
   // tarjetas primero; dentro de cada grupo, por día y luego por nombre
@@ -224,12 +229,14 @@ List<MonthGroup> groupChecklistByCategory(List<MonthItem> items) {
   for (final macro in _macroOrder) {
     final bucket = buckets[macro]!;
     if (bucket.isEmpty) continue;
-    groups.add(_buildGroup(
-      key: macro.name,
-      title: _macroLabels[macro]!,
-      emoji: _macroEmojis[macro]!,
-      items: bucket,
-    ));
+    groups.add(
+      _buildGroup(
+        key: macro.name,
+        title: _macroLabels[macro]!,
+        emoji: _macroEmojis[macro]!,
+        items: bucket,
+      ),
+    );
   }
   return groups;
 }
@@ -247,8 +254,7 @@ MonthGroup _buildGroup({
   for (final item in items) {
     if (item.estimatedAmount != null) estimatedTotal += item.estimatedAmount!;
     if (item.payment?.status == PaymentStatus.paid) {
-      paidTotal +=
-          item.payment?.amountReal ?? item.estimatedAmount ?? 0;
+      paidTotal += item.payment?.amountReal ?? item.estimatedAmount ?? 0;
       paidCount++;
     } else {
       pendingCount++;
@@ -274,8 +280,7 @@ MonthSummary summarizeChecklist(List<MonthItem> items) {
   for (final item in items) {
     if (item.estimatedAmount != null) estimatedTotal += item.estimatedAmount!;
     if (item.payment?.status == PaymentStatus.paid) {
-      paidTotal +=
-          item.payment?.amountReal ?? item.estimatedAmount ?? 0;
+      paidTotal += item.payment?.amountReal ?? item.estimatedAmount ?? 0;
       paidCount++;
     } else {
       pendingCount++;

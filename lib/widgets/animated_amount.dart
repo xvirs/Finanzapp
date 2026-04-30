@@ -35,11 +35,7 @@ class AnimatedCurrency extends StatelessWidget {
       duration: duration,
       curve: curve,
       builder: (context, val, _) {
-        return Text(
-          formatCurrency(val),
-          style: style,
-          textAlign: textAlign,
-        );
+        return Text(formatCurrency(val), style: style, textAlign: textAlign);
       },
     );
   }

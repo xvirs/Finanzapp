@@ -38,12 +38,12 @@ class NotificationService {
     required InstallmentsRepository installmentsRepository,
     required PaymentsRepository paymentsRepository,
     required RealtimeService realtimeService,
-  })  : _plugin = plugin,
-        _billsRepository = billsRepository,
-        _cardsRepository = cardsRepository,
-        _installmentsRepository = installmentsRepository,
-        _paymentsRepository = paymentsRepository,
-        _realtimeService = realtimeService;
+  }) : _plugin = plugin,
+       _billsRepository = billsRepository,
+       _cardsRepository = cardsRepository,
+       _installmentsRepository = installmentsRepository,
+       _paymentsRepository = paymentsRepository,
+       _realtimeService = realtimeService;
 
   final FlutterLocalNotificationsPlugin _plugin;
   final BillsRepository _billsRepository;
@@ -61,10 +61,12 @@ class NotificationService {
   Future<bool> requestPermissions() async {
     final ios = _plugin
         .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>();
+          IOSFlutterLocalNotificationsPlugin
+        >();
     final android = _plugin
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
 
     final iosOk = await ios?.requestPermissions(
       alert: true,
@@ -131,21 +133,24 @@ class NotificationService {
         if (bill.dayOfMonth == null) continue;
 
         final paid = payments.any(
-          (p) => p.kind == PaymentKind.bill &&
+          (p) =>
+              p.kind == PaymentKind.bill &&
               p.billId == bill.id &&
               p.status == PaymentStatus.paid,
         );
         if (paid) continue;
 
-        reminders.add(_DueReminder(
-          id: _idForBill(bill),
-          title: 'Vence mañana: ${bill.name}',
-          body: bill.defaultAmount != null
-              ? formatCurrency(bill.defaultAmount)
-              : 'Monto variable',
-          dayOfMonth: bill.dayOfMonth!,
-          period: period,
-        ));
+        reminders.add(
+          _DueReminder(
+            id: _idForBill(bill),
+            title: 'Vence mañana: ${bill.name}',
+            body: bill.defaultAmount != null
+                ? formatCurrency(bill.defaultAmount)
+                : 'Monto variable',
+            dayOfMonth: bill.dayOfMonth!,
+            period: period,
+          ),
+        );
       }
 
       // Tarjetas: sumamos cuotas + auto-debits y avisamos si hay total.
@@ -168,20 +173,24 @@ class NotificationService {
         if (summary.total <= 0) continue;
 
         final paid = payments.any(
-          (p) => p.kind == PaymentKind.cardTotal &&
+          (p) =>
+              p.kind == PaymentKind.cardTotal &&
               p.cardId == card.id &&
               p.status == PaymentStatus.paid,
         );
         if (paid) continue;
 
-        reminders.add(_DueReminder(
-          id: _idForCard(card),
-          title: 'Vence mañana: ${card.name}',
-          body: '${formatCurrency(summary.total)} · '
-              '${_cardBreakdown(summary.installmentsCount, summary.autoDebitsCount)}',
-          dayOfMonth: card.dueDay!,
-          period: period,
-        ));
+        reminders.add(
+          _DueReminder(
+            id: _idForCard(card),
+            title: 'Vence mañana: ${card.name}',
+            body:
+                '${formatCurrency(summary.total)} · '
+                '${_cardBreakdown(summary.installmentsCount, summary.autoDebitsCount)}',
+            dayOfMonth: card.dueDay!,
+            period: period,
+          ),
+        );
       }
 
       for (final r in reminders) {
@@ -233,9 +242,9 @@ class NotificationService {
       period.month + 1,
       clampedDay,
     );
-    final notifyAt = dueDate.subtract(const Duration(days: 1)).add(
-          const Duration(hours: _reminderHour),
-        );
+    final notifyAt = dueDate
+        .subtract(const Duration(days: 1))
+        .add(const Duration(hours: _reminderHour));
 
     final now = tz.TZDateTime.now(tz.local);
     if (notifyAt.isBefore(now)) return null;
@@ -256,9 +265,7 @@ class NotificationService {
       parts.add('$installments ${installments == 1 ? "cuota" : "cuotas"}');
     }
     if (autoDebits > 0) {
-      parts.add(
-        '$autoDebits ${autoDebits == 1 ? "déb. aut." : "débs. aut."}',
-      );
+      parts.add('$autoDebits ${autoDebits == 1 ? "déb. aut." : "débs. aut."}');
     }
     return parts.isEmpty ? 'Sin desglose' : parts.join(' · ');
   }

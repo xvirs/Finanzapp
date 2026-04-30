@@ -51,8 +51,15 @@ class FzTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: FzColors.card,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        hintStyle: const TextStyle(color: FzColors.textMute, fontSize: 14, fontFamily: FzType.sans),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
+        ),
+        hintStyle: const TextStyle(
+          color: FzColors.textMute,
+          fontSize: 14,
+          fontFamily: FzType.sans,
+        ),
         labelStyle: FzText.caplabel,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(FzRadius.lg),
@@ -74,9 +81,13 @@ class FzTheme {
           backgroundColor: FzColors.primary,
           foregroundColor: FzColors.primaryInk,
           padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FzRadius.lg)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(FzRadius.lg),
+          ),
           textStyle: const TextStyle(
-            fontFamily: FzType.sans, fontSize: 14.5, fontWeight: FontWeight.w600,
+            fontFamily: FzType.sans,
+            fontSize: 14.5,
+            fontWeight: FontWeight.w600,
           ),
           elevation: 0,
         ),
@@ -87,16 +98,23 @@ class FzTheme {
           backgroundColor: Colors.transparent,
           side: const BorderSide(color: FzColors.border),
           padding: const EdgeInsets.symmetric(vertical: 13, horizontal: 16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(FzRadius.lg)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(FzRadius.lg),
+          ),
           textStyle: const TextStyle(
-            fontFamily: FzType.sans, fontSize: 13.5, fontWeight: FontWeight.w500,
+            fontFamily: FzType.sans,
+            fontSize: 13.5,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
           foregroundColor: FzColors.primary,
-          textStyle: const TextStyle(fontFamily: FzType.sans, fontWeight: FontWeight.w500),
+          textStyle: const TextStyle(
+            fontFamily: FzType.sans,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
 
@@ -119,10 +137,16 @@ class FzTheme {
 
       // Switch
       switchTheme: SwitchThemeData(
-        thumbColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.selected) ? Colors.white : FzColors.textDim),
-        trackColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.selected) ? FzColors.primary : FzColors.cardHi),
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? Colors.white
+              : FzColors.textDim,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? FzColors.primary
+              : FzColors.cardHi,
+        ),
       ),
     );
   }
@@ -139,26 +163,57 @@ class FzTheme {
         onSurface: FzColorsLight.text,
         outline: FzColorsLight.border,
       ),
-      textTheme: _textTheme(FzColorsLight.text, FzColorsLight.textDim, FzColorsLight.textMute),
+      textTheme: _textTheme(
+        FzColorsLight.text,
+        FzColorsLight.textDim,
+        FzColorsLight.textMute,
+      ),
     );
   }
 
   static TextTheme _textTheme(Color text, Color dim, Color mute) {
-    TextStyle base(double size, FontWeight w, {double letter = 0, Color? color, String f = FzType.sans}) =>
-        TextStyle(fontFamily: f, fontSize: size, fontWeight: w, letterSpacing: letter, color: color ?? text);
+    TextStyle base(
+      double size,
+      FontWeight w, {
+      double letter = 0,
+      Color? color,
+      String f = FzType.sans,
+    }) => TextStyle(
+      fontFamily: f,
+      fontSize: size,
+      fontWeight: w,
+      letterSpacing: letter,
+      color: color ?? text,
+    );
 
     return TextTheme(
-      displayLarge:  base(36, FontWeight.w600, letter: -1.08).copyWith(fontFeatures: FzType.tabularNums),
+      displayLarge: base(
+        36,
+        FontWeight.w600,
+        letter: -1.08,
+      ).copyWith(fontFeatures: FzType.tabularNums),
       headlineLarge: base(26, FontWeight.w600, letter: -0.65),
-      headlineMedium:base(20, FontWeight.w600, letter: -0.4),
-      titleLarge:    base(17, FontWeight.w600, letter: -0.17),
-      titleMedium:   base(15, FontWeight.w600),
-      bodyLarge:     base(14.5, FontWeight.w400),
-      bodyMedium:    base(14, FontWeight.w400),
-      bodySmall:     base(12, FontWeight.w400, color: dim),
-      labelLarge:    base(13, FontWeight.w500),
-      labelMedium:   base(11, FontWeight.w500, letter: 0.66, f: FzType.mono, color: mute),
-      labelSmall:    base(10.5, FontWeight.w500, letter: 0.84, f: FzType.mono, color: mute),
+      headlineMedium: base(20, FontWeight.w600, letter: -0.4),
+      titleLarge: base(17, FontWeight.w600, letter: -0.17),
+      titleMedium: base(15, FontWeight.w600),
+      bodyLarge: base(14.5, FontWeight.w400),
+      bodyMedium: base(14, FontWeight.w400),
+      bodySmall: base(12, FontWeight.w400, color: dim),
+      labelLarge: base(13, FontWeight.w500),
+      labelMedium: base(
+        11,
+        FontWeight.w500,
+        letter: 0.66,
+        f: FzType.mono,
+        color: mute,
+      ),
+      labelSmall: base(
+        10.5,
+        FontWeight.w500,
+        letter: 0.84,
+        f: FzType.mono,
+        color: mute,
+      ),
     );
   }
 }

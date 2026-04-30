@@ -85,8 +85,10 @@ class MonthGroupSection extends StatelessWidget {
   String _totalLabel(List<MonthItem> items) {
     final hasVariable = items.any((i) => i.estimatedAmount == null);
     if (hasVariable) return '—';
-    final total =
-        items.fold<double>(0, (acc, i) => acc + (i.estimatedAmount ?? 0));
+    final total = items.fold<double>(
+      0,
+      (acc, i) => acc + (i.estimatedAmount ?? 0),
+    );
     return formatCurrency(total);
   }
 }

@@ -31,11 +31,7 @@ class FzTheme {
         outline: FzColors.border,
         outlineVariant: FzColors.borderHi,
       ),
-      textTheme: _textTheme(
-        FzColors.text,
-        FzColors.textDim,
-        FzColors.textMute,
-      ),
+      textTheme: _textTheme(FzColors.text, FzColors.textDim, FzColors.textMute),
       cardTheme: CardThemeData(
         color: FzColors.card,
         elevation: 0,
@@ -48,12 +44,11 @@ class FzTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: FzColors.card,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        hintStyle: GoogleFonts.inter(
-          color: FzColors.textMute,
-          fontSize: 14,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 12,
         ),
+        hintStyle: GoogleFonts.inter(color: FzColors.textMute, fontSize: 14),
         labelStyle: GoogleFonts.jetBrainsMono(
           fontSize: 11,
           fontWeight: FontWeight.w500,
@@ -208,9 +203,11 @@ class FzTheme {
     }
 
     return sans.copyWith(
-      displayLarge: s(36, FontWeight.w600, letter: -1.08).copyWith(
-        fontFeatures: FzType.tabularNums,
-      ),
+      displayLarge: s(
+        36,
+        FontWeight.w600,
+        letter: -1.08,
+      ).copyWith(fontFeatures: FzType.tabularNums),
       headlineLarge: s(26, FontWeight.w600, letter: -0.65),
       headlineMedium: s(20, FontWeight.w600, letter: -0.4),
       titleLarge: s(17, FontWeight.w600, letter: -0.17),

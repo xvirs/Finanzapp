@@ -26,11 +26,11 @@ class CardDetailBloc extends Bloc<CardDetailEvent, CardDetailBlocState> {
     required BillsRepository billsRepository,
     required PaymentsRepository paymentsRepository,
     required RealtimeService realtimeService,
-  })  : _cardsRepository = cardsRepository,
-        _installmentsRepository = installmentsRepository,
-        _billsRepository = billsRepository,
-        _paymentsRepository = paymentsRepository,
-        super(CardDetailBlocState()) {
+  }) : _cardsRepository = cardsRepository,
+       _installmentsRepository = installmentsRepository,
+       _billsRepository = billsRepository,
+       _paymentsRepository = paymentsRepository,
+       super(CardDetailBlocState()) {
     on<CardDetailRequested>(_onRequested);
     on<CardDetailRefreshRequested>(_onRefreshRequested);
     on<CardDetailSilentRefreshRequested>(_onSilentRefreshRequested);
@@ -59,14 +59,17 @@ class CardDetailBloc extends Bloc<CardDetailEvent, CardDetailBlocState> {
     return super.close();
   }
 
-  Future<({
-    CreditCard? card,
-    List<PurchaseWithStatus> purchases,
-    List<Bill> autoDebitBills,
-    Payment? payment,
-    CardMonthSummary summary,
-    PeriodKey period,
-  })> _loadDetailData(String cardId) async {
+  Future<
+    ({
+      CreditCard? card,
+      List<PurchaseWithStatus> purchases,
+      List<Bill> autoDebitBills,
+      Payment? payment,
+      CardMonthSummary summary,
+      PeriodKey period,
+    })
+  >
+  _loadDetailData(String cardId) async {
     final period = PeriodKey.current();
     final periodIso = period.toIso();
 
@@ -82,9 +85,7 @@ class CardDetailBloc extends Bloc<CardDetailEvent, CardDetailBlocState> {
 
     final autoDebitBills = card == null
         ? <Bill>[]
-        : bills
-            .where((b) => b.active && b.autoDebitCardId == card.id)
-            .toList();
+        : bills.where((b) => b.active && b.autoDebitCardId == card.id).toList();
 
     final purchasesWithStatus = purchases.map((p) {
       final inMonth = installmentForPeriod(p, period);
@@ -103,12 +104,11 @@ class CardDetailBloc extends Bloc<CardDetailEvent, CardDetailBlocState> {
     final payment = card == null
         ? null
         : payments
-            .where(
-              (p) =>
-                  p.kind == PaymentKind.cardTotal && p.cardId == card.id,
-            )
-            .cast<Payment?>()
-            .firstWhere((_) => true, orElse: () => null);
+              .where(
+                (p) => p.kind == PaymentKind.cardTotal && p.cardId == card.id,
+              )
+              .cast<Payment?>()
+              .firstWhere((_) => true, orElse: () => null);
 
     return (
       card: card,
@@ -124,36 +124,44 @@ class CardDetailBloc extends Bloc<CardDetailEvent, CardDetailBlocState> {
     CardDetailRequested event,
     Emitter<CardDetailBlocState> emit,
   ) async {
-    emit(state.copyWith(
-      status: CardDetailStatus.loading,
-      cardId: event.cardId,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(
+        status: CardDetailStatus.loading,
+        cardId: event.cardId,
+        clearError: true,
+      ),
+    );
 
     try {
       final data = await _loadDetailData(event.cardId);
       if (data.card == null) {
-        emit(state.copyWith(
-          status: CardDetailStatus.failure,
-          errorMessage: 'La tarjeta no existe.',
-        ));
+        emit(
+          state.copyWith(
+            status: CardDetailStatus.failure,
+            errorMessage: 'La tarjeta no existe.',
+          ),
+        );
         return;
       }
-      emit(state.copyWith(
-        status: CardDetailStatus.success,
-        card: data.card,
-        purchases: data.purchases,
-        autoDebitBills: data.autoDebitBills,
-        payment: data.payment,
-        clearPayment: data.payment == null,
-        summary: data.summary,
-        period: data.period,
-      ));
+      emit(
+        state.copyWith(
+          status: CardDetailStatus.success,
+          card: data.card,
+          purchases: data.purchases,
+          autoDebitBills: data.autoDebitBills,
+          payment: data.payment,
+          clearPayment: data.payment == null,
+          summary: data.summary,
+          period: data.period,
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(
-        status: CardDetailStatus.failure,
-        errorMessage: error.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: CardDetailStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -177,15 +185,17 @@ class CardDetailBloc extends Bloc<CardDetailEvent, CardDetailBlocState> {
       // Si la tarjeta fue eliminada, dejamos el estado como está; el
       // usuario volverá a la lista por su lado.
       if (data.card == null) return;
-      emit(state.copyWith(
-        card: data.card,
-        purchases: data.purchases,
-        autoDebitBills: data.autoDebitBills,
-        payment: data.payment,
-        clearPayment: data.payment == null,
-        summary: data.summary,
-        period: data.period,
-      ));
+      emit(
+        state.copyWith(
+          card: data.card,
+          purchases: data.purchases,
+          autoDebitBills: data.autoDebitBills,
+          payment: data.payment,
+          clearPayment: data.payment == null,
+          summary: data.summary,
+          period: data.period,
+        ),
+      );
     } catch (error) {
       emit(state.copyWith(errorMessage: error.toString()));
     }

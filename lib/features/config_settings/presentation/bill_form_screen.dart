@@ -92,8 +92,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
       _activeCards = cards;
       if (bill != null) {
         _nameController.text = bill.name;
-        _amountController.text =
-            bill.defaultAmount?.toStringAsFixed(0) ?? '';
+        _amountController.text = bill.defaultAmount?.toStringAsFixed(0) ?? '';
         _dayController.text = bill.dayOfMonth?.toString() ?? '';
         _providerCodeController.text = bill.providerCode ?? '';
         _urlController.text = bill.url ?? '';
@@ -130,10 +129,10 @@ class _BillFormScreenState extends State<BillFormScreen> {
         normalizedUrl = normalizeUrl(rawUrl).url;
       }
 
-      final amountRaw =
-          _amountController.text.trim().replaceAll(',', '.');
-      final defaultAmount =
-          amountRaw.isEmpty ? null : double.tryParse(amountRaw);
+      final amountRaw = _amountController.text.trim().replaceAll(',', '.');
+      final defaultAmount = amountRaw.isEmpty
+          ? null
+          : double.tryParse(amountRaw);
 
       await repo.saveBill(
         existingId: widget.billId,
@@ -199,15 +198,14 @@ class _BillFormScreenState extends State<BillFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             FzAppBar(
-              title:
-                  widget.isEditing ? 'Editar cuenta' : 'Nueva cuenta fija',
+              title: widget.isEditing ? 'Editar cuenta' : 'Nueva cuenta fija',
             ),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _loadError != null
-                      ? _ErrorView(message: _loadError!, onRetry: _load)
-                      : _buildForm(),
+                  ? _ErrorView(message: _loadError!, onRetry: _load)
+                  : _buildForm(),
             ),
           ],
         ),
@@ -376,11 +374,7 @@ class _KindSelector extends StatelessWidget {
       },
       child: Row(
         children: [
-          Icon(
-            BillKindIcon.iconFor(value),
-            size: 16,
-            color: FzColors.text,
-          ),
+          Icon(BillKindIcon.iconFor(value), size: 16, color: FzColors.text),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
@@ -436,14 +430,18 @@ class _KindSheet extends StatelessWidget {
                   style: TextStyle(
                     fontFamily: FzType.sans,
                     fontSize: 14,
-                    fontWeight:
-                        k == selected ? FontWeight.w600 : FontWeight.w400,
+                    fontWeight: k == selected
+                        ? FontWeight.w600
+                        : FontWeight.w400,
                     color: FzColors.text,
                   ),
                 ),
                 trailing: k == selected
-                    ? const Icon(Icons.check_rounded,
-                        color: FzColors.primary, size: 20)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: FzColors.primary,
+                        size: 20,
+                      )
                     : null,
                 onTap: () => Navigator.of(context).pop(k),
               ),
@@ -472,9 +470,9 @@ class _AutoDebitSelector extends StatelessWidget {
     final selectedCard = selectedCardId == null
         ? null
         : cards.cast<CreditCard?>().firstWhere(
-              (c) => c?.id == selectedCardId,
-              orElse: () => null,
-            );
+            (c) => c?.id == selectedCardId,
+            orElse: () => null,
+          );
     return FormFieldShell(
       onTap: () async {
         final picked = await showModalBottomSheet<_AutoDebitPick?>(
@@ -483,10 +481,8 @@ class _AutoDebitSelector extends StatelessWidget {
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
           ),
-          builder: (_) => _AutoDebitSheet(
-            cards: cards,
-            selectedCardId: selectedCardId,
-          ),
+          builder: (_) =>
+              _AutoDebitSheet(cards: cards, selectedCardId: selectedCardId),
         );
         if (picked != null) onChanged(picked.cardId);
       },
@@ -498,8 +494,7 @@ class _AutoDebitSelector extends StatelessWidget {
               style: TextStyle(
                 fontFamily: FzType.sans,
                 fontSize: 14,
-                color:
-                    selectedCard == null ? FzColors.textMute : FzColors.text,
+                color: selectedCard == null ? FzColors.textMute : FzColors.text,
               ),
             ),
           ),
@@ -556,8 +551,11 @@ class _AutoDebitSheet extends StatelessWidget {
                 ),
               ),
               trailing: selectedCardId == null
-                  ? const Icon(Icons.check_rounded,
-                      color: FzColors.primary, size: 20)
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: FzColors.primary,
+                      size: 20,
+                    )
                   : null,
               onTap: () =>
                   Navigator.of(context).pop(const _AutoDebitPick(null)),
@@ -577,11 +575,13 @@ class _AutoDebitSheet extends StatelessWidget {
                   ),
                 ),
                 trailing: c.id == selectedCardId
-                    ? const Icon(Icons.check_rounded,
-                        color: FzColors.primary, size: 20)
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: FzColors.primary,
+                        size: 20,
+                      )
                     : null,
-                onTap: () =>
-                    Navigator.of(context).pop(_AutoDebitPick(c.id)),
+                onTap: () => Navigator.of(context).pop(_AutoDebitPick(c.id)),
               ),
             const SizedBox(height: 8),
           ],
@@ -629,8 +629,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline,
-              size: 48, color: FzColors.lateColor),
+          const Icon(Icons.error_outline, size: 48, color: FzColors.lateColor),
           const SizedBox(height: 12),
           Text(
             message,

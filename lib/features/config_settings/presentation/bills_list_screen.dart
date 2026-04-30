@@ -33,17 +33,16 @@ class BillsListScreen extends StatelessWidget {
                   trailing: _AddButton(
                     onPressed: () async {
                       final bloc = context.read<BillsListBloc>();
-                      final result =
-                          await context.push<bool>('/config/bills/new');
+                      final result = await context.push<bool>(
+                        '/config/bills/new',
+                      );
                       if (result == true) {
                         bloc.add(const BillsListRefreshRequested());
                       }
                     },
                   ),
                 ),
-                Expanded(
-                  child: _Body(state: state),
-                ),
+                Expanded(child: _Body(state: state)),
               ],
             );
           },
@@ -104,9 +103,9 @@ class _Body extends StatelessWidget {
       case BillsListStatus.failure:
         return _ErrorView(
           message: state.errorMessage ?? 'Error',
-          onRetry: () => context
-              .read<BillsListBloc>()
-              .add(const BillsListRefreshRequested()),
+          onRetry: () => context.read<BillsListBloc>().add(
+            const BillsListRefreshRequested(),
+          ),
         );
 
       case BillsListStatus.initial:
@@ -115,9 +114,9 @@ class _Body extends StatelessWidget {
           color: FzColors.primary,
           backgroundColor: FzColors.card,
           onRefresh: () async {
-            context
-                .read<BillsListBloc>()
-                .add(const BillsListRefreshRequested());
+            context.read<BillsListBloc>().add(
+              const BillsListRefreshRequested(),
+            );
           },
           child: const _Shimmer(),
         );
@@ -127,9 +126,9 @@ class _Body extends StatelessWidget {
           color: FzColors.primary,
           backgroundColor: FzColors.card,
           onRefresh: () async {
-            context
-                .read<BillsListBloc>()
-                .add(const BillsListRefreshRequested());
+            context.read<BillsListBloc>().add(
+              const BillsListRefreshRequested(),
+            );
           },
           child: state.bills.isEmpty
               ? ListView(
@@ -149,8 +148,7 @@ class _Body extends StatelessWidget {
     }
   }
 
-  List<Widget> _buildBillTiles(
-      BuildContext context, BillsListBlocState state) {
+  List<Widget> _buildBillTiles(BuildContext context, BillsListBlocState state) {
     return [
       for (final bill in state.bills) ...[
         Padding(
@@ -185,8 +183,7 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final activeBills = state.bills.where((b) => b.active).toList();
     final activeCount = activeBills.length;
-    final fixedCount =
-        activeBills.where((b) => b.defaultAmount != null).length;
+    final fixedCount = activeBills.where((b) => b.defaultAmount != null).length;
     final variableCount = activeCount - fixedCount;
 
     return Padding(
@@ -532,8 +529,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: FzColors.lateColor),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: FzColors.lateColor,
+            ),
             const SizedBox(height: 12),
             const Text(
               'No se pudieron cargar las cuentas',

@@ -51,8 +51,8 @@ class _Caplabel extends StatelessWidget {
     final label = state.isFuturePeriod
         ? 'MES FUTURO'
         : state.isPastPeriod
-            ? 'MES PASADO'
-            : 'MES ACTUAL';
+        ? 'MES PASADO'
+        : 'MES ACTUAL';
     return Text(
       label,
       style: const TextStyle(
@@ -84,9 +84,9 @@ class _MonthNav extends StatelessWidget {
           ),
           padding: const EdgeInsets.all(4),
           constraints: const BoxConstraints(),
-          onPressed: () => context
-              .read<MonthBloc>()
-              .add(MonthRequested(state.period.previous())),
+          onPressed: () => context.read<MonthBloc>().add(
+            MonthRequested(state.period.previous()),
+          ),
         ),
         Text(
           _formatMonth(state.period),
@@ -107,9 +107,9 @@ class _MonthNav extends StatelessWidget {
           padding: const EdgeInsets.all(4),
           constraints: const BoxConstraints(),
           onPressed: canGoNext
-              ? () => context
-                  .read<MonthBloc>()
-                  .add(MonthRequested(state.period.next()))
+              ? () => context.read<MonthBloc>().add(
+                  MonthRequested(state.period.next()),
+                )
               : null,
         ),
       ],
@@ -284,23 +284,23 @@ class _FilterTabs extends StatelessWidget {
         _FilterPill(
           label: 'Todos',
           active: state.filter == MonthFilter.all,
-          onTap: () => context
-              .read<MonthBloc>()
-              .add(const MonthFilterChanged(MonthFilter.all)),
+          onTap: () => context.read<MonthBloc>().add(
+            const MonthFilterChanged(MonthFilter.all),
+          ),
         ),
         _FilterPill(
           label: 'Pendientes',
           active: state.filter == MonthFilter.pending,
-          onTap: () => context
-              .read<MonthBloc>()
-              .add(const MonthFilterChanged(MonthFilter.pending)),
+          onTap: () => context.read<MonthBloc>().add(
+            const MonthFilterChanged(MonthFilter.pending),
+          ),
         ),
         _FilterPill(
           label: 'Atrasadas',
           active: state.filter == MonthFilter.overdue,
-          onTap: () => context
-              .read<MonthBloc>()
-              .add(const MonthFilterChanged(MonthFilter.overdue)),
+          onTap: () => context.read<MonthBloc>().add(
+            const MonthFilterChanged(MonthFilter.overdue),
+          ),
         ),
       ],
     );

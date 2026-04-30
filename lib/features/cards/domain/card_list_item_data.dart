@@ -24,10 +24,10 @@ class CardListItemData extends Equatable {
 
   @override
   List<Object?> get props => [
-        card,
-        installmentsCount,
-        autoDebitsCount,
-        total,
-        payment,
-      ];
+    card,
+    installmentsCount,
+    autoDebitsCount,
+    total,
+    payment,
+  ];
 }

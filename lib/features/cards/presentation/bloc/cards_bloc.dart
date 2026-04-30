@@ -24,11 +24,11 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
     required InstallmentsRepository installmentsRepository,
     required PaymentsRepository paymentsRepository,
     required RealtimeService realtimeService,
-  })  : _billsRepository = billsRepository,
-        _cardsRepository = cardsRepository,
-        _installmentsRepository = installmentsRepository,
-        _paymentsRepository = paymentsRepository,
-        super(CardsBlocState()) {
+  }) : _billsRepository = billsRepository,
+       _cardsRepository = cardsRepository,
+       _installmentsRepository = installmentsRepository,
+       _paymentsRepository = paymentsRepository,
+       super(CardsBlocState()) {
     on<CardsRequested>(_onRequested);
     on<CardsRefreshRequested>(_onRefreshRequested);
     on<CardsSilentRefreshRequested>(_onSilentRefreshRequested);
@@ -57,11 +57,10 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
     return super.close();
   }
 
-  Future<({
-    PeriodKey period,
-    List<CardListItemData> items,
-    double totalForPeriod,
-  })> _loadCardsData() async {
+  Future<
+    ({PeriodKey period, List<CardListItemData> items, double totalForPeriod})
+  >
+  _loadCardsData() async {
     final period = PeriodKey.current();
     final periodIso = period.toIso();
 
@@ -79,8 +78,9 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
     var totalForPeriod = 0.0;
 
     for (final card in cards) {
-      final cardPurchases =
-          purchases.where((p) => p.creditCardId == card.id).toList();
+      final cardPurchases = purchases
+          .where((p) => p.creditCardId == card.id)
+          .toList();
       final cardAutoDebits = bills
           .where((b) => b.active && b.autoDebitCardId == card.id)
           .toList();
@@ -92,19 +92,19 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
       );
 
       final payment = payments
-          .where(
-            (p) => p.kind == PaymentKind.cardTotal && p.cardId == card.id,
-          )
+          .where((p) => p.kind == PaymentKind.cardTotal && p.cardId == card.id)
           .cast<Payment?>()
           .firstWhere((_) => true, orElse: () => null);
 
-      items.add(CardListItemData(
-        card: card,
-        installmentsCount: summary.installmentsCount,
-        autoDebitsCount: summary.autoDebitsCount,
-        total: summary.total,
-        payment: payment,
-      ));
+      items.add(
+        CardListItemData(
+          card: card,
+          installmentsCount: summary.installmentsCount,
+          autoDebitsCount: summary.autoDebitsCount,
+          total: summary.total,
+          payment: payment,
+        ),
+      );
 
       totalForPeriod += summary.total;
     }
@@ -119,17 +119,21 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
     emit(state.copyWith(status: CardsStatus.loading, clearError: true));
     try {
       final data = await _loadCardsData();
-      emit(state.copyWith(
-        status: CardsStatus.success,
-        period: data.period,
-        items: data.items,
-        totalForPeriod: data.totalForPeriod,
-      ));
+      emit(
+        state.copyWith(
+          status: CardsStatus.success,
+          period: data.period,
+          items: data.items,
+          totalForPeriod: data.totalForPeriod,
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(
-        status: CardsStatus.failure,
-        errorMessage: error.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: CardsStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -147,11 +151,13 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
     if (state.status != CardsStatus.success) return;
     try {
       final data = await _loadCardsData();
-      emit(state.copyWith(
-        period: data.period,
-        items: data.items,
-        totalForPeriod: data.totalForPeriod,
-      ));
+      emit(
+        state.copyWith(
+          period: data.period,
+          items: data.items,
+          totalForPeriod: data.totalForPeriod,
+        ),
+      );
     } catch (error) {
       emit(state.copyWith(errorMessage: error.toString()));
     }

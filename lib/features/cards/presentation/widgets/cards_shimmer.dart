@@ -12,11 +12,7 @@ class CardsShimmer extends StatelessWidget {
     return ListView(
       physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.only(top: 14, bottom: 24),
-      children: const [
-        _CardShimmer(),
-        _CardShimmer(),
-        _CardShimmer(),
-      ],
+      children: const [_CardShimmer(), _CardShimmer(), _CardShimmer()],
     );
   }
 }

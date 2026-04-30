@@ -56,16 +56,16 @@ class InstallmentsRepository {
 
     final row = existingId == null
         ? await supabase
-            .from('installment_purchases')
-            .insert(data)
-            .select()
-            .single()
+              .from('installment_purchases')
+              .insert(data)
+              .select()
+              .single()
         : await supabase
-            .from('installment_purchases')
-            .update(data)
-            .eq('id', existingId)
-            .select()
-            .single();
+              .from('installment_purchases')
+              .update(data)
+              .eq('id', existingId)
+              .select()
+              .single();
 
     return InstallmentPurchase.fromJson(row);
   }

@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 /// para mantener paridad con el código TS de la web.
 class PeriodKey {
   const PeriodKey({required this.year, required this.month})
-      : assert(month >= 0 && month <= 11, 'month must be 0..11');
+    : assert(month >= 0 && month <= 11, 'month must be 0..11');
 
   final int year;
   final int month;

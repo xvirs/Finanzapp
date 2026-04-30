@@ -26,13 +26,29 @@ class FzCard extends StatelessWidget {
     this.onTap,
   });
 
-  factory FzCard.paid({Key? key, required Widget child, EdgeInsetsGeometry? padding}) =>
-      FzCard(key: key, child: child, padding: padding ?? const EdgeInsets.all(16),
-        bg: FzColors.cardPaid, border: FzColors.borderPaid);
+  factory FzCard.paid({
+    Key? key,
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+  }) => FzCard(
+    key: key,
+    child: child,
+    padding: padding ?? const EdgeInsets.all(16),
+    bg: FzColors.cardPaid,
+    border: FzColors.borderPaid,
+  );
 
-  factory FzCard.late_({Key? key, required Widget child, EdgeInsetsGeometry? padding}) =>
-      FzCard(key: key, child: child, padding: padding ?? const EdgeInsets.all(16),
-        bg: FzColors.cardLate, border: FzColors.borderLate);
+  factory FzCard.late_({
+    Key? key,
+    required Widget child,
+    EdgeInsetsGeometry? padding,
+  }) => FzCard(
+    key: key,
+    child: child,
+    padding: padding ?? const EdgeInsets.all(16),
+    bg: FzColors.cardLate,
+    border: FzColors.borderLate,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +64,11 @@ class FzCard extends StatelessWidget {
     if (onTap == null) return box;
     return Material(
       color: Colors.transparent,
-      child: InkWell(borderRadius: BorderRadius.circular(radius), onTap: onTap, child: box),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(radius),
+        onTap: onTap,
+        child: box,
+      ),
     );
   }
 }
@@ -60,7 +80,13 @@ class FzPrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool expanded;
 
-  const FzPrimaryButton({super.key, required this.label, this.icon, this.onPressed, this.expanded = true});
+  const FzPrimaryButton({
+    super.key,
+    required this.label,
+    this.icon,
+    this.onPressed,
+    this.expanded = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +101,10 @@ class FzPrimaryButton extends StatelessWidget {
           mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            if (icon != null) ...[Icon(icon, size: 16), const SizedBox(width: 8)],
+            if (icon != null) ...[
+              Icon(icon, size: 16),
+              const SizedBox(width: 8),
+            ],
             Text(label),
           ],
         ),
@@ -91,7 +120,12 @@ class FzDangerButton extends StatelessWidget {
   final IconData? icon;
   final VoidCallback? onPressed;
 
-  const FzDangerButton({super.key, required this.label, this.icon, this.onPressed});
+  const FzDangerButton({
+    super.key,
+    required this.label,
+    this.icon,
+    this.onPressed,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -107,7 +141,10 @@ class FzDangerButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (icon != null) ...[Icon(icon, size: 15, color: FzColors.late), const SizedBox(width: 8)],
+            if (icon != null) ...[
+              Icon(icon, size: 15, color: FzColors.late),
+              const SizedBox(width: 8),
+            ],
             Text(label),
           ],
         ),
@@ -121,20 +158,34 @@ class FzBadge extends StatelessWidget {
   final String label;
   final Color bg;
   final Color fg;
-  const FzBadge({super.key, required this.label, this.bg = FzColors.cardHi, this.fg = FzColors.textDim});
+  const FzBadge({
+    super.key,
+    required this.label,
+    this.bg = FzColors.cardHi,
+    this.fg = FzColors.textDim,
+  });
 
-  factory FzBadge.late_(String label) => FzBadge(label: label, bg: FzColors.lateSoft, fg: FzColors.lateInk);
-  factory FzBadge.paid(String label)  => FzBadge(label: label, bg: FzColors.primarySoft, fg: FzColors.primary);
+  factory FzBadge.late_(String label) =>
+      FzBadge(label: label, bg: FzColors.lateSoft, fg: FzColors.lateInk);
+  factory FzBadge.paid(String label) =>
+      FzBadge(label: label, bg: FzColors.primarySoft, fg: FzColors.primary);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(FzRadius.xs)),
-      child: Text(label.toUpperCase(),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(FzRadius.xs),
+      ),
+      child: Text(
+        label.toUpperCase(),
         style: TextStyle(
-          fontFamily: FzType.mono, fontSize: 9, fontWeight: FontWeight.w700,
-          letterSpacing: 0.36, color: fg,
+          fontFamily: FzType.mono,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.36,
+          color: fg,
         ),
       ),
     );
@@ -149,10 +200,14 @@ class FzCaplabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text.toUpperCase(),
+    return Text(
+      text.toUpperCase(),
       style: TextStyle(
-        fontFamily: FzType.mono, fontSize: 11, fontWeight: FontWeight.w500,
-        letterSpacing: 1.1, color: color ?? FzColors.textMute,
+        fontFamily: FzType.mono,
+        fontSize: 11,
+        fontWeight: FontWeight.w500,
+        letterSpacing: 1.1,
+        color: color ?? FzColors.textMute,
       ),
     );
   }
@@ -164,19 +219,27 @@ class FzLogo extends StatelessWidget {
   final Color bg;
   final Color fg;
   final bool shadow;
-  const FzLogo({super.key, this.size = 56, this.bg = FzColors.primary, this.fg = FzColors.primaryInk, this.shadow = false});
+  const FzLogo({
+    super.key,
+    this.size = 56,
+    this.bg = FzColors.primary,
+    this.fg = FzColors.primaryInk,
+    this.shadow = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: size, height: size,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(size * 0.26),
         boxShadow: shadow ? FzShadow.hero : null,
       ),
       alignment: Alignment.center,
-      child: Text(r'$',
+      child: Text(
+        r'$',
         style: TextStyle(
           color: fg,
           fontWeight: FontWeight.w800,
@@ -198,9 +261,9 @@ class FzBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = const [
-      ('Mes',      Icons.calendar_today_outlined),
+      ('Mes', Icons.calendar_today_outlined),
       ('Tarjetas', Icons.credit_card_outlined),
-      ('Config',   Icons.settings_outlined),
+      ('Config', Icons.settings_outlined),
     ];
     return Container(
       decoration: const BoxDecoration(
@@ -208,29 +271,53 @@ class FzBottomNav extends StatelessWidget {
         border: Border(top: BorderSide(color: FzColors.border)),
       ),
       padding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
-      child: Row(children: [
-        for (var i = 0; i < items.length; i++) Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => onChange(i),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                decoration: BoxDecoration(
-                  color: i == index ? FzColors.primarySoft : Colors.transparent,
-                  borderRadius: BorderRadius.circular(FzRadius.md),
+      child: Row(
+        children: [
+          for (var i = 0; i < items.length; i++)
+            Expanded(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => onChange(i),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: i == index
+                            ? FzColors.primarySoft
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(FzRadius.md),
+                      ),
+                      child: Icon(
+                        items[i].$2,
+                        size: 20,
+                        color: i == index
+                            ? FzColors.primary
+                            : FzColors.textMute,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      items[i].$1,
+                      style: TextStyle(
+                        fontFamily: FzType.sans,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        color: i == index
+                            ? FzColors.primary
+                            : FzColors.textMute,
+                      ),
+                    ),
+                  ],
                 ),
-                child: Icon(items[i].$2, size: 20, color: i == index ? FzColors.primary : FzColors.textMute),
               ),
-              const SizedBox(height: 4),
-              Text(items[i].$1, style: TextStyle(
-                fontFamily: FzType.sans, fontSize: 10.5, fontWeight: FontWeight.w500,
-                color: i == index ? FzColors.primary : FzColors.textMute,
-              )),
-            ]),
-          ),
-        ),
-      ]),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -249,26 +336,42 @@ class FzAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(children: [
-        Container(
-          width: 36, height: 36,
-          decoration: BoxDecoration(
-            border: Border.all(color: FzColors.border),
-            borderRadius: BorderRadius.circular(FzRadius.md),
+      child: Row(
+        children: [
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              border: Border.all(color: FzColors.border),
+              borderRadius: BorderRadius.circular(FzRadius.md),
+            ),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              icon: const Icon(
+                Icons.arrow_back,
+                size: 18,
+                color: FzColors.text,
+              ),
+              onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+            ),
           ),
-          child: IconButton(
-            padding: EdgeInsets.zero,
-            icon: const Icon(Icons.arrow_back, size: 18, color: FzColors.text),
-            onPressed: onBack ?? () => Navigator.of(context).maybePop(),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.17,
+                color: FzColors.text,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Text(title, style: const TextStyle(
-          fontFamily: FzType.sans, fontSize: 17, fontWeight: FontWeight.w600,
-          letterSpacing: -0.17, color: FzColors.text,
-        ), overflow: TextOverflow.ellipsis)),
-        if (trailing != null) trailing!,
-      ]),
+          if (trailing != null) trailing!,
+        ],
+      ),
     );
   }
 }
@@ -278,21 +381,37 @@ class FzBrandChip extends StatelessWidget {
   final String label;
   final Color bg;
   final Color fg;
-  const FzBrandChip({super.key, required this.label, required this.bg, this.fg = Colors.white});
+  const FzBrandChip({
+    super.key,
+    required this.label,
+    required this.bg,
+    this.fg = Colors.white,
+  });
 
-  factory FzBrandChip.visa()  => const FzBrandChip(label: 'VISA', bg: FzColors.visaBg);
-  factory FzBrandChip.mc()    => const FzBrandChip(label: 'MC',   bg: FzColors.mastercardBg);
-  factory FzBrandChip.mp()    => const FzBrandChip(label: 'MP',   bg: FzColors.mpBg);
+  factory FzBrandChip.visa() =>
+      const FzBrandChip(label: 'VISA', bg: FzColors.visaBg);
+  factory FzBrandChip.mc() =>
+      const FzBrandChip(label: 'MC', bg: FzColors.mastercardBg);
+  factory FzBrandChip.mp() => const FzBrandChip(label: 'MP', bg: FzColors.mpBg);
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(FzRadius.xs)),
-      child: Text(label, style: TextStyle(
-        fontFamily: FzType.sans, fontSize: 9, fontWeight: FontWeight.w700,
-        letterSpacing: 0.36, color: fg,
-      )),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(FzRadius.xs),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontFamily: FzType.sans,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.36,
+          color: fg,
+        ),
+      ),
     );
   }
 }

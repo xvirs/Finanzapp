@@ -25,8 +25,7 @@ class CardDetailScreen extends StatelessWidget {
         bottom: false,
         child: BlocBuilder<CardDetailBloc, CardDetailBlocState>(
           builder: (context, state) {
-            final hasHeroData =
-                state.card != null && state.summary != null;
+            final hasHeroData = state.card != null && state.summary != null;
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -44,9 +43,7 @@ class CardDetailScreen extends StatelessWidget {
                         : const _HeroShimmer(),
                   ),
                 ),
-                Expanded(
-                  child: _Body(state: state),
-                ),
+                Expanded(child: _Body(state: state)),
               ],
             );
           },
@@ -68,9 +65,9 @@ class _Body extends StatelessWidget {
       case CardDetailStatus.failure:
         return _ErrorView(
           message: state.errorMessage ?? 'Error',
-          onRetry: () => context
-              .read<CardDetailBloc>()
-              .add(const CardDetailRefreshRequested()),
+          onRetry: () => context.read<CardDetailBloc>().add(
+            const CardDetailRefreshRequested(),
+          ),
         );
 
       case CardDetailStatus.initial:
@@ -79,9 +76,9 @@ class _Body extends StatelessWidget {
           color: FzColors.primary,
           backgroundColor: FzColors.card,
           onRefresh: () async {
-            context
-                .read<CardDetailBloc>()
-                .add(const CardDetailRefreshRequested());
+            context.read<CardDetailBloc>().add(
+              const CardDetailRefreshRequested(),
+            );
           },
           child: const _BodyShimmer(),
         );
@@ -91,9 +88,9 @@ class _Body extends StatelessWidget {
           color: FzColors.primary,
           backgroundColor: FzColors.card,
           onRefresh: () async {
-            context
-                .read<CardDetailBloc>()
-                .add(const CardDetailRefreshRequested());
+            context.read<CardDetailBloc>().add(
+              const CardDetailRefreshRequested(),
+            );
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -286,70 +283,67 @@ class _HeroCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: paid ? FzColors.cardPaid : FzColors.card,
-          borderRadius: BorderRadius.circular(FzRadius.xxxl),
-          border: Border.all(
-            color: paid ? FzColors.borderPaid : FzColors.border,
-          ),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            if (paid) const _GreenHalo(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (paid)
-                    const _PaidCaplabel()
-                  else
-                    const Text(
-                      'TOTAL DEL MES',
-                      style: TextStyle(
-                        fontFamily: FzType.mono,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.66,
-                        color: FzColors.textMute,
-                      ),
-                    ),
-                  const SizedBox(height: 4),
-                  AnimatedCurrency(
-                    value: amount,
+        borderRadius: BorderRadius.circular(FzRadius.xxxl),
+        border: Border.all(color: paid ? FzColors.borderPaid : FzColors.border),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(
+        children: [
+          if (paid) const _GreenHalo(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (paid)
+                  const _PaidCaplabel()
+                else
+                  const Text(
+                    'TOTAL DEL MES',
                     style: TextStyle(
-                      fontFamily: FzType.sans,
-                      fontSize: 36,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: -1.08,
-                      fontFeatures: FzType.tabularNums,
-                      color: paid ? FzColors.primaryHi : FzColors.text,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    breakdown,
-                    style: const TextStyle(
                       fontFamily: FzType.mono,
-                      fontSize: 12,
-                      color: FzColors.textDim,
-                      letterSpacing: 0.24,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.66,
+                      color: FzColors.textMute,
                     ),
                   ),
-                  if (url != null) ...[
-                    const SizedBox(height: 14),
-                    _OutlinePillButton(
-                      icon: Icons.open_in_new_rounded,
-                      label: 'Ir a pagar',
-                      borderColor:
-                          paid ? FzColors.borderPaid : FzColors.border,
-                      onPressed: () => _openUrl(context, url),
-                    ),
-                  ],
+                const SizedBox(height: 4),
+                AnimatedCurrency(
+                  value: amount,
+                  style: TextStyle(
+                    fontFamily: FzType.sans,
+                    fontSize: 36,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: -1.08,
+                    fontFeatures: FzType.tabularNums,
+                    color: paid ? FzColors.primaryHi : FzColors.text,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  breakdown,
+                  style: const TextStyle(
+                    fontFamily: FzType.mono,
+                    fontSize: 12,
+                    color: FzColors.textDim,
+                    letterSpacing: 0.24,
+                  ),
+                ),
+                if (url != null) ...[
+                  const SizedBox(height: 14),
+                  _OutlinePillButton(
+                    icon: Icons.open_in_new_rounded,
+                    label: 'Ir a pagar',
+                    borderColor: paid ? FzColors.borderPaid : FzColors.border,
+                    onPressed: () => _openUrl(context, url),
+                  ),
                 ],
-              ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -501,9 +495,7 @@ class _InstallmentsSection extends StatelessWidget {
             ),
           ),
           if (purchases.isEmpty)
-            const _EmptyDashed(
-              message: 'Sin compras en cuotas registradas',
-            )
+            const _EmptyDashed(message: 'Sin compras en cuotas registradas')
           else
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -528,8 +520,7 @@ class _InstallmentsSection extends StatelessWidget {
 
   Future<void> _newPurchase(BuildContext context, String cardId) async {
     final bloc = context.read<CardDetailBloc>();
-    final result =
-        await context.push<bool>('/cards/$cardId/installments/new');
+    final result = await context.push<bool>('/cards/$cardId/installments/new');
     if (result == true) {
       bloc.add(const CardDetailRefreshRequested());
     }
@@ -541,8 +532,9 @@ class _InstallmentsSection extends StatelessWidget {
     String purchaseId,
   ) async {
     final bloc = context.read<CardDetailBloc>();
-    final result =
-        await context.push<bool>('/cards/$cardId/installments/$purchaseId');
+    final result = await context.push<bool>(
+      '/cards/$cardId/installments/$purchaseId',
+    );
     if (result == true) {
       bloc.add(const CardDetailRefreshRequested());
     }
@@ -677,8 +669,7 @@ class _DashedBorderPainter extends CustomPainter {
     canvas.drawPath(_dashed(path), paint);
   }
 
-  Path _dashed(Path source,
-      {double dash = 5, double gap = 4}) {
+  Path _dashed(Path source, {double dash = 5, double gap = 4}) {
     final dest = Path();
     for (final m in source.computeMetrics()) {
       var d = 0.0;
@@ -763,9 +754,7 @@ class _PurchaseTile extends StatelessWidget {
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                   fontFeatures: FzType.tabularNums,
-                  color: thisMonth == null
-                      ? FzColors.textMute
-                      : FzColors.text,
+                  color: thisMonth == null ? FzColors.textMute : FzColors.text,
                 ),
               ),
             ],
@@ -920,8 +909,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: FzColors.lateColor),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: FzColors.lateColor,
+            ),
             const SizedBox(height: 12),
             const Text(
               'No se pudo cargar la tarjeta',

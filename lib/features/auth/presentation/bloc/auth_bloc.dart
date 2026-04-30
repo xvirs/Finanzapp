@@ -11,8 +11,8 @@ part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
   AuthBloc({required AuthRepository repository})
-      : _repository = repository,
-        super(_initialState(repository)) {
+    : _repository = repository,
+      super(_initialState(repository)) {
     on<AuthSubscriptionRequested>(_onSubscriptionRequested);
     on<AuthSessionChanged>(_onSessionChanged);
     on<AuthMagicLinkRequested>(_onMagicLinkRequested);
@@ -28,8 +28,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
   static AuthBlocState _initialState(AuthRepository repository) {
     final session = repository.currentSession;
     return AuthBlocState(
-      status:
-          session != null ? AuthStatus.authenticated : AuthStatus.unauthenticated,
+      status: session != null
+          ? AuthStatus.authenticated
+          : AuthStatus.unauthenticated,
       session: session,
     );
   }
@@ -50,20 +51,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
   ) {
     final session = event.session;
     if (session != null) {
-      emit(state.copyWith(
-        status: AuthStatus.authenticated,
-        session: session,
-        actionStatus: AuthActionStatus.idle,
-        clearError: true,
-        clearLastMagicLinkEmail: true,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.authenticated,
+          session: session,
+          actionStatus: AuthActionStatus.idle,
+          clearError: true,
+          clearLastMagicLinkEmail: true,
+        ),
+      );
     } else {
-      emit(state.copyWith(
-        status: AuthStatus.unauthenticated,
-        clearSession: true,
-        actionStatus: AuthActionStatus.idle,
-        clearError: true,
-      ));
+      emit(
+        state.copyWith(
+          status: AuthStatus.unauthenticated,
+          clearSession: true,
+          actionStatus: AuthActionStatus.idle,
+          clearError: true,
+        ),
+      );
     }
   }
 
@@ -71,21 +76,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
     AuthMagicLinkRequested event,
     Emitter<AuthBlocState> emit,
   ) async {
-    emit(state.copyWith(
-      actionStatus: AuthActionStatus.loading,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(actionStatus: AuthActionStatus.loading, clearError: true),
+    );
     try {
       await _repository.signInWithMagicLink(event.email);
-      emit(state.copyWith(
-        actionStatus: AuthActionStatus.success,
-        lastMagicLinkEmail: event.email,
-      ));
+      emit(
+        state.copyWith(
+          actionStatus: AuthActionStatus.success,
+          lastMagicLinkEmail: event.email,
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(
-        actionStatus: AuthActionStatus.failure,
-        errorMessage: error.toString(),
-      ));
+      emit(
+        state.copyWith(
+          actionStatus: AuthActionStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -93,18 +101,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
     AuthGoogleSignInRequested event,
     Emitter<AuthBlocState> emit,
   ) async {
-    emit(state.copyWith(
-      actionStatus: AuthActionStatus.loading,
-      clearError: true,
-    ));
+    emit(
+      state.copyWith(actionStatus: AuthActionStatus.loading, clearError: true),
+    );
     try {
       await _repository.signInWithGoogle();
       emit(state.copyWith(actionStatus: AuthActionStatus.idle));
     } catch (error) {
-      emit(state.copyWith(
-        actionStatus: AuthActionStatus.failure,
-        errorMessage: error.toString(),
-      ));
+      emit(
+        state.copyWith(
+          actionStatus: AuthActionStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -115,10 +124,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
     try {
       await _repository.signOut();
     } catch (error) {
-      emit(state.copyWith(
-        actionStatus: AuthActionStatus.failure,
-        errorMessage: error.toString(),
-      ));
+      emit(
+        state.copyWith(
+          actionStatus: AuthActionStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 

@@ -14,8 +14,10 @@ NormalizedUrl normalizeUrl(String raw) {
   final trimmed = raw.trim();
   if (trimmed.isEmpty) return const NormalizedUrl(url: null);
 
-  final hasScheme = RegExp(r'^[a-z][a-z0-9+\-.]*:', caseSensitive: false)
-      .hasMatch(trimmed);
+  final hasScheme = RegExp(
+    r'^[a-z][a-z0-9+\-.]*:',
+    caseSensitive: false,
+  ).hasMatch(trimmed);
   final candidate = hasScheme ? trimmed : 'https://$trimmed';
 
   final uri = Uri.tryParse(candidate);

@@ -49,17 +49,17 @@ class CalendarTag extends StatelessWidget {
     }
     return switch (urgency) {
       UrgencyOverdue _ => const _TagColors(
-          bg: AppColors.urgencyOverdueBg,
-          fg: AppColors.urgencyOverdue,
-        ),
+        bg: AppColors.urgencyOverdueBg,
+        fg: AppColors.urgencyOverdue,
+      ),
       UrgencyDueSoon _ => const _TagColors(
-          bg: AppColors.urgencyDueSoonBg,
-          fg: AppColors.urgencyDueSoon,
-        ),
+        bg: AppColors.urgencyDueSoonBg,
+        fg: AppColors.urgencyDueSoon,
+      ),
       UrgencyNormal _ => _TagColors(
-          bg: theme.colorScheme.surfaceContainerHighest,
-          fg: theme.colorScheme.onSurface,
-        ),
+        bg: theme.colorScheme.surfaceContainerHighest,
+        fg: theme.colorScheme.onSurface,
+      ),
     };
   }
 }

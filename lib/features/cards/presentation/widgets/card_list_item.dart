@@ -33,11 +33,7 @@ class CardListItem extends StatelessWidget {
     final paid = data.payment?.status == PaymentStatus.paid;
     final hasAmount = data.total > 0;
     final urgency = hasAmount
-        ? getUrgency(
-            dayOfMonth: card.dueDay,
-            paid: paid,
-            period: period,
-          )
+        ? getUrgency(dayOfMonth: card.dueDay, paid: paid, period: period)
         : const Urgency.normal();
     final isOverdue = urgency is UrgencyOverdue;
     final isEmpty = !paid && !hasAmount;
@@ -45,13 +41,13 @@ class CardListItem extends StatelessWidget {
     final cardBg = paid
         ? FzColors.cardPaid
         : isOverdue
-            ? FzColors.cardLate
-            : FzColors.card;
+        ? FzColors.cardLate
+        : FzColors.card;
     final cardBorder = paid
         ? FzColors.borderPaid
         : isOverdue
-            ? FzColors.borderLate
-            : FzColors.border;
+        ? FzColors.borderLate
+        : FzColors.border;
 
     final amountForDisplay = paid && data.payment?.amountReal != null
         ? data.payment!.amountReal!
@@ -80,11 +76,7 @@ class CardListItem extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    _LeadBox(
-                      day: card.dueDay,
-                      paid: paid,
-                      overdue: isOverdue,
-                    ),
+                    _LeadBox(day: card.dueDay, paid: paid, overdue: isOverdue),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -146,8 +138,8 @@ class CardListItem extends StatelessWidget {
                         color: isEmpty
                             ? FzColors.textDim
                             : paid
-                                ? FzColors.primaryHi
-                                : FzColors.text,
+                            ? FzColors.primaryHi
+                            : FzColors.text,
                       ),
                     ),
                     const Spacer(),
@@ -171,10 +163,7 @@ class CardListItem extends StatelessWidget {
                 // Row 3 — botón "Ir a pagar" si hay url
                 if (url != null) ...[
                   const SizedBox(height: 12),
-                  _PayButton(
-                    url: url,
-                    cardBorder: cardBorder,
-                  ),
+                  _PayButton(url: url, cardBorder: cardBorder),
                 ],
               ],
             ),
@@ -228,13 +217,13 @@ class _LeadBox extends StatelessWidget {
     final bg = paid
         ? FzColors.primary
         : overdue
-            ? FzColors.lateSoft
-            : FzColors.cardHi;
+        ? FzColors.lateSoft
+        : FzColors.cardHi;
     final fg = paid
         ? FzColors.primaryInk
         : overdue
-            ? FzColors.lateInk
-            : FzColors.textDim;
+        ? FzColors.lateInk
+        : FzColors.textDim;
 
     return Container(
       width: 38,

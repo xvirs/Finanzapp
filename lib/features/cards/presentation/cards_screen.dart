@@ -34,9 +34,7 @@ class CardsScreen extends StatelessWidget {
                   color: FzColors.bg,
                   child: _CardsHeader(state: state),
                 ),
-                Expanded(
-                  child: _Body(state: state),
-                ),
+                Expanded(child: _Body(state: state)),
               ],
             );
           },
@@ -57,9 +55,8 @@ class _Body extends StatelessWidget {
       case CardsStatus.failure:
         return _ErrorView(
           message: state.errorMessage ?? 'Error desconocido',
-          onRetry: () => context
-              .read<CardsBloc>()
-              .add(const CardsRefreshRequested()),
+          onRetry: () =>
+              context.read<CardsBloc>().add(const CardsRefreshRequested()),
         );
 
       case CardsStatus.initial:
@@ -192,8 +189,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: FzColors.lateColor),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: FzColors.lateColor,
+            ),
             const SizedBox(height: 12),
             const Text(
               'No se pudieron cargar las tarjetas',

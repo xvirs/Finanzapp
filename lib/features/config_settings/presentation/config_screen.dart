@@ -83,7 +83,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   _DataRows(
                     billsCount: _billsCount,
                     cardsCount: _cardsCount,
-                    loading: _loadingCounts &&
+                    loading:
+                        _loadingCounts &&
                         _billsCount == null &&
                         _cardsCount == null,
                     error: _countsError,
@@ -398,7 +399,11 @@ class _AddSquareButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(FzRadius.sm),
           ),
           alignment: Alignment.center,
-          child: const Icon(Icons.add_rounded, size: 14, color: FzColors.primary),
+          child: const Icon(
+            Icons.add_rounded,
+            size: 14,
+            color: FzColors.primary,
+          ),
         ),
       ),
     );
@@ -478,7 +483,8 @@ class _BiometricCardState extends State<_BiometricCard> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-              'Biométrico [${e.code}]: ${e.message ?? "sin mensaje"}'),
+            'Biométrico [${e.code}]: ${e.message ?? "sin mensaje"}',
+          ),
           duration: const Duration(seconds: 6),
         ),
       );
@@ -553,10 +559,7 @@ class _BiometricCardState extends State<_BiometricCard> {
               ),
             ),
             const SizedBox(width: 12),
-            Switch(
-              value: _enabled,
-              onChanged: canToggle ? _toggle : null,
-            ),
+            Switch(value: _enabled, onChanged: canToggle ? _toggle : null),
           ],
         ),
       ),

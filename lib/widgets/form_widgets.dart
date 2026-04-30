@@ -5,11 +5,7 @@ import '../design/tokens.dart';
 /// Caplabel mono uppercase + asterisco rojo si required — para labels
 /// arriba de inputs (patrón ACField del handoff).
 class FormCaplabel extends StatelessWidget {
-  const FormCaplabel({
-    required this.text,
-    this.required = false,
-    super.key,
-  });
+  const FormCaplabel({required this.text, this.required = false, super.key});
 
   final String text;
   final bool required;
@@ -88,8 +84,7 @@ class FormFieldWrap extends StatelessWidget {
 class FormFieldShell extends StatelessWidget {
   const FormFieldShell({
     required this.child,
-    this.padding =
-        const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+    this.padding = const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     this.onTap,
     super.key,
   });
@@ -253,10 +248,7 @@ class FormActiveToggle extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 12),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-          ),
+          Switch(value: value, onChanged: onChanged),
         ],
       ),
     );

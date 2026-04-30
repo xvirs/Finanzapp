@@ -61,11 +61,11 @@ class PaymentsRepository {
     final row = existingPaymentId == null
         ? await supabase.from('payments').insert(data).select().single()
         : await supabase
-            .from('payments')
-            .update(data)
-            .eq('id', existingPaymentId)
-            .select()
-            .single();
+              .from('payments')
+              .update(data)
+              .eq('id', existingPaymentId)
+              .select()
+              .single();
 
     return Payment.fromJson(row);
   }

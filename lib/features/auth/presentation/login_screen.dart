@@ -40,9 +40,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void _submitMagicLink() {
     final email = _emailController.text.trim();
     if (email.isEmpty || !email.contains('@') || !email.contains('.')) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresá un email válido.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Ingresá un email válido.')));
       return;
     }
     FocusScope.of(context).unfocus();
@@ -63,9 +63,7 @@ class _LoginScreenState extends State<LoginScreen> {
         final messenger = ScaffoldMessenger.of(context);
         if (state.actionStatus == AuthActionStatus.failure &&
             state.errorMessage != null) {
-          messenger.showSnackBar(
-            SnackBar(content: Text(state.errorMessage!)),
-          );
+          messenger.showSnackBar(SnackBar(content: Text(state.errorMessage!)));
         }
         if (state.actionStatus == AuthActionStatus.success &&
             state.lastMagicLinkEmail != null) {
@@ -97,15 +95,14 @@ class _LoginScreenState extends State<LoginScreen> {
                         children: [
                           const SizedBox(height: 24),
                           // Logo
-                          const Center(
-                            child: FzLogo(size: 64, shadow: true),
-                          ),
+                          const Center(child: FzLogo(size: 64, shadow: true)),
                           const SizedBox(height: 28),
                           // Título
                           Text(
                             'Finanzapp',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(fontSize: 30,
+                            style: GoogleFonts.inter(
+                              fontSize: 30,
                               fontWeight: FontWeight.w600,
                               letterSpacing: -0.75,
                               color: FzColors.text,
@@ -116,7 +113,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             'Tus pagos del mes, ordenados.',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(fontSize: 14,
+                            style: GoogleFonts.inter(
+                              fontSize: 14,
                               color: FzColors.textDim,
                               height: 1.5,
                             ),
@@ -146,7 +144,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           Text(
                             'v2.0 · finanzapp.app',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.jetBrainsMono(fontSize: 11.5,
+                            style: GoogleFonts.jetBrainsMono(
+                              fontSize: 11.5,
                               letterSpacing: 0.46,
                               color: FzColors.textMute,
                             ),
@@ -240,7 +239,8 @@ class _GoogleButton extends StatelessWidget {
                 const SizedBox(width: 10),
                 Text(
                   'Continuar con Google',
-                  style: GoogleFonts.inter(fontSize: 14.5,
+                  style: GoogleFonts.inter(
+                    fontSize: 14.5,
                     fontWeight: FontWeight.w500,
                     color: const Color(0xFF1F1F1F),
                   ),
@@ -267,7 +267,8 @@ class _OrDivider extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 10),
           child: Text(
             'O POR EMAIL',
-            style: GoogleFonts.jetBrainsMono(fontSize: 11,
+            style: GoogleFonts.jetBrainsMono(
+              fontSize: 11,
               letterSpacing: 1.1,
               color: FzColors.textMute,
             ),
@@ -303,12 +304,11 @@ class _EmailInput extends StatelessWidget {
             keyboardType: TextInputType.emailAddress,
             autocorrect: false,
             enableSuggestions: false,
-            style: GoogleFonts.inter(fontSize: 14,
-              color: FzColors.text,
-            ),
+            style: GoogleFonts.inter(fontSize: 14, color: FzColors.text),
             decoration: InputDecoration(
               hintText: 'tu@email.com',
-              hintStyle: GoogleFonts.inter(fontSize: 14,
+              hintStyle: GoogleFonts.inter(
+                fontSize: 14,
                 color: FzColors.textMute,
               ),
               border: InputBorder.none,
@@ -331,7 +331,8 @@ class _EmailInput extends StatelessWidget {
             color: FzColors.bg,
             child: Text(
               'EMAIL',
-              style: GoogleFonts.jetBrainsMono(fontSize: 10.5,
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 10.5,
                 letterSpacing: 0.53,
                 color: FzColors.textMute,
               ),
@@ -375,7 +376,8 @@ class _PrimaryCta extends StatelessWidget {
                 children: [
                   Text(
                     'Enviarme el link',
-                    style: GoogleFonts.inter(fontSize: 14.5,
+                    style: GoogleFonts.inter(
+                      fontSize: 14.5,
                       fontWeight: FontWeight.w600,
                       color: FzColors.primaryInk,
                       letterSpacing: -0.07,
@@ -388,8 +390,9 @@ class _PrimaryCta extends StatelessWidget {
                           height: 14,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation(FzColors.primaryInk),
+                            valueColor: AlwaysStoppedAnimation(
+                              FzColors.primaryInk,
+                            ),
                           ),
                         )
                       : const Icon(

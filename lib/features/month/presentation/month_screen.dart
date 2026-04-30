@@ -43,9 +43,9 @@ class _MonthScreenState extends State<MonthScreen> {
                 current.mutatingItemKey == null),
         listener: (context, state) {
           if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage!)),
-            );
+            ScaffoldMessenger.of(
+              context,
+            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
           }
           if (_expandedKey != null) {
             setState(() => _expandedKey = null);
@@ -98,9 +98,8 @@ class _Body extends StatelessWidget {
       case MonthStatus.failure:
         return _ErrorView(
           message: state.errorMessage ?? 'Error desconocido',
-          onRetry: () => context
-              .read<MonthBloc>()
-              .add(const MonthRefreshRequested()),
+          onRetry: () =>
+              context.read<MonthBloc>().add(const MonthRefreshRequested()),
         );
 
       case MonthStatus.initial:
@@ -160,8 +159,11 @@ class _ErrorView extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline,
-                size: 48, color: FzColors.lateColor),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: FzColors.lateColor,
+            ),
             const SizedBox(height: 12),
             const Text(
               'No se pudieron cargar los datos',

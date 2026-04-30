@@ -16,11 +16,7 @@ import '../../auth/data/auth_repository.dart';
 /// usuario queda atrapado. Por eso al pie hay un link "¿Problemas?
 /// Cerrar sesión" que limpia la sesión y manda al login.
 class LockScreen extends StatefulWidget {
-  const LockScreen({
-    required this.service,
-    required this.onUnlock,
-    super.key,
-  });
+  const LockScreen({required this.service, required this.onUnlock, super.key});
 
   final BiometricService service;
   final VoidCallback onUnlock;
@@ -139,8 +135,9 @@ class _LockScreenState extends State<LockScreen> {
                               width: 16,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor:
-                                    AlwaysStoppedAnimation(Colors.white),
+                                valueColor: AlwaysStoppedAnimation(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Icon(Icons.fingerprint_rounded, size: 20),

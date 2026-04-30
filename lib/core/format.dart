@@ -17,8 +17,7 @@ String formatCurrencyOrVariable(num? value) {
   return '\$${_amountFormatter.format(value)}';
 }
 
-String formatMonthYear(DateTime date) =>
-    DateFormat.yMMMM('es_AR').format(date);
+String formatMonthYear(DateTime date) => DateFormat.yMMMM('es_AR').format(date);
 
 const Map<BillKind, String> kBillKindLabels = {
   BillKind.rent: 'Alquiler',

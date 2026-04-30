@@ -14,11 +14,7 @@ import '../models/enums.dart';
 ///   consortium → apartment | subscription → subscriptions
 ///   rent → home          |   other → label
 class BillKindIcon extends StatelessWidget {
-  const BillKindIcon({
-    required this.kind,
-    this.size = 38,
-    super.key,
-  });
+  const BillKindIcon({required this.kind, this.size = 38, super.key});
 
   final BillKind kind;
   final double size;

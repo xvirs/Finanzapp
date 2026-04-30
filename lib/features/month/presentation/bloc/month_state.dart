@@ -58,12 +58,12 @@ final class MonthBlocState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        period,
-        groups,
-        summary,
-        filter,
-        errorMessage,
-        mutatingItemKey,
-      ];
+    status,
+    period,
+    groups,
+    summary,
+    filter,
+    errorMessage,
+    mutatingItemKey,
+  ];
 }

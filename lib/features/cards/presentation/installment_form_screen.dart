@@ -67,7 +67,8 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
 
   double? get _liveTotal {
     final amount = double.tryParse(
-        _amountController.text.trim().replaceAll(',', '.'));
+      _amountController.text.trim().replaceAll(',', '.'),
+    );
     final count = int.tryParse(_countController.text.trim());
     if (amount == null || count == null || count <= 0 || amount <= 0) {
       return null;
@@ -104,8 +105,7 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
 
       if (purchase != null) {
         _descriptionController.text = purchase.description;
-        _amountController.text =
-            purchase.installmentAmount.toStringAsFixed(0);
+        _amountController.text = purchase.installmentAmount.toStringAsFixed(0);
         _countController.text = purchase.installmentCount.toString();
         _notesController.text = purchase.notes ?? '';
         _firstPeriod = PeriodKey.fromIso(purchase.firstPeriod);
@@ -204,8 +204,8 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _loadError != null
-                      ? _ErrorView(message: _loadError!, onRetry: _load)
-                      : _buildForm(),
+                  ? _ErrorView(message: _loadError!, onRetry: _load)
+                  : _buildForm(),
             ),
           ],
         ),
@@ -274,9 +274,7 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
                       suffix: 'x',
                       mono: true,
                       keyboardType: TextInputType.number,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                      ],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       validator: (v) {
                         final n = int.tryParse((v ?? '').trim());
                         if (n == null || n <= 0) return 'Inválido';
@@ -478,9 +476,7 @@ class _TotalCalculated extends StatelessWidget {
               fontWeight: FontWeight.w600,
               letterSpacing: -0.44,
               fontFeatures: FzType.tabularNums,
-              color: amount == null
-                  ? FzColors.textDim
-                  : FzColors.primaryHi,
+              color: amount == null ? FzColors.textDim : FzColors.primaryHi,
             ),
           ),
         ],
@@ -589,8 +585,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline,
-              size: 48, color: FzColors.lateColor),
+          const Icon(Icons.error_outline, size: 48, color: FzColors.lateColor),
           const SizedBox(height: 12),
           Text(
             message,

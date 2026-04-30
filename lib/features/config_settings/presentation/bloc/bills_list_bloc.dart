@@ -17,17 +17,16 @@ class BillsListBloc extends Bloc<BillsListEvent, BillsListBlocState> {
     required BillsRepository billsRepository,
     required CardsRepository cardsRepository,
     required RealtimeService realtimeService,
-  })  : _billsRepository = billsRepository,
-        _cardsRepository = cardsRepository,
-        super(const BillsListBlocState()) {
+  }) : _billsRepository = billsRepository,
+       _cardsRepository = cardsRepository,
+       super(const BillsListBlocState()) {
     on<BillsListRequested>(_onRequested);
     on<BillsListRefreshRequested>(_onRefreshRequested);
     on<BillsListSilentRefreshRequested>(_onSilentRefreshRequested);
 
     _realtimeSubscription = realtimeService.changes.listen((table) {
       // Solo nos interesan cambios en bills y credit_cards.
-      if (table != RealtimeTable.bills &&
-          table != RealtimeTable.creditCards) {
+      if (table != RealtimeTable.bills && table != RealtimeTable.creditCards) {
         return;
       }
       _refreshDebounce?.cancel();
@@ -52,7 +51,7 @@ class BillsListBloc extends Bloc<BillsListEvent, BillsListBlocState> {
   }
 
   Future<({List<Bill> bills, Map<String, CreditCard> cardsById})>
-      _loadData() async {
+  _loadData() async {
     final billsFuture = _billsRepository.fetchAll();
     final cardsFuture = _cardsRepository.fetchAll();
     final bills = await billsFuture;
@@ -68,16 +67,20 @@ class BillsListBloc extends Bloc<BillsListEvent, BillsListBlocState> {
     emit(state.copyWith(status: BillsListStatus.loading, clearError: true));
     try {
       final data = await _loadData();
-      emit(state.copyWith(
-        status: BillsListStatus.success,
-        bills: data.bills,
-        cardsById: data.cardsById,
-      ));
+      emit(
+        state.copyWith(
+          status: BillsListStatus.success,
+          bills: data.bills,
+          cardsById: data.cardsById,
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(
-        status: BillsListStatus.failure,
-        errorMessage: error.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: BillsListStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -95,10 +98,7 @@ class BillsListBloc extends Bloc<BillsListEvent, BillsListBlocState> {
     if (state.status != BillsListStatus.success) return;
     try {
       final data = await _loadData();
-      emit(state.copyWith(
-        bills: data.bills,
-        cardsById: data.cardsById,
-      ));
+      emit(state.copyWith(bills: data.bills, cardsById: data.cardsById));
     } catch (error) {
       emit(state.copyWith(errorMessage: error.toString()));
     }

@@ -76,8 +76,10 @@ Future<void> main() async {
   final biometricService = BiometricService();
   await biometricService.refreshEnabledCache();
 
-  runApp(FinanzappApp(
-    notifications: notifications,
-    biometricService: biometricService,
-  ));
+  runApp(
+    FinanzappApp(
+      notifications: notifications,
+      biometricService: biometricService,
+    ),
+  );
 }

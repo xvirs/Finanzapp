@@ -36,10 +36,10 @@ final class CardsBlocState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        period,
-        items,
-        totalForPeriod,
-        errorMessage,
-      ];
+    status,
+    period,
+    items,
+    totalForPeriod,
+    errorMessage,
+  ];
 }

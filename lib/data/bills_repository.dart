@@ -62,11 +62,11 @@ class BillsRepository {
     final row = existingId == null
         ? await supabase.from('bills').insert(data).select().single()
         : await supabase
-            .from('bills')
-            .update(data)
-            .eq('id', existingId)
-            .select()
-            .single();
+              .from('bills')
+              .update(data)
+              .eq('id', existingId)
+              .select()
+              .single();
 
     return Bill.fromJson(row);
   }

@@ -38,27 +38,22 @@ class MonthItemCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final paid = item.payment?.status == PaymentStatus.paid;
-    final hasAmount =
-        item.estimatedAmount != null && item.estimatedAmount! > 0;
+    final hasAmount = item.estimatedAmount != null && item.estimatedAmount! > 0;
     final urgency = hasAmount
-        ? getUrgency(
-            dayOfMonth: item.dayOfMonth,
-            paid: paid,
-            period: period,
-          )
+        ? getUrgency(dayOfMonth: item.dayOfMonth, paid: paid, period: period)
         : const Urgency.normal();
     final isOverdue = urgency is UrgencyOverdue;
 
     final cardBg = paid
         ? FzColors.cardPaid
         : isOverdue
-            ? FzColors.cardLate
-            : FzColors.card;
+        ? FzColors.cardLate
+        : FzColors.card;
     final cardBorder = paid
         ? FzColors.borderPaid
         : isOverdue
-            ? FzColors.borderLate
-            : FzColors.border;
+        ? FzColors.borderLate
+        : FzColors.border;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -74,8 +69,7 @@ class MonthItemCard extends StatelessWidget {
           InkWell(
             onTap: isMutating ? null : onTap,
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -105,11 +99,7 @@ class MonthItemCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  _AmountColumn(
-                    item: item,
-                    paid: paid,
-                    isOverdue: isOverdue,
-                  ),
+                  _AmountColumn(item: item, paid: paid, isOverdue: isOverdue),
                   const SizedBox(width: 8),
                   AnimatedRotation(
                     turns: expanded ? 0.5 : 0,
@@ -168,13 +158,13 @@ class _LeadIcon extends StatelessWidget {
     final bg = paid
         ? FzColors.primary
         : overdue
-            ? FzColors.lateColor
-            : FzColors.cardHi;
+        ? FzColors.lateColor
+        : FzColors.cardHi;
     final fg = paid
         ? FzColors.primaryInk
         : overdue
-            ? Colors.white
-            : FzColors.textDim;
+        ? Colors.white
+        : FzColors.textDim;
 
     return Container(
       width: 38,
@@ -230,10 +220,7 @@ class _NameRow extends StatelessWidget {
           const SizedBox(width: 6),
           _BrandChip(brand: item.card!.brand!),
         ],
-        if (isOverdue) ...[
-          const SizedBox(width: 6),
-          const _OverdueBadge(),
-        ],
+        if (isOverdue) ...[const SizedBox(width: 6), const _OverdueBadge()],
       ],
     );
   }
@@ -332,9 +319,7 @@ class _AmountColumn extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(
-          showAmount == null
-              ? 'Variable'
-              : formatCurrency(showAmount),
+          showAmount == null ? 'Variable' : formatCurrency(showAmount),
           style: TextStyle(
             fontFamily: FzType.sans,
             fontSize: 15,
@@ -383,8 +368,7 @@ class _ItemActionsState extends State<_ItemActions> {
     super.dispose();
   }
 
-  String? get _paymentUrl =>
-      widget.item.bill?.url ?? widget.item.card?.url;
+  String? get _paymentUrl => widget.item.bill?.url ?? widget.item.card?.url;
 
   Future<void> _openPayUrl() async {
     final raw = _paymentUrl;
@@ -412,15 +396,13 @@ class _ItemActionsState extends State<_ItemActions> {
       return;
     }
     FocusScope.of(context).unfocus();
-    context
-        .read<MonthBloc>()
-        .add(MonthMarkPaidRequested(item: widget.item, amount: value));
+    context.read<MonthBloc>().add(
+      MonthMarkPaidRequested(item: widget.item, amount: value),
+    );
   }
 
   void _submitPending() {
-    context
-        .read<MonthBloc>()
-        .add(MonthMarkPendingRequested(item: widget.item));
+    context.read<MonthBloc>().add(MonthMarkPendingRequested(item: widget.item));
   }
 
   void _snack(String msg) {
@@ -560,8 +542,7 @@ class _AmountField extends StatelessWidget {
           ),
           child: TextField(
             controller: controller,
-            keyboardType:
-                const TextInputType.numberWithOptions(decimal: true),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
             style: const TextStyle(
               fontFamily: FzType.mono,
               fontSize: 16,
@@ -640,8 +621,7 @@ class _PrimaryButton extends StatelessWidget {
                     height: 14,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor:
-                          AlwaysStoppedAnimation(FzColors.primaryInk),
+                      valueColor: AlwaysStoppedAnimation(FzColors.primaryInk),
                     ),
                   )
                 else

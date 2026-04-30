@@ -60,11 +60,11 @@ class CardsRepository {
     final row = existingId == null
         ? await supabase.from('credit_cards').insert(data).select().single()
         : await supabase
-            .from('credit_cards')
-            .update(data)
-            .eq('id', existingId)
-            .select()
-            .single();
+              .from('credit_cards')
+              .update(data)
+              .eq('id', existingId)
+              .select()
+              .single();
 
     return CreditCard.fromJson(row);
   }

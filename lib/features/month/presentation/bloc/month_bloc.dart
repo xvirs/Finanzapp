@@ -23,11 +23,11 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     required InstallmentsRepository installmentsRepository,
     required PaymentsRepository paymentsRepository,
     required RealtimeService realtimeService,
-  })  : _billsRepository = billsRepository,
-        _cardsRepository = cardsRepository,
-        _installmentsRepository = installmentsRepository,
-        _paymentsRepository = paymentsRepository,
-        super(MonthBlocState()) {
+  }) : _billsRepository = billsRepository,
+       _cardsRepository = cardsRepository,
+       _installmentsRepository = installmentsRepository,
+       _paymentsRepository = paymentsRepository,
+       super(MonthBlocState()) {
     on<MonthRequested>(_onRequested);
     on<MonthRefreshRequested>(_onRefreshRequested);
     on<MonthSilentRefreshRequested>(_onSilentRefreshRequested);
@@ -103,25 +103,31 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     MonthRequested event,
     Emitter<MonthBlocState> emit,
   ) async {
-    emit(state.copyWith(
-      status: MonthStatus.loading,
-      period: event.period,
-      clearError: true,
-      clearMutating: true,
-    ));
+    emit(
+      state.copyWith(
+        status: MonthStatus.loading,
+        period: event.period,
+        clearError: true,
+        clearMutating: true,
+      ),
+    );
 
     try {
       final data = await _loadMonthData(event.period);
-      emit(state.copyWith(
-        status: MonthStatus.success,
-        groups: data.groups,
-        summary: data.summary,
-      ));
+      emit(
+        state.copyWith(
+          status: MonthStatus.success,
+          groups: data.groups,
+          summary: data.summary,
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(
-        status: MonthStatus.failure,
-        errorMessage: error.toString(),
-      ));
+      emit(
+        state.copyWith(
+          status: MonthStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
     }
   }
 
@@ -154,16 +160,15 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
   Future<void> _silentRefresh(Emitter<MonthBlocState> emit) async {
     try {
       final data = await _loadMonthData(state.period);
-      emit(state.copyWith(
-        groups: data.groups,
-        summary: data.summary,
-        clearMutating: true,
-      ));
+      emit(
+        state.copyWith(
+          groups: data.groups,
+          summary: data.summary,
+          clearMutating: true,
+        ),
+      );
     } catch (error) {
-      emit(state.copyWith(
-        clearMutating: true,
-        errorMessage: error.toString(),
-      ));
+      emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));
     }
   }
 
@@ -186,10 +191,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
       );
       await _silentRefresh(emit);
     } catch (error) {
-      emit(state.copyWith(
-        clearMutating: true,
-        errorMessage: error.toString(),
-      ));
+      emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));
     }
   }
 
@@ -206,10 +208,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
       await _paymentsRepository.deletePayment(paymentId);
       await _silentRefresh(emit);
     } catch (error) {
-      emit(state.copyWith(
-        clearMutating: true,
-        errorMessage: error.toString(),
-      ));
+      emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));
     }
   }
 }

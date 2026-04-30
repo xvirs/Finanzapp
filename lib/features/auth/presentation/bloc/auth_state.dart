@@ -44,10 +44,10 @@ final class AuthBlocState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        session?.accessToken,
-        actionStatus,
-        errorMessage,
-        lastMagicLinkEmail,
-      ];
+    status,
+    session?.accessToken,
+    actionStatus,
+    errorMessage,
+    lastMagicLinkEmail,
+  ];
 }

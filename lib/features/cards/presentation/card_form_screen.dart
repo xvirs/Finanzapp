@@ -178,8 +178,8 @@ class _CardFormScreenState extends State<CardFormScreen> {
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
                   : _loadError != null
-                      ? _ErrorView(message: _loadError!, onRetry: _load)
-                      : _buildForm(),
+                  ? _ErrorView(message: _loadError!, onRetry: _load)
+                  : _buildForm(),
             ),
           ],
         ),
@@ -201,8 +201,7 @@ class _CardFormScreenState extends State<CardFormScreen> {
                     ? (_editingCard?.name ?? 'Tarjeta')
                     : _nameController.text,
                 brand: _brand,
-                closingDay:
-                    int.tryParse(_closingDayController.text.trim()),
+                closingDay: int.tryParse(_closingDayController.text.trim()),
                 dueDay: int.tryParse(_dueDayController.text.trim()),
                 active: _active,
               ),
@@ -509,9 +508,7 @@ class _BrandSwatch extends StatelessWidget {
       decoration: BoxDecoration(
         color: color,
         borderRadius: BorderRadius.circular(3),
-        border: brand == null
-            ? Border.all(color: FzColors.border)
-            : null,
+        border: brand == null ? Border.all(color: FzColors.border) : null,
       ),
     );
   }
@@ -546,14 +543,16 @@ class _BrandSheet extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: FzType.sans,
                   fontSize: 14,
-                  fontWeight:
-                      b == selected ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: b == selected ? FontWeight.w600 : FontWeight.w400,
                   color: FzColors.text,
                 ),
               ),
               trailing: b == selected
-                  ? const Icon(Icons.check_rounded,
-                      color: FzColors.primary, size: 20)
+                  ? const Icon(
+                      Icons.check_rounded,
+                      color: FzColors.primary,
+                      size: 20,
+                    )
                   : null,
               onTap: () => Navigator.of(context).pop(b),
             ),
@@ -577,8 +576,7 @@ class _ErrorView extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.error_outline,
-              size: 48, color: FzColors.lateColor),
+          const Icon(Icons.error_outline, size: 48, color: FzColors.lateColor),
           const SizedBox(height: 12),
           Text(
             message,
