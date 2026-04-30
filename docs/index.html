@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Política de Privacidad de Finanzapp — control de gastos recurrentes.">
+    <title>Política de Privacidad — Finanzapp</title>
+    <style>
+        :root {
+            --bg: #0B0F0D;
+            --surface: #11161433;
+            --text: #E8EDEA;
+            --text-mute: #8A958F;
+            --primary: #1FB87A;
+            --border: #1F2624;
+            --link: #4DD49A;
+        }
+        @media (prefers-color-scheme: light) {
+            :root {
+                --bg: #FAFBFA;
+                --surface: #F4F6F5;
+                --text: #0B0F0D;
+                --text-mute: #5A615D;
+                --primary: #0E8554;
+                --border: #E1E5E3;
+                --link: #0E8554;
+            }
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.65;
+            font-size: 16px;
+        }
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 48px 24px 96px;
+        }
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #04130C;
+            font-weight: 800;
+            font-size: 22px;
+        }
+        .brand-name {
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.01em;
+        }
+        h1 {
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin: 0 0 8px;
+        }
+        h2 {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            margin: 40px 0 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+        h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin: 24px 0 8px;
+            color: var(--text);
+        }
+        p, ul, ol { margin: 12px 0; color: var(--text); }
+        ul, ol { padding-left: 24px; }
+        li { margin: 4px 0; }
+        a {
+            color: var(--link);
+            text-decoration: none;
+            border-bottom: 1px solid color-mix(in srgb, var(--link) 30%, transparent);
+        }
+        a:hover { border-bottom-color: var(--link); }
+        .meta {
+            color: var(--text-mute);
+            font-size: 14px;
+            margin-bottom: 32px;
+        }
+        .lead {
+            font-size: 17px;
+            color: var(--text-mute);
+            margin-bottom: 24px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 14px;
+        }
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        th {
+            font-weight: 600;
+            color: var(--text-mute);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            font-size: 12px;
+        }
+        strong { color: var(--text); }
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 32px 0;
+        }
+        .contact {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin: 24px 0;
+        }
+        .contact a { font-weight: 600; }
+        footer {
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border);
+            color: var(--text-mute);
+            font-size: 13px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="brand">
+            <div class="logo">$</div>
+            <div class="brand-name">Finanzapp</div>
+        </div>
+
+        <h1>Política de Privacidad</h1>
+        <p class="meta">Última actualización: 29 de abril de 2026</p>
+
+        <p class="lead">Esta política explica qué datos recolecta la aplicación móvil <strong>Finanzapp</strong>, cómo los usamos, con quién los compartimos y qué derechos tenés sobre tus datos.</p>
+
+        <p>Al usar Finanzapp aceptás esta política. Si no estás de acuerdo, por favor no uses la App.</p>
+
+        <h2>1. Quién es responsable de tus datos</h2>
+        <p><strong>Responsable del tratamiento:</strong> Xavier Rosales — desarrollador independiente de Finanzapp.<br>
+        <strong>Contacto:</strong> <a href="mailto:rosales.xavier.eloy@gmail.com">rosales.xavier.eloy@gmail.com</a><br>
+        <strong>Domicilio:</strong> Córdoba, Argentina.</p>
+        <p>Finanzapp es un proyecto personal sin fines comerciales orientado a usuarios individuales que llevan registro de sus gastos recurrentes.</p>
+
+        <h2>2. Qué datos recolectamos</h2>
+
+        <h3>2.1. Datos que vos nos das directamente</h3>
+        <ul>
+            <li><strong>Email</strong> — para crear tu cuenta (vía Magic Link o Google Sign-In).</li>
+            <li><strong>Nombre y foto de perfil</strong> — solo si elegís iniciar sesión con Google. Se reciben desde Google Identity Services y se usan para mostrar tu identidad en la app.</li>
+            <li><strong>Datos financieros que cargás vos</strong>:
+                <ul>
+                    <li>Cuentas fijas (servicios, suscripciones): nombre, monto estimado, día de vencimiento, categoría, notas.</li>
+                    <li>Tarjetas de crédito: nombre, banco emisor, marca (Visa/Mastercard/etc), día de cierre y vencimiento, último resumen.</li>
+                    <li>Compras en cuotas: descripción, monto total, número de cuotas, fecha de inicio.</li>
+                    <li>Pagos realizados: monto, fecha, cuenta o tarjeta asociada.</li>
+                </ul>
+            </li>
+            <li><strong>Configuraciones personales</strong>: tema, idioma, preferencia de notificaciones, lock biométrico habilitado/no.</li>
+        </ul>
+
+        <h3>2.2. Datos que se generan automáticamente</h3>
+        <ul>
+            <li><strong>Identificador único de cuenta (UUID)</strong> asignado por Supabase al registrarte.</li>
+            <li><strong>Fecha de creación y de última modificación</strong> de cada registro.</li>
+            <li><strong>Tokens de sesión</strong> (access token + refresh token) emitidos por nuestro proveedor de autenticación, almacenados de forma cifrada en tu dispositivo.</li>
+        </ul>
+
+        <h3>2.3. Datos que NO recolectamos</h3>
+        <ul>
+            <li>No usamos analytics, tracking ni publicidad (no Firebase Analytics, no Google Ads, no Meta SDK, no AppsFlyer).</li>
+            <li>No accedemos a tu agenda de contactos, fotos, micrófono, ubicación ni calendarios.</li>
+            <li>No leemos tus SMS ni notificaciones de otras apps.</li>
+            <li>No recolectamos información de pagos reales — los montos que cargás son estimaciones tuyas, no transacciones procesadas.</li>
+        </ul>
+
+        <h2>3. Para qué usamos tus datos</h2>
+        <table>
+            <thead>
+                <tr><th>Finalidad</th><th>Base legal</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>Crear y mantener tu cuenta</td><td>Ejecución del servicio que pediste</td></tr>
+                <tr><td>Mostrar y sincronizar tus gastos en todos tus dispositivos</td><td>Ejecución del servicio</td></tr>
+                <tr><td>Enviarte notificaciones locales de vencimientos próximos</td><td>Tu consentimiento explícito al activar el permiso</td></tr>
+                <tr><td>Proteger tu cuenta con bloqueo biométrico (opcional)</td><td>Tu consentimiento explícito al activarlo</td></tr>
+            </tbody>
+        </table>
+        <p>No usamos tus datos para perfilamiento, publicidad ni venta a terceros.</p>
+
+        <h2>4. Con quién compartimos tus datos</h2>
+        <p>Finanzapp depende de los siguientes servicios para funcionar:</p>
+
+        <h3>4.1. Supabase (proveedor de backend)</h3>
+        <ul>
+            <li><strong>Qué hace:</strong> almacena tu cuenta, datos financieros y gestiona la autenticación.</li>
+            <li><strong>Dónde:</strong> servidores de Supabase en EE.UU. y/o UE.</li>
+            <li><strong>Política de privacidad:</strong> <a href="https://supabase.com/privacy" target="_blank" rel="noopener">supabase.com/privacy</a></li>
+        </ul>
+
+        <h3>4.2. Google Identity Services (autenticación opcional)</h3>
+        <ul>
+            <li><strong>Qué hace:</strong> valida tu identidad si elegís iniciar sesión con Google.</li>
+            <li><strong>Dónde:</strong> servidores de Google.</li>
+            <li><strong>Política de privacidad:</strong> <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></li>
+        </ul>
+
+        <h3>4.3. Google Play Services</h3>
+        <ul>
+            <li><strong>Qué hace:</strong> infraestructura del sistema operativo Android (notificaciones, entrega vía Google Play).</li>
+            <li><strong>Política de privacidad:</strong> <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">policies.google.com/privacy</a></li>
+        </ul>
+
+        <p><strong>No vendemos ni cedemos tus datos a anunciantes, brokers ni terceros distintos a los listados arriba.</strong></p>
+
+        <h2>5. Dónde se almacenan tus datos</h2>
+        <ul>
+            <li><strong>En tu dispositivo:</strong> datos cacheados de la app + tokens de sesión cifrados (Keychain en iOS / EncryptedSharedPreferences en Android). El backup automático del sistema operativo está deshabilitado para esta app, por lo que los tokens no se filtran a Google One ni a iCloud Backup.</li>
+            <li><strong>En la nube (Supabase):</strong> todos tus datos financieros, protegidos por Row Level Security — solo vos podés leer y modificar tus propios registros, validado en cada consulta vía tu UUID y JWT.</li>
+        </ul>
+
+        <h2>6. Cuánto tiempo conservamos tus datos</h2>
+        <ul>
+            <li>Mientras tu cuenta esté activa, conservamos todos tus datos.</li>
+            <li>Si pedís borrar tu cuenta (ver sección 7), eliminamos todos tus datos del backend dentro de los <strong>30 días</strong>.</li>
+            <li>Los logs operativos del backend (sin datos personales) se conservan hasta 90 días para diagnóstico.</li>
+        </ul>
+
+        <h2>7. Tus derechos</h2>
+        <p>Como usuario tenés derecho a:</p>
+        <ul>
+            <li><strong>Acceder</strong> a los datos que tenemos sobre vos (la propia app te los muestra todos — no hay "datos ocultos" que no veas).</li>
+            <li><strong>Rectificar</strong> datos incorrectos (lo hacés desde la app misma editando cada registro).</li>
+            <li><strong>Borrar</strong> tu cuenta y todos tus datos.</li>
+            <li><strong>Exportar</strong> tus datos en formato legible (pedilo por email).</li>
+            <li><strong>Retirar el consentimiento</strong> de notificaciones o biometría desde la pantalla Configuración.</li>
+            <li><strong>Oponerte</strong> al tratamiento o presentar un reclamo ante la <strong>Agencia de Acceso a la Información Pública (Argentina)</strong> — <a href="https://www.argentina.gob.ar/aaip" target="_blank" rel="noopener">argentina.gob.ar/aaip</a> — o la autoridad equivalente en tu país.</li>
+        </ul>
+        <div class="contact">
+            Para ejercer cualquier derecho escribinos a <a href="mailto:rosales.xavier.eloy@gmail.com">rosales.xavier.eloy@gmail.com</a> desde el email asociado a tu cuenta. Respondemos dentro de los 10 días hábiles.
+        </div>
+
+        <h2>8. Seguridad</h2>
+        <ul>
+            <li>Todas las comunicaciones entre la app y Supabase usan <strong>HTTPS</strong> (TLS).</li>
+            <li>Las contraseñas no se almacenan — usamos Magic Link y Google Sign-In, ambos protocolos sin password.</li>
+            <li>El acceso a la base de datos está protegido por <strong>Row Level Security</strong>: cada usuario solo puede ver/modificar sus propios datos.</li>
+            <li>Los tokens de sesión en el dispositivo están <strong>cifrados</strong> con la master key del hardware (Keychain iOS / Android Keystore).</li>
+            <li>Opcionalmente podés activar <strong>bloqueo biométrico</strong> (Face ID / huella / PIN) que se valida cada vez que la app vuelve del background después de 60 segundos.</li>
+        </ul>
+        <p>Ningún sistema es 100% seguro. Si detectás un problema de seguridad, escribinos a <a href="mailto:rosales.xavier.eloy@gmail.com">rosales.xavier.eloy@gmail.com</a>.</p>
+
+        <h2>9. Menores de edad</h2>
+        <p>Finanzapp no está dirigida a menores de <strong>13 años</strong>. No recolectamos a sabiendas datos de menores de esa edad. Si sos padre/madre y creés que tu hijo/a creó una cuenta, escribinos para borrarla.</p>
+
+        <h2>10. Cambios a esta política</h2>
+        <p>Si modificamos esta política sustancialmente, te avisamos por email y/o con un aviso visible dentro de la app antes de que el cambio entre en vigor. Los cambios menores (corrección de typos, aclaraciones) se publican directamente.</p>
+
+        <h2>11. Legislación aplicable</h2>
+        <p>Esta política se rige por la <strong>Ley 25.326 de Protección de los Datos Personales (Argentina)</strong> y, en lo aplicable a usuarios europeos, por el <strong>Reglamento General de Protección de Datos (RGPD/GDPR)</strong>.</p>
+
+        <h2>12. Contacto</h2>
+        <div class="contact">
+            Cualquier pregunta sobre esta política o sobre tus datos:<br>
+            📧 <a href="mailto:rosales.xavier.eloy@gmail.com">rosales.xavier.eloy@gmail.com</a>
+        </div>
+
+        <footer>
+            Finanzapp — Control de gastos recurrentes obligatorios.<br>
+            Esta política está versionada en GitHub: <a href="https://github.com/xvirs/Finanzapp/blob/main/docs/privacy_policy.md" target="_blank" rel="noopener">ver fuente</a>.
+        </footer>
+    </div>
+</body>
+</html>
