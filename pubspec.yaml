@@ -28,7 +28,12 @@ dependencies:
   json_annotation: ^4.9.0
 
   # Auth providers
-  google_sign_in: ^6.2.2
+  google_sign_in: ^7.2.0
+  # SHA256 para nonce de Google Sign-In + Supabase signInWithIdToken.
+  # Sin nonce explícito iOS rompe con AuthApiException (el plugin de
+  # iOS embebe nonce en el id_token automáticamente y Supabase exige
+  # que se le pase el rawNonce para verificarlo).
+  crypto: ^3.0.5
 
   # Utilities
   url_launcher: ^6.3.1

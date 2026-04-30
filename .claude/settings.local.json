@@ -31,7 +31,15 @@
       "Bash(/Users/xavier/Library/Android/sdk/build-tools/36.0.0/aapt2 dump *)",
       "Read(//Users/xavier/flutter/packages/flutter_tools/gradle/src/main/kotlin/**)",
       "Bash(git remote *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(curl -s \"https://pub.dev/api/packages/google_sign_in\")",
+      "Bash(python3 -c ' *)",
+      "Bash(curl -s \"https://pub.dev/documentation/google_sign_in/latest/google_sign_in/GoogleSignIn-class.html\")",
+      "Bash(curl -s \"https://pub.dev/documentation/google_sign_in/latest/google_sign_in/GoogleSignIn/initialize.html\")",
+      "Bash(pod install *)",
+      "Bash(pod update *)",
+      "Bash(rm -f Podfile.lock)",
+      "Bash(rm -rf Pods)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"
