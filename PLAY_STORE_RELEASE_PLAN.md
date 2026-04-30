@@ -48,13 +48,13 @@ P1 = alto (riesgo real si no se hace), P2 = recomendado.
 
 ---
 
-## Etapa 4 — Privacy Policy + Legal (P0)
+## Etapa 4 — Privacy Policy + Legal (P0) — ✅ COMPLETA
 
-| # | Tarea | Responsable | Detalle |
+| # | Tarea | Responsable | Estado |
 |---|---|---|---|
-| 4.1 | Redactar Privacy Policy | 🤖 Yo | Plantilla en `docs/privacy_policy.md` cubriendo: email, datos financieros (montos/tarjetas/categorías), Google Sign-In, Supabase como backend, retención y derecho de borrado. |
-| 4.2 | Publicar como URL pública | 👤 Vos | Opción más simple: GitHub Pages del repo (gratis). Alternativa: Notion público, Vercel, dominio propio. |
-| 4.3 | Decidir Términos de Uso (opcional) | 👤 Vos | Play Store no los exige, pero sí es buena práctica. |
+| 4.1 | Redactar Privacy Policy | 🤖 Yo | ✅ `docs/privacy_policy.md` + `docs/index.html` |
+| 4.2 | Publicar como URL pública | 🤝 | ✅ Live en **https://xvirs.github.io/Finanzapp/** (GitHub Pages, repo público `xvirs/Finanzapp`) |
+| 4.3 | Decidir Términos de Uso (opcional) | 👤 Vos | ⏳ Diferido — Play Store no los exige |
 
 ---
 
