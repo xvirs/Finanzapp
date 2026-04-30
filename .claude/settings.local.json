@@ -18,7 +18,23 @@
       "Bash(grep -nB1 -A1 \"getFont\" /Users/xavier/Proyectos/Finanzapp/lib/features/auth/presentation/login_screen.dart)",
       "Bash(perl -i -0777 -pe \"s/GoogleFonts\\\\.getFont\\\\\\(\\\\s*'Geist',\\\\s*/GoogleFonts.inter\\(/g; s/GoogleFonts\\\\.getFont\\\\\\(\\\\s*'Geist Mono',\\\\s*/GoogleFonts.jetBrainsMono\\(/g\" lib/features/auth/presentation/login_screen.dart)",
       "Bash(python3 -c \"from PIL import Image, ImageDraw, ImageFont; print\\('PIL OK'\\)\")",
-      "Bash(python3 /Users/xavier/Proyectos/Finanzapp/tool/gen_app_icon.py)"
+      "Bash(python3 /Users/xavier/Proyectos/Finanzapp/tool/gen_app_icon.py)",
+      "Read(//Users/xavier/Proyectos/**)",
+      "Bash(curl -s 'https://iyuhohfbfhjuiyyrmasj.supabase.co/rest/v1/__TRACKED_VAR__?select=*&limit=5' -H 'apikey: sb_publishable_ZoufhqjvaXHgTHtdFs9_Kw_BS91NgIi' -H 'Authorization: Bearer sb_publishable_ZoufhqjvaXHgTHtdFs9_Kw_BS91NgIi')",
+      "Bash(jarsigner -verify -verbose -certs /Users/xavier/Proyectos/Finanzapp/build/app/outputs/bundle/release/app-release.aab)",
+      "Bash(jarsigner -verify /Users/xavier/Proyectos/Finanzapp/build/app/outputs/bundle/release/app-release.aab)",
+      "Bash(cp ~/.keys/finanzapp/finanzapp-release.jks ~/Desktop/finanzapp-release-BACKUP.jks)",
+      "Read(//Users/xavier/Desktop/**)",
+      "Bash(unzip -p /Users/xavier/Proyectos/Finanzapp/build/app/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml)",
+      "Bash(mkdir -p /tmp/aab-check)",
+      "Bash(unzip -o -q /Users/xavier/Proyectos/Finanzapp/build/app/outputs/bundle/release/app-release.aab base/manifest/AndroidManifest.xml -d /tmp/aab-check)",
+      "Bash(/Users/xavier/Library/Android/sdk/build-tools/36.0.0/aapt2 dump *)",
+      "Read(//Users/xavier/flutter/packages/flutter_tools/gradle/src/main/kotlin/**)",
+      "Bash(git remote *)",
+      "Bash(git push *)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp/aab-check"
     ]
   }
 }
