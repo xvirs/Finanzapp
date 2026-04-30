@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' show Session;
 
+import 'core/analytics_service.dart';
 import 'core/biometric_service.dart';
 import 'core/firebase_init.dart';
 import 'core/notification_service.dart';
@@ -45,6 +47,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
   late final InstallmentsRepository _installmentsRepository;
   late final PaymentsRepository _paymentsRepository;
   late final NotificationService _notificationService;
+  late final AnalyticsService _analytics;
 
   StreamSubscription<AuthBlocState>? _authSubscription;
 
@@ -55,6 +58,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
     _authBloc = AuthBloc(repository: _authRepository);
     _appRouter = AppRouter(_authBloc);
     _realtimeService = RealtimeService();
+    _analytics = AnalyticsService(widget.firebase.analytics);
 
     _billsRepository = BillsRepository();
     _cardsRepository = CardsRepository();
@@ -71,19 +75,40 @@ class _FinanzappAppState extends State<FinanzappApp> {
     );
 
     // Arrancar/parar realtime + notifications según el estado de auth.
+    // También seteamos el user_id en Analytics + logueamos signed_in /
+    // signed_out para correlacionar el resto de eventos por usuario.
     if (_authBloc.state.status == AuthStatus.authenticated) {
       _bootSession();
+      _trackSignIn(_authBloc.state.session);
     }
     _authSubscription = _authBloc.stream.listen((authState) {
       switch (authState.status) {
         case AuthStatus.authenticated:
           _bootSession();
+          _trackSignIn(authState.session);
         case AuthStatus.unauthenticated:
           _shutdownSession();
+          _trackSignOut();
         case AuthStatus.unknown:
           break;
       }
     });
+  }
+
+  void _trackSignIn(Session? session) {
+    final user = session?.user;
+    if (user == null) return;
+    _analytics.setUser(user.id);
+    // El provider lo guarda Supabase en appMetadata.provider; típicamente
+    // 'google' (Google Sign-In) o 'email' (magic link). Si por algún motivo
+    // no está, dejamos 'unknown' — preferimos un evento anónimo que ninguno.
+    final method = user.appMetadata['provider'] as String? ?? 'unknown';
+    _analytics.signedIn(method: method);
+  }
+
+  void _trackSignOut() {
+    _analytics.signedOut();
+    _analytics.setUser(null);
   }
 
   Future<void> _bootSession() async {
@@ -131,6 +156,11 @@ class _FinanzappAppState extends State<FinanzappApp> {
         // Si Firebase no fue configurado todavía, los nullable getters
         // devuelven null y los call sites son no-op.
         RepositoryProvider.value(value: widget.firebase),
+        // AnalyticsService wrapper: las screens deberían usar este
+        // (`context.read<AnalyticsService>().billCreated(...)`) en
+        // lugar de FirebaseSetup directo. Si Firebase no inició, las
+        // llamadas son no-op silencioso.
+        RepositoryProvider.value(value: _analytics),
       ],
       child: BlocProvider.value(
         value: _authBloc,

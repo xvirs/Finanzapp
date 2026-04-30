@@ -44,7 +44,10 @@
       "Bash(awk '{print $2}')",
       "Bash(python3)",
       "Bash(python3 tool/gen_app_icon.py)",
-      "Bash(curl -s https://pub.dev/api/packages/__TRACKED_VAR__)"
+      "Bash(curl -s https://pub.dev/api/packages/__TRACKED_VAR__)",
+      "Bash(export PATH=\"$PATH:$HOME/.pub-cache/bin\")",
+      "Bash(flutterfire configure *)",
+      "Bash(gem list *)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"
