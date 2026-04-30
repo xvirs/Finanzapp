@@ -1,5 +1,6 @@
-# Uncomment this line to define a global platform for your project
-# platform :ios, '13.0'
+# iOS deployment target. Match con google_sign_in_ios 6.2.5 (>= 13.0)
+# y con IPHONEOS_DEPLOYMENT_TARGET en project.pbxproj.
+platform :ios, '13.0'
 
 # CocoaPods analytics sends network stats synchronously affecting flutter build latency.
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'

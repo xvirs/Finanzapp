@@ -39,7 +39,9 @@
       "Bash(pod install *)",
       "Bash(pod update *)",
       "Bash(rm -f Podfile.lock)",
-      "Bash(rm -rf Pods)"
+      "Bash(rm -rf Pods)",
+      "Bash(python3 tool/gen_feature_graphic.py)",
+      "Bash(awk '{print $2}')"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"

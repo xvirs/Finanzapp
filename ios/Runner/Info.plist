@@ -74,5 +74,14 @@
 		</array>
 		<key>UIStatusBarHidden</key>
 		<false/>
+		<!-- App Store: declarar que NO usamos encriptación no-exenta.
+		     Solo HTTPS estándar. Sin este flag Apple pregunta export
+		     compliance en cada submit a App Store Connect. -->
+		<key>ITSAppUsesNonExemptEncryption</key>
+		<false/>
+		<!-- Categoría sugerida cuando se crea el listing en
+		     App Store Connect. -->
+		<key>LSApplicationCategoryType</key>
+		<string>public.app-category.finance</string>
 	</dict>
 </plist>
