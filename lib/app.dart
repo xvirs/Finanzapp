@@ -13,6 +13,7 @@ import 'core/notification_service.dart';
 import 'core/realtime_service.dart';
 import 'data/bills_repository.dart';
 import 'data/cards_repository.dart';
+import 'data/incomes_repository.dart';
 import 'data/installments_repository.dart';
 import 'data/payments_repository.dart';
 import 'design/theme.dart';
@@ -44,6 +45,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
   late final RealtimeService _realtimeService;
   late final BillsRepository _billsRepository;
   late final CardsRepository _cardsRepository;
+  late final IncomesRepository _incomesRepository;
   late final InstallmentsRepository _installmentsRepository;
   late final PaymentsRepository _paymentsRepository;
   late final NotificationService _notificationService;
@@ -62,6 +64,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
 
     _billsRepository = BillsRepository();
     _cardsRepository = CardsRepository();
+    _incomesRepository = IncomesRepository();
     _installmentsRepository = InstallmentsRepository();
     _paymentsRepository = PaymentsRepository();
 
@@ -149,6 +152,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
         RepositoryProvider.value(value: widget.biometricService),
         RepositoryProvider.value(value: _billsRepository),
         RepositoryProvider.value(value: _cardsRepository),
+        RepositoryProvider.value(value: _incomesRepository),
         RepositoryProvider.value(value: _installmentsRepository),
         RepositoryProvider.value(value: _paymentsRepository),
         // FirebaseSetup expuesto para que cualquier screen llame

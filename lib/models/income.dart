@@ -3,28 +3,25 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../core/json_converters.dart';
 import 'enums.dart';
 
-part 'bill.freezed.dart';
-part 'bill.g.dart';
+part 'income.freezed.dart';
+part 'income.g.dart';
 
 @freezed
-class Bill with _$Bill {
-  const factory Bill({
+class Income with _$Income {
+  const factory Income({
     required String id,
     required String userId,
     required String name,
     @NullableDoubleConverter() double? defaultAmount,
     int? dayOfMonth,
-    required BillKind kind,
-    String? providerCode,
-    @Default(true) bool active,
-    String? notes,
-    String? autoDebitCardId,
-    String? url,
+    required IncomeKind kind,
     required String startPeriod,
     String? endPeriod,
+    @Default(true) bool active,
+    String? notes,
     required DateTime createdAt,
     required DateTime updatedAt,
-  }) = _Bill;
+  }) = _Income;
 
-  factory Bill.fromJson(Map<String, dynamic> json) => _$BillFromJson(json);
+  factory Income.fromJson(Map<String, dynamic> json) => _$IncomeFromJson(json);
 }

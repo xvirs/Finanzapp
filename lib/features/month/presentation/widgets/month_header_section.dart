@@ -72,21 +72,24 @@ class _MonthNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canGoNext = state.isPastPeriod;
+    final canGoPrevious = state.canGoPrevious;
+    final canGoNext = state.canGoNext;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.chevron_left_rounded,
             size: 20,
-            color: FzColors.textDim,
+            color: canGoPrevious ? FzColors.textDim : FzColors.textMute,
           ),
           padding: const EdgeInsets.all(4),
           constraints: const BoxConstraints(),
-          onPressed: () => context.read<MonthBloc>().add(
-            MonthRequested(state.period.previous()),
-          ),
+          onPressed: canGoPrevious
+              ? () => context.read<MonthBloc>().add(
+                  MonthRequested(state.period.previous()),
+                )
+              : null,
         ),
         Text(
           _formatMonth(state.period),
@@ -130,28 +133,79 @@ class _SummaryGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final summary = state.summary;
+    final income = summary?.incomeTotal ?? 0;
     final estimated = summary?.estimatedTotal ?? 0;
     final paid = summary?.paidTotal ?? 0;
     final pending = (estimated - paid).clamp(0, double.infinity);
+    final balance = income - estimated;
+    final hasIncome = income > 0;
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Cards principales: Estimado / Pagado. Es la info clave del mes.
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _SummaryCard(
+                  label: 'ESTIMADO',
+                  amount: estimated,
+                  tone: _CardTone.neutral,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: _SummaryCard(
+                  label: 'PAGADO',
+                  amount: paid,
+                  tone: _CardTone.paid,
+                  footer: 'falta ${formatCurrency(pending)}',
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Info secundaria de ingresos/saldo, solo si tiene ingresos
+        // cargados. No queremos ocupar espacio en pantalla si el usuario
+        // no usa la feature de ingresos.
+        if (hasIncome) ...[
+          const SizedBox(height: 10),
+          _IncomeBalanceRow(income: income, balance: balance),
+        ],
+      ],
+    );
+  }
+}
+
+class _IncomeBalanceRow extends StatelessWidget {
+  const _IncomeBalanceRow({required this.income, required this.balance});
+
+  final double income;
+  final double balance;
+
+  @override
+  Widget build(BuildContext context) {
+    final balancePositive = balance >= 0;
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(
-            child: _SummaryCard(
-              label: 'ESTIMADO',
-              amount: estimated,
-              tinted: false,
+            child: _MiniStat(
+              label: 'INGRESOS',
+              amount: income,
+              valueColor: FzColors.primaryHi,
             ),
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: _SummaryCard(
-              label: 'PAGADO',
-              amount: paid,
-              tinted: true,
-              footer: 'falta ${formatCurrency(pending)}',
+            child: _MiniStat(
+              label: 'SALDO',
+              amount: balance,
+              valueColor:
+                  balancePositive ? FzColors.primaryHi : FzColors.lateInk,
             ),
           ),
         ],
@@ -160,29 +214,101 @@ class _SummaryGrid extends StatelessWidget {
   }
 }
 
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({
+    required this.label,
+    required this.amount,
+    required this.valueColor,
+  });
+
+  final String label;
+  final double amount;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: Row(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.6,
+              color: FzColors.textMute,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: AnimatedCurrency(
+              value: amount,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                fontFeatures: FzType.tabularNums,
+                color: valueColor,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+enum _CardTone { neutral, paid, late }
+
 class _SummaryCard extends StatelessWidget {
   const _SummaryCard({
     required this.label,
     required this.amount,
-    required this.tinted,
+    required this.tone,
     this.footer,
   });
 
   final String label;
   final double amount;
-  final bool tinted;
+  final _CardTone tone;
   final String? footer;
 
   @override
   Widget build(BuildContext context) {
+    final bg = switch (tone) {
+      _CardTone.neutral => FzColors.card,
+      _CardTone.paid => FzColors.cardPaid,
+      _CardTone.late => FzColors.cardLate,
+    };
+    final border = switch (tone) {
+      _CardTone.neutral => FzColors.border,
+      _CardTone.paid => FzColors.borderPaid,
+      _CardTone.late => FzColors.borderLate,
+    };
+    final labelColor = switch (tone) {
+      _CardTone.neutral => FzColors.textMute,
+      _CardTone.paid => FzColors.primary.withValues(alpha: 0.85),
+      _CardTone.late => FzColors.lateColor.withValues(alpha: 0.85),
+    };
+    final amountColor = switch (tone) {
+      _CardTone.neutral => FzColors.text,
+      _CardTone.paid => FzColors.primaryHi,
+      _CardTone.late => FzColors.lateInk,
+    };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: tinted ? FzColors.cardPaid : FzColors.card,
+        color: bg,
         borderRadius: BorderRadius.circular(FzRadius.xl),
-        border: Border.all(
-          color: tinted ? FzColors.borderPaid : FzColors.border,
-        ),
+        border: Border.all(color: border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -194,9 +320,7 @@ class _SummaryCard extends StatelessWidget {
               fontSize: 10.5,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.63,
-              color: tinted
-                  ? FzColors.primary.withValues(alpha: 0.85)
-                  : FzColors.textMute,
+              color: labelColor,
             ),
           ),
           const SizedBox(height: 6),
@@ -208,7 +332,7 @@ class _SummaryCard extends StatelessWidget {
               fontWeight: FontWeight.w600,
               letterSpacing: -0.44,
               fontFeatures: FzType.tabularNums,
-              color: tinted ? FzColors.primaryHi : FzColors.text,
+              color: amountColor,
             ),
           ),
           if (footer != null) ...[

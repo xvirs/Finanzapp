@@ -773,6 +773,7 @@ mixin _$MonthSummary {
   int get pendingCount => throw _privateConstructorUsedError;
   int get paidCount => throw _privateConstructorUsedError;
   int get totalCount => throw _privateConstructorUsedError;
+  double get incomeTotal => throw _privateConstructorUsedError;
 
   /// Create a copy of MonthSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -794,6 +795,7 @@ abstract class $MonthSummaryCopyWith<$Res> {
     int pendingCount,
     int paidCount,
     int totalCount,
+    double incomeTotal,
   });
 }
 
@@ -817,6 +819,7 @@ class _$MonthSummaryCopyWithImpl<$Res, $Val extends MonthSummary>
     Object? pendingCount = null,
     Object? paidCount = null,
     Object? totalCount = null,
+    Object? incomeTotal = null,
   }) {
     return _then(
       _value.copyWith(
@@ -840,6 +843,10 @@ class _$MonthSummaryCopyWithImpl<$Res, $Val extends MonthSummary>
                 ? _value.totalCount
                 : totalCount // ignore: cast_nullable_to_non_nullable
                       as int,
+            incomeTotal: null == incomeTotal
+                ? _value.incomeTotal
+                : incomeTotal // ignore: cast_nullable_to_non_nullable
+                      as double,
           )
           as $Val,
     );
@@ -861,6 +868,7 @@ abstract class _$$MonthSummaryImplCopyWith<$Res>
     int pendingCount,
     int paidCount,
     int totalCount,
+    double incomeTotal,
   });
 }
 
@@ -883,6 +891,7 @@ class __$$MonthSummaryImplCopyWithImpl<$Res>
     Object? pendingCount = null,
     Object? paidCount = null,
     Object? totalCount = null,
+    Object? incomeTotal = null,
   }) {
     return _then(
       _$MonthSummaryImpl(
@@ -906,6 +915,10 @@ class __$$MonthSummaryImplCopyWithImpl<$Res>
             ? _value.totalCount
             : totalCount // ignore: cast_nullable_to_non_nullable
                   as int,
+        incomeTotal: null == incomeTotal
+            ? _value.incomeTotal
+            : incomeTotal // ignore: cast_nullable_to_non_nullable
+                  as double,
       ),
     );
   }
@@ -920,6 +933,7 @@ class _$MonthSummaryImpl implements _MonthSummary {
     required this.pendingCount,
     required this.paidCount,
     required this.totalCount,
+    this.incomeTotal = 0.0,
   });
 
   @override
@@ -932,10 +946,13 @@ class _$MonthSummaryImpl implements _MonthSummary {
   final int paidCount;
   @override
   final int totalCount;
+  @override
+  @JsonKey()
+  final double incomeTotal;
 
   @override
   String toString() {
-    return 'MonthSummary(estimatedTotal: $estimatedTotal, paidTotal: $paidTotal, pendingCount: $pendingCount, paidCount: $paidCount, totalCount: $totalCount)';
+    return 'MonthSummary(estimatedTotal: $estimatedTotal, paidTotal: $paidTotal, pendingCount: $pendingCount, paidCount: $paidCount, totalCount: $totalCount, incomeTotal: $incomeTotal)';
   }
 
   @override
@@ -952,7 +969,9 @@ class _$MonthSummaryImpl implements _MonthSummary {
             (identical(other.paidCount, paidCount) ||
                 other.paidCount == paidCount) &&
             (identical(other.totalCount, totalCount) ||
-                other.totalCount == totalCount));
+                other.totalCount == totalCount) &&
+            (identical(other.incomeTotal, incomeTotal) ||
+                other.incomeTotal == incomeTotal));
   }
 
   @override
@@ -963,6 +982,7 @@ class _$MonthSummaryImpl implements _MonthSummary {
     pendingCount,
     paidCount,
     totalCount,
+    incomeTotal,
   );
 
   /// Create a copy of MonthSummary
@@ -981,6 +1001,7 @@ abstract class _MonthSummary implements MonthSummary {
     required final int pendingCount,
     required final int paidCount,
     required final int totalCount,
+    final double incomeTotal,
   }) = _$MonthSummaryImpl;
 
   @override
@@ -993,6 +1014,8 @@ abstract class _MonthSummary implements MonthSummary {
   int get paidCount;
   @override
   int get totalCount;
+  @override
+  double get incomeTotal;
 
   /// Create a copy of MonthSummary
   /// with the given fields replaced by the non-null parameter values.

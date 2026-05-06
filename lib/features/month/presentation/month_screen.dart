@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/analytics_service.dart';
+import '../../../core/format.dart';
 import '../../../design/tokens.dart';
+import '../../../models/income.dart';
 import 'bloc/month_bloc.dart';
 import 'widgets/month_group_section.dart';
 import 'widgets/month_header_section.dart';
@@ -126,32 +128,152 @@ class _Body extends StatelessWidget {
         );
 
       case MonthStatus.success:
+        final hasGroups = state.groups.isNotEmpty;
+        final hasIncomes = state.incomes.isNotEmpty;
         return RefreshIndicator(
           color: FzColors.primary,
           backgroundColor: FzColors.card,
           onRefresh: () async {
             context.read<MonthBloc>().add(const MonthRefreshRequested());
           },
-          child: state.groups.isEmpty
+          child: !hasGroups && !hasIncomes
               ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: const [_EmptyView()],
                 )
-              : ListView.builder(
+              : ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.only(bottom: 12),
-                  itemCount: state.groups.length,
-                  itemBuilder: (ctx, i) => MonthGroupSection(
-                    group: state.groups[i],
-                    period: state.period,
-                    filter: state.filter,
-                    expandedKey: expandedKey,
-                    mutatingItemKey: state.mutatingItemKey,
-                    onToggle: onToggle,
-                  ),
+                  children: [
+                    for (final group in state.groups)
+                      MonthGroupSection(
+                        group: group,
+                        period: state.period,
+                        filter: state.filter,
+                        expandedKey: expandedKey,
+                        mutatingItemKey: state.mutatingItemKey,
+                        onToggle: onToggle,
+                      ),
+                    if (hasIncomes) _IncomesSection(incomes: state.incomes),
+                  ],
                 ),
         );
     }
+  }
+}
+
+class _IncomesSection extends StatelessWidget {
+  const _IncomesSection({required this.incomes});
+
+  final List<Income> incomes;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = incomes.fold<double>(
+      0,
+      (sum, i) => sum + (i.defaultAmount ?? 0),
+    );
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Container(
+        decoration: BoxDecoration(
+          color: FzColors.cardPaid,
+          borderRadius: BorderRadius.circular(FzRadius.xl),
+          border: Border.all(color: FzColors.borderPaid),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Row(
+                  children: [
+                    Text('💰', style: TextStyle(fontSize: 16)),
+                    SizedBox(width: 8),
+                    Text(
+                      'Ingresos',
+                      style: TextStyle(
+                        fontFamily: FzType.sans,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: FzColors.text,
+                      ),
+                    ),
+                  ],
+                ),
+                Text(
+                  formatCurrency(total),
+                  style: const TextStyle(
+                    fontFamily: FzType.sans,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    fontFeatures: FzType.tabularNums,
+                    color: FzColors.primaryHi,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            for (final income in incomes) ...[
+              _IncomeRow(income: income),
+              if (income != incomes.last) const SizedBox(height: 4),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _IncomeRow extends StatelessWidget {
+  const _IncomeRow({required this.income});
+
+  final Income income;
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = income.defaultAmount;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            income.name,
+            style: const TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 13,
+              color: FzColors.text,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        if (income.dayOfMonth != null) ...[
+          const SizedBox(width: 8),
+          Text(
+            'día ${income.dayOfMonth}',
+            style: const TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 11,
+              color: FzColors.textDim,
+              letterSpacing: 0.44,
+            ),
+          ),
+        ],
+        const SizedBox(width: 8),
+        Text(
+          amount == null ? 'variable' : formatCurrency(amount),
+          style: TextStyle(
+            fontFamily: FzType.sans,
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            fontFeatures: FzType.tabularNums,
+            color: amount == null ? FzColors.textDim : FzColors.text,
+          ),
+        ),
+      ],
+    );
   }
 }
 

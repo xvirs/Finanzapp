@@ -5,7 +5,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_client.dart';
 
 /// Tablas que monitoreamos para auto-refresh.
-enum RealtimeTable { bills, creditCards, installmentPurchases, payments }
+enum RealtimeTable {
+  bills,
+  creditCards,
+  installmentPurchases,
+  payments,
+  incomes,
+}
 
 extension RealtimeTableX on RealtimeTable {
   String get name {
@@ -18,17 +24,19 @@ extension RealtimeTableX on RealtimeTable {
         return 'installment_purchases';
       case RealtimeTable.payments:
         return 'payments';
+      case RealtimeTable.incomes:
+        return 'incomes';
     }
   }
 }
 
-/// Mantiene un canal único de Supabase Realtime con suscripciones a las 4
+/// Mantiene un canal único de Supabase Realtime con suscripciones a las
 /// tablas del usuario. Cuando llega un cambio (insert/update/delete) emite
 /// el [RealtimeTable] correspondiente por [changes]. Los blocs escuchan y
 /// dispatch un refresh silencioso si la tabla los afecta.
 ///
-/// Importante: para que esto funcione, hay que habilitar Realtime en las
-/// 4 tablas en el Dashboard de Supabase (Database → Replication → activar
+/// Importante: para que esto funcione, hay que habilitar Realtime en cada
+/// tabla en el Dashboard de Supabase (Database → Replication → activar
 /// el toggle por tabla).
 class RealtimeService {
   RealtimeService();

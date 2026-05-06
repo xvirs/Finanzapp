@@ -3,7 +3,7 @@
 // ignore_for_file: type=lint
 // ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
 
-part of 'bill.dart';
+part of 'income.dart';
 
 // **************************************************************************
 // FreezedGenerator
@@ -15,42 +15,39 @@ final _privateConstructorUsedError = UnsupportedError(
   'It seems like you constructed your class using `MyClass._()`. This constructor is only meant to be used by freezed and you are not supposed to need it nor use it.\nPlease check the documentation here for more information: https://github.com/rrousselGit/freezed#adding-getters-and-methods-to-our-models',
 );
 
-Bill _$BillFromJson(Map<String, dynamic> json) {
-  return _Bill.fromJson(json);
+Income _$IncomeFromJson(Map<String, dynamic> json) {
+  return _Income.fromJson(json);
 }
 
 /// @nodoc
-mixin _$Bill {
+mixin _$Income {
   String get id => throw _privateConstructorUsedError;
   String get userId => throw _privateConstructorUsedError;
   String get name => throw _privateConstructorUsedError;
   @NullableDoubleConverter()
   double? get defaultAmount => throw _privateConstructorUsedError;
   int? get dayOfMonth => throw _privateConstructorUsedError;
-  BillKind get kind => throw _privateConstructorUsedError;
-  String? get providerCode => throw _privateConstructorUsedError;
-  bool get active => throw _privateConstructorUsedError;
-  String? get notes => throw _privateConstructorUsedError;
-  String? get autoDebitCardId => throw _privateConstructorUsedError;
-  String? get url => throw _privateConstructorUsedError;
+  IncomeKind get kind => throw _privateConstructorUsedError;
   String get startPeriod => throw _privateConstructorUsedError;
   String? get endPeriod => throw _privateConstructorUsedError;
+  bool get active => throw _privateConstructorUsedError;
+  String? get notes => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
-  /// Serializes this Bill to a JSON map.
+  /// Serializes this Income to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
 
-  /// Create a copy of Bill
+  /// Create a copy of Income
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
-  $BillCopyWith<Bill> get copyWith => throw _privateConstructorUsedError;
+  $IncomeCopyWith<Income> get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
-abstract class $BillCopyWith<$Res> {
-  factory $BillCopyWith(Bill value, $Res Function(Bill) then) =
-      _$BillCopyWithImpl<$Res, Bill>;
+abstract class $IncomeCopyWith<$Res> {
+  factory $IncomeCopyWith(Income value, $Res Function(Income) then) =
+      _$IncomeCopyWithImpl<$Res, Income>;
   @useResult
   $Res call({
     String id,
@@ -58,30 +55,27 @@ abstract class $BillCopyWith<$Res> {
     String name,
     @NullableDoubleConverter() double? defaultAmount,
     int? dayOfMonth,
-    BillKind kind,
-    String? providerCode,
-    bool active,
-    String? notes,
-    String? autoDebitCardId,
-    String? url,
+    IncomeKind kind,
     String startPeriod,
     String? endPeriod,
+    bool active,
+    String? notes,
     DateTime createdAt,
     DateTime updatedAt,
   });
 }
 
 /// @nodoc
-class _$BillCopyWithImpl<$Res, $Val extends Bill>
-    implements $BillCopyWith<$Res> {
-  _$BillCopyWithImpl(this._value, this._then);
+class _$IncomeCopyWithImpl<$Res, $Val extends Income>
+    implements $IncomeCopyWith<$Res> {
+  _$IncomeCopyWithImpl(this._value, this._then);
 
   // ignore: unused_field
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
 
-  /// Create a copy of Bill
+  /// Create a copy of Income
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -92,13 +86,10 @@ class _$BillCopyWithImpl<$Res, $Val extends Bill>
     Object? defaultAmount = freezed,
     Object? dayOfMonth = freezed,
     Object? kind = null,
-    Object? providerCode = freezed,
-    Object? active = null,
-    Object? notes = freezed,
-    Object? autoDebitCardId = freezed,
-    Object? url = freezed,
     Object? startPeriod = null,
     Object? endPeriod = freezed,
+    Object? active = null,
+    Object? notes = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -127,10 +118,14 @@ class _$BillCopyWithImpl<$Res, $Val extends Bill>
             kind: null == kind
                 ? _value.kind
                 : kind // ignore: cast_nullable_to_non_nullable
-                      as BillKind,
-            providerCode: freezed == providerCode
-                ? _value.providerCode
-                : providerCode // ignore: cast_nullable_to_non_nullable
+                      as IncomeKind,
+            startPeriod: null == startPeriod
+                ? _value.startPeriod
+                : startPeriod // ignore: cast_nullable_to_non_nullable
+                      as String,
+            endPeriod: freezed == endPeriod
+                ? _value.endPeriod
+                : endPeriod // ignore: cast_nullable_to_non_nullable
                       as String?,
             active: null == active
                 ? _value.active
@@ -139,22 +134,6 @@ class _$BillCopyWithImpl<$Res, $Val extends Bill>
             notes: freezed == notes
                 ? _value.notes
                 : notes // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            autoDebitCardId: freezed == autoDebitCardId
-                ? _value.autoDebitCardId
-                : autoDebitCardId // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            url: freezed == url
-                ? _value.url
-                : url // ignore: cast_nullable_to_non_nullable
-                      as String?,
-            startPeriod: null == startPeriod
-                ? _value.startPeriod
-                : startPeriod // ignore: cast_nullable_to_non_nullable
-                      as String,
-            endPeriod: freezed == endPeriod
-                ? _value.endPeriod
-                : endPeriod // ignore: cast_nullable_to_non_nullable
                       as String?,
             createdAt: null == createdAt
                 ? _value.createdAt
@@ -171,11 +150,11 @@ class _$BillCopyWithImpl<$Res, $Val extends Bill>
 }
 
 /// @nodoc
-abstract class _$$BillImplCopyWith<$Res> implements $BillCopyWith<$Res> {
-  factory _$$BillImplCopyWith(
-    _$BillImpl value,
-    $Res Function(_$BillImpl) then,
-  ) = __$$BillImplCopyWithImpl<$Res>;
+abstract class _$$IncomeImplCopyWith<$Res> implements $IncomeCopyWith<$Res> {
+  factory _$$IncomeImplCopyWith(
+    _$IncomeImpl value,
+    $Res Function(_$IncomeImpl) then,
+  ) = __$$IncomeImplCopyWithImpl<$Res>;
   @override
   @useResult
   $Res call({
@@ -184,27 +163,26 @@ abstract class _$$BillImplCopyWith<$Res> implements $BillCopyWith<$Res> {
     String name,
     @NullableDoubleConverter() double? defaultAmount,
     int? dayOfMonth,
-    BillKind kind,
-    String? providerCode,
-    bool active,
-    String? notes,
-    String? autoDebitCardId,
-    String? url,
+    IncomeKind kind,
     String startPeriod,
     String? endPeriod,
+    bool active,
+    String? notes,
     DateTime createdAt,
     DateTime updatedAt,
   });
 }
 
 /// @nodoc
-class __$$BillImplCopyWithImpl<$Res>
-    extends _$BillCopyWithImpl<$Res, _$BillImpl>
-    implements _$$BillImplCopyWith<$Res> {
-  __$$BillImplCopyWithImpl(_$BillImpl _value, $Res Function(_$BillImpl) _then)
-    : super(_value, _then);
+class __$$IncomeImplCopyWithImpl<$Res>
+    extends _$IncomeCopyWithImpl<$Res, _$IncomeImpl>
+    implements _$$IncomeImplCopyWith<$Res> {
+  __$$IncomeImplCopyWithImpl(
+    _$IncomeImpl _value,
+    $Res Function(_$IncomeImpl) _then,
+  ) : super(_value, _then);
 
-  /// Create a copy of Bill
+  /// Create a copy of Income
   /// with the given fields replaced by the non-null parameter values.
   @pragma('vm:prefer-inline')
   @override
@@ -215,18 +193,15 @@ class __$$BillImplCopyWithImpl<$Res>
     Object? defaultAmount = freezed,
     Object? dayOfMonth = freezed,
     Object? kind = null,
-    Object? providerCode = freezed,
-    Object? active = null,
-    Object? notes = freezed,
-    Object? autoDebitCardId = freezed,
-    Object? url = freezed,
     Object? startPeriod = null,
     Object? endPeriod = freezed,
+    Object? active = null,
+    Object? notes = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
     return _then(
-      _$BillImpl(
+      _$IncomeImpl(
         id: null == id
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
@@ -250,10 +225,14 @@ class __$$BillImplCopyWithImpl<$Res>
         kind: null == kind
             ? _value.kind
             : kind // ignore: cast_nullable_to_non_nullable
-                  as BillKind,
-        providerCode: freezed == providerCode
-            ? _value.providerCode
-            : providerCode // ignore: cast_nullable_to_non_nullable
+                  as IncomeKind,
+        startPeriod: null == startPeriod
+            ? _value.startPeriod
+            : startPeriod // ignore: cast_nullable_to_non_nullable
+                  as String,
+        endPeriod: freezed == endPeriod
+            ? _value.endPeriod
+            : endPeriod // ignore: cast_nullable_to_non_nullable
                   as String?,
         active: null == active
             ? _value.active
@@ -262,22 +241,6 @@ class __$$BillImplCopyWithImpl<$Res>
         notes: freezed == notes
             ? _value.notes
             : notes // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        autoDebitCardId: freezed == autoDebitCardId
-            ? _value.autoDebitCardId
-            : autoDebitCardId // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        url: freezed == url
-            ? _value.url
-            : url // ignore: cast_nullable_to_non_nullable
-                  as String?,
-        startPeriod: null == startPeriod
-            ? _value.startPeriod
-            : startPeriod // ignore: cast_nullable_to_non_nullable
-                  as String,
-        endPeriod: freezed == endPeriod
-            ? _value.endPeriod
-            : endPeriod // ignore: cast_nullable_to_non_nullable
                   as String?,
         createdAt: null == createdAt
             ? _value.createdAt
@@ -294,27 +257,24 @@ class __$$BillImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$BillImpl implements _Bill {
-  const _$BillImpl({
+class _$IncomeImpl implements _Income {
+  const _$IncomeImpl({
     required this.id,
     required this.userId,
     required this.name,
     @NullableDoubleConverter() this.defaultAmount,
     this.dayOfMonth,
     required this.kind,
-    this.providerCode,
-    this.active = true,
-    this.notes,
-    this.autoDebitCardId,
-    this.url,
     required this.startPeriod,
     this.endPeriod,
+    this.active = true,
+    this.notes,
     required this.createdAt,
     required this.updatedAt,
   });
 
-  factory _$BillImpl.fromJson(Map<String, dynamic> json) =>
-      _$$BillImplFromJson(json);
+  factory _$IncomeImpl.fromJson(Map<String, dynamic> json) =>
+      _$$IncomeImplFromJson(json);
 
   @override
   final String id;
@@ -328,22 +288,16 @@ class _$BillImpl implements _Bill {
   @override
   final int? dayOfMonth;
   @override
-  final BillKind kind;
+  final IncomeKind kind;
   @override
-  final String? providerCode;
+  final String startPeriod;
+  @override
+  final String? endPeriod;
   @override
   @JsonKey()
   final bool active;
   @override
   final String? notes;
-  @override
-  final String? autoDebitCardId;
-  @override
-  final String? url;
-  @override
-  final String startPeriod;
-  @override
-  final String? endPeriod;
   @override
   final DateTime createdAt;
   @override
@@ -351,14 +305,14 @@ class _$BillImpl implements _Bill {
 
   @override
   String toString() {
-    return 'Bill(id: $id, userId: $userId, name: $name, defaultAmount: $defaultAmount, dayOfMonth: $dayOfMonth, kind: $kind, providerCode: $providerCode, active: $active, notes: $notes, autoDebitCardId: $autoDebitCardId, url: $url, startPeriod: $startPeriod, endPeriod: $endPeriod, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Income(id: $id, userId: $userId, name: $name, defaultAmount: $defaultAmount, dayOfMonth: $dayOfMonth, kind: $kind, startPeriod: $startPeriod, endPeriod: $endPeriod, active: $active, notes: $notes, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
   bool operator ==(Object other) {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
-            other is _$BillImpl &&
+            other is _$IncomeImpl &&
             (identical(other.id, id) || other.id == id) &&
             (identical(other.userId, userId) || other.userId == userId) &&
             (identical(other.name, name) || other.name == name) &&
@@ -367,17 +321,12 @@ class _$BillImpl implements _Bill {
             (identical(other.dayOfMonth, dayOfMonth) ||
                 other.dayOfMonth == dayOfMonth) &&
             (identical(other.kind, kind) || other.kind == kind) &&
-            (identical(other.providerCode, providerCode) ||
-                other.providerCode == providerCode) &&
-            (identical(other.active, active) || other.active == active) &&
-            (identical(other.notes, notes) || other.notes == notes) &&
-            (identical(other.autoDebitCardId, autoDebitCardId) ||
-                other.autoDebitCardId == autoDebitCardId) &&
-            (identical(other.url, url) || other.url == url) &&
             (identical(other.startPeriod, startPeriod) ||
                 other.startPeriod == startPeriod) &&
             (identical(other.endPeriod, endPeriod) ||
                 other.endPeriod == endPeriod) &&
+            (identical(other.active, active) || other.active == active) &&
+            (identical(other.notes, notes) || other.notes == notes) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -394,51 +343,45 @@ class _$BillImpl implements _Bill {
     defaultAmount,
     dayOfMonth,
     kind,
-    providerCode,
-    active,
-    notes,
-    autoDebitCardId,
-    url,
     startPeriod,
     endPeriod,
+    active,
+    notes,
     createdAt,
     updatedAt,
   );
 
-  /// Create a copy of Bill
+  /// Create a copy of Income
   /// with the given fields replaced by the non-null parameter values.
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
   @pragma('vm:prefer-inline')
-  _$$BillImplCopyWith<_$BillImpl> get copyWith =>
-      __$$BillImplCopyWithImpl<_$BillImpl>(this, _$identity);
+  _$$IncomeImplCopyWith<_$IncomeImpl> get copyWith =>
+      __$$IncomeImplCopyWithImpl<_$IncomeImpl>(this, _$identity);
 
   @override
   Map<String, dynamic> toJson() {
-    return _$$BillImplToJson(this);
+    return _$$IncomeImplToJson(this);
   }
 }
 
-abstract class _Bill implements Bill {
-  const factory _Bill({
+abstract class _Income implements Income {
+  const factory _Income({
     required final String id,
     required final String userId,
     required final String name,
     @NullableDoubleConverter() final double? defaultAmount,
     final int? dayOfMonth,
-    required final BillKind kind,
-    final String? providerCode,
-    final bool active,
-    final String? notes,
-    final String? autoDebitCardId,
-    final String? url,
+    required final IncomeKind kind,
     required final String startPeriod,
     final String? endPeriod,
+    final bool active,
+    final String? notes,
     required final DateTime createdAt,
     required final DateTime updatedAt,
-  }) = _$BillImpl;
+  }) = _$IncomeImpl;
 
-  factory _Bill.fromJson(Map<String, dynamic> json) = _$BillImpl.fromJson;
+  factory _Income.fromJson(Map<String, dynamic> json) = _$IncomeImpl.fromJson;
 
   @override
   String get id;
@@ -452,30 +395,24 @@ abstract class _Bill implements Bill {
   @override
   int? get dayOfMonth;
   @override
-  BillKind get kind;
-  @override
-  String? get providerCode;
-  @override
-  bool get active;
-  @override
-  String? get notes;
-  @override
-  String? get autoDebitCardId;
-  @override
-  String? get url;
+  IncomeKind get kind;
   @override
   String get startPeriod;
   @override
   String? get endPeriod;
   @override
+  bool get active;
+  @override
+  String? get notes;
+  @override
   DateTime get createdAt;
   @override
   DateTime get updatedAt;
 
-  /// Create a copy of Bill
+  /// Create a copy of Income
   /// with the given fields replaced by the non-null parameter values.
   @override
   @JsonKey(includeFromJson: false, includeToJson: false)
-  _$$BillImplCopyWith<_$BillImpl> get copyWith =>
+  _$$IncomeImplCopyWith<_$IncomeImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

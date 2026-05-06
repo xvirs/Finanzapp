@@ -9,6 +9,7 @@ import '../../../core/analytics_service.dart';
 import '../../../core/biometric_service.dart';
 import '../../../data/bills_repository.dart';
 import '../../../data/cards_repository.dart';
+import '../../../data/incomes_repository.dart';
 import '../../../design/tokens.dart';
 import '../../../widgets/shimmer_box.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
@@ -25,6 +26,7 @@ class ConfigScreen extends StatefulWidget {
 class _ConfigScreenState extends State<ConfigScreen> {
   int? _billsCount;
   int? _cardsCount;
+  int? _incomesCount;
   bool _loadingCounts = false;
   String? _countsError;
 
@@ -46,14 +48,18 @@ class _ConfigScreenState extends State<ConfigScreen> {
     try {
       final billsRepo = context.read<BillsRepository>();
       final cardsRepo = context.read<CardsRepository>();
+      final incomesRepo = context.read<IncomesRepository>();
       final billsFuture = billsRepo.fetchAllActive();
       final cardsFuture = cardsRepo.fetchAllActive();
+      final incomesFuture = incomesRepo.fetchAllActive();
       final bills = await billsFuture;
       final cards = await cardsFuture;
+      final incomes = await incomesFuture;
       if (!mounted) return;
       setState(() {
         _billsCount = bills.length;
         _cardsCount = cards.length;
+        _incomesCount = incomes.length;
         _loadingCounts = false;
       });
     } catch (e) {
@@ -90,10 +96,12 @@ class _ConfigScreenState extends State<ConfigScreen> {
                   _DataRows(
                     billsCount: _billsCount,
                     cardsCount: _cardsCount,
+                    incomesCount: _incomesCount,
                     loading:
                         _loadingCounts &&
                         _billsCount == null &&
-                        _cardsCount == null,
+                        _cardsCount == null &&
+                        _incomesCount == null,
                     error: _countsError,
                   ),
                   const SizedBox(height: 18),
@@ -240,12 +248,14 @@ class _DataRows extends StatelessWidget {
   const _DataRows({
     required this.billsCount,
     required this.cardsCount,
+    required this.incomesCount,
     required this.loading,
     required this.error,
   });
 
   final int? billsCount;
   final int? cardsCount;
+  final int? incomesCount;
   final bool loading;
   final String? error;
 
@@ -255,6 +265,16 @@ class _DataRows extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         children: [
+          _DataRow(
+            icon: Icons.savings_outlined,
+            label: 'Ingresos',
+            count: incomesCount,
+            loading: loading,
+            error: error != null,
+            onOpenList: () => context.push('/config/incomes'),
+            onCreate: () => context.push('/config/incomes/new'),
+          ),
+          const SizedBox(height: 8),
           _DataRow(
             icon: Icons.description_outlined,
             label: 'Cuentas fijas',

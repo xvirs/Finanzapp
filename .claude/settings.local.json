@@ -49,7 +49,11 @@
       "Bash(flutterfire configure *)",
       "Bash(gem list *)",
       "Bash(curl -s \"https://pub.dev/api/packages/sign_in_with_apple\")",
-      "Bash(python3 -c \"import json,sys; print\\('latest:', json.load\\(sys.stdin\\)['latest']['version']\\)\")"
+      "Bash(python3 -c \"import json,sys; print\\('latest:', json.load\\(sys.stdin\\)['latest']['version']\\)\")",
+      "Bash(supabase --version)",
+      "Bash(brew install *)",
+      "Bash(supabase migration *)",
+      "Bash(supabase db *)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"

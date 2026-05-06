@@ -8,6 +8,7 @@ import 'core/analytics_service.dart';
 import 'core/realtime_service.dart';
 import 'data/bills_repository.dart';
 import 'data/cards_repository.dart';
+import 'data/incomes_repository.dart';
 import 'data/installments_repository.dart';
 import 'data/payments_repository.dart';
 import 'domain/period.dart';
@@ -22,7 +23,10 @@ import 'features/cards/presentation/installment_form_screen.dart';
 import 'features/config_settings/presentation/bill_form_screen.dart';
 import 'features/config_settings/presentation/bills_list_screen.dart';
 import 'features/config_settings/presentation/bloc/bills_list_bloc.dart';
+import 'features/config_settings/presentation/bloc/incomes_list_bloc.dart';
 import 'features/config_settings/presentation/config_screen.dart';
+import 'features/config_settings/presentation/income_form_screen.dart';
+import 'features/config_settings/presentation/incomes_list_screen.dart';
 import 'features/month/presentation/bloc/month_bloc.dart';
 import 'features/month/presentation/month_screen.dart';
 import 'shell/app_shell.dart';
@@ -55,6 +59,7 @@ class AppRouter {
                   create: (ctx) => MonthBloc(
                     billsRepository: ctx.read<BillsRepository>(),
                     cardsRepository: ctx.read<CardsRepository>(),
+                    incomesRepository: ctx.read<IncomesRepository>(),
                     installmentsRepository: ctx.read<InstallmentsRepository>(),
                     paymentsRepository: ctx.read<PaymentsRepository>(),
                     realtimeService: ctx.read<RealtimeService>(),
@@ -160,6 +165,31 @@ class AppRouter {
                         name: 'bill-edit',
                         builder: (context, state) =>
                             BillFormScreen(billId: state.pathParameters['id']),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'incomes',
+                    name: 'incomes-list',
+                    builder: (context, state) => BlocProvider(
+                      create: (ctx) => IncomesListBloc(
+                        incomesRepository: ctx.read<IncomesRepository>(),
+                        realtimeService: ctx.read<RealtimeService>(),
+                      )..add(const IncomesListRequested()),
+                      child: const IncomesListScreen(),
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        name: 'income-new',
+                        builder: (context, state) => const IncomeFormScreen(),
+                      ),
+                      GoRoute(
+                        path: ':id',
+                        name: 'income-edit',
+                        builder: (context, state) => IncomeFormScreen(
+                          incomeId: state.pathParameters['id'],
+                        ),
                       ),
                     ],
                   ),

@@ -1,55 +1,42 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/analytics_service.dart';
 import '../../../core/format.dart';
-import '../../../core/url.dart';
-import '../../../data/bills_repository.dart';
-import '../../../data/cards_repository.dart';
+import '../../../data/incomes_repository.dart';
 import '../../../design/tokens.dart';
 import '../../../design/widgets.dart';
 import '../../../domain/period.dart';
-import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
-import '../../../widgets/bill_kind_icon.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
 import '../../../widgets/month_year_picker.dart';
 
-/// Pantallas 10/11 — Nueva/Editar cuenta fija.
-/// Port del JSX `ANewFixedAccount` + `AEditFixedAccount`
-/// (handoff/screens-a-config.jsx).
-class BillFormScreen extends StatefulWidget {
-  const BillFormScreen({this.billId, super.key});
+/// Crear/editar un ingreso. Espejo simétrico de [BillFormScreen].
+class IncomeFormScreen extends StatefulWidget {
+  const IncomeFormScreen({this.incomeId, super.key});
 
-  final String? billId;
+  final String? incomeId;
 
-  bool get isEditing => billId != null;
+  bool get isEditing => incomeId != null;
 
   @override
-  State<BillFormScreen> createState() => _BillFormScreenState();
+  State<IncomeFormScreen> createState() => _IncomeFormScreenState();
 }
 
-class _BillFormScreenState extends State<BillFormScreen> {
+class _IncomeFormScreenState extends State<IncomeFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _amountController = TextEditingController();
   final _dayController = TextEditingController();
-  final _providerCodeController = TextEditingController();
-  final _urlController = TextEditingController();
   final _notesController = TextEditingController();
 
-  BillKind _kind = BillKind.other;
-  String? _autoDebitCardId;
+  IncomeKind _kind = IncomeKind.salary;
   bool _active = true;
   String _startPeriod = PeriodKey.current().toIso();
   String? _endPeriod;
 
-  List<CreditCard> _activeCards = const [];
   bool _loading = true;
   bool _saving = false;
   String? _loadError;
@@ -67,8 +54,6 @@ class _BillFormScreenState extends State<BillFormScreen> {
     _nameController.dispose();
     _amountController.dispose();
     _dayController.dispose();
-    _providerCodeController.dispose();
-    _urlController.dispose();
     _notesController.dispose();
     super.dispose();
   }
@@ -79,42 +64,27 @@ class _BillFormScreenState extends State<BillFormScreen> {
       _loadError = null;
     });
     try {
-      final billsRepo = context.read<BillsRepository>();
-      final cardsRepo = context.read<CardsRepository>();
-
-      final cardsFuture = cardsRepo.fetchAllActive();
-      final billFuture = widget.isEditing
-          ? billsRepo.fetchById(widget.billId!)
-          : Future.value(null);
-
-      final cards = await cardsFuture;
-      final bill = await billFuture;
-
-      if (widget.isEditing && bill == null) {
+      if (!widget.isEditing) {
+        setState(() => _loading = false);
+        return;
+      }
+      final repo = context.read<IncomesRepository>();
+      final income = await repo.fetchById(widget.incomeId!);
+      if (income == null) {
         setState(() {
-          _loadError = 'No se encontró la cuenta fija.';
+          _loadError = 'No se encontró el ingreso.';
           _loading = false;
         });
         return;
       }
-
-      _activeCards = cards;
-      if (bill != null) {
-        _nameController.text = bill.name;
-        _amountController.text = bill.defaultAmount?.toStringAsFixed(0) ?? '';
-        _dayController.text = bill.dayOfMonth?.toString() ?? '';
-        _providerCodeController.text = bill.providerCode ?? '';
-        _urlController.text = bill.url ?? '';
-        _notesController.text = bill.notes ?? '';
-        _kind = bill.kind;
-        _active = bill.active;
-        _startPeriod = bill.startPeriod;
-        _endPeriod = bill.endPeriod;
-        if (bill.autoDebitCardId != null &&
-            cards.any((c) => c.id == bill.autoDebitCardId)) {
-          _autoDebitCardId = bill.autoDebitCardId;
-        }
-      }
+      _nameController.text = income.name;
+      _amountController.text = income.defaultAmount?.toStringAsFixed(0) ?? '';
+      _dayController.text = income.dayOfMonth?.toString() ?? '';
+      _notesController.text = income.notes ?? '';
+      _kind = income.kind;
+      _active = income.active;
+      _startPeriod = income.startPeriod;
+      _endPeriod = income.endPeriod;
       setState(() => _loading = false);
     } catch (e) {
       setState(() {
@@ -129,46 +99,29 @@ class _BillFormScreenState extends State<BillFormScreen> {
     FocusScope.of(context).unfocus();
     setState(() => _saving = true);
 
-    final repo = context.read<BillsRepository>();
-    final analytics = context.read<AnalyticsService>();
-    final isNew = widget.billId == null;
+    final repo = context.read<IncomesRepository>();
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
-      String? normalizedUrl;
-      final rawUrl = _urlController.text.trim();
-      if (rawUrl.isNotEmpty) {
-        normalizedUrl = normalizeUrl(rawUrl).url;
-      }
-
       final amountRaw = _amountController.text.trim().replaceAll(',', '.');
       final defaultAmount = amountRaw.isEmpty
           ? null
           : double.tryParse(amountRaw);
 
-      await repo.saveBill(
-        existingId: widget.billId,
+      await repo.saveIncome(
+        existingId: widget.incomeId,
         name: _nameController.text.trim(),
         kind: _kind,
         defaultAmount: defaultAmount,
         dayOfMonth: int.tryParse(_dayController.text.trim()),
-        providerCode: _providerCodeController.text.trim().isEmpty
-            ? null
-            : _providerCodeController.text.trim(),
         active: _active,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
-        autoDebitCardId: _autoDebitCardId,
-        url: normalizedUrl,
         startPeriod: _startPeriod,
         endPeriod: _endPeriod,
       );
-
-      if (isNew) {
-        unawaited(analytics.billCreated(kind: _kind.name));
-      }
 
       if (!mounted) return;
       router.pop(true);
@@ -184,18 +137,18 @@ class _BillFormScreenState extends State<BillFormScreen> {
   Future<void> _delete() async {
     final confirmed = await showConfirmDeleteDialog(
       context,
-      title: 'Eliminar cuenta fija',
+      title: 'Eliminar ingreso',
       message: 'Esta acción no se puede deshacer.',
     );
     if (!confirmed || !mounted) return;
 
     setState(() => _saving = true);
-    final repo = context.read<BillsRepository>();
+    final repo = context.read<IncomesRepository>();
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
-      await repo.softDeleteOrDelete(widget.billId!);
+      await repo.softDeleteOrDelete(widget.incomeId!);
       if (!mounted) return;
       router.pop(true);
     } catch (error) {
@@ -217,7 +170,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             FzAppBar(
-              title: widget.isEditing ? 'Editar cuenta' : 'Nueva cuenta fija',
+              title: widget.isEditing ? 'Editar ingreso' : 'Nuevo ingreso',
             ),
             Expanded(
               child: _loading
@@ -245,7 +198,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
               required: true,
               child: FormTextField(
                 controller: _nameController,
-                hint: 'Ej. EPEC, Netflix, OSDE',
+                hint: 'Ej. Sueldo, Cliente X, Alquiler depto',
                 textInputAction: TextInputAction.next,
                 validator: (v) => (v == null || v.trim().isEmpty)
                     ? 'Ingresá un nombre'
@@ -285,7 +238,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
             const SizedBox(height: 14),
             FormFieldWrap(
               label: 'Día del mes',
-              hint: '1 a 31',
+              hint: '1 a 31 — opcional',
               child: FormTextField(
                 controller: _dayController,
                 hint: '—',
@@ -303,39 +256,8 @@ class _BillFormScreenState extends State<BillFormScreen> {
             ),
             const SizedBox(height: 14),
             FormFieldWrap(
-              label: 'Débito automático en',
-              hint:
-                  'Si está seleccionada, esta cuenta no aparece como ítem en Mes (ya viene en el resumen de la tarjeta).',
-              child: _AutoDebitSelector(
-                cards: _activeCards,
-                selectedCardId: _autoDebitCardId,
-                onChanged: (id) => setState(() => _autoDebitCardId = id),
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Código de referencia',
-              hint: 'Se copia al clipboard al tocar "Ir a pagar" en el Mes.',
-              child: FormTextField(
-                controller: _providerCodeController,
-                hint: '0292849306',
-                mono: true,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Link para pagar',
-              child: FormTextField(
-                controller: _urlController,
-                hint: 'https://… o app://…',
-                mono: true,
-                keyboardType: TextInputType.url,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
               label: 'Desde',
-              hint: 'Primer mes en que aplica esta cuenta.',
+              hint: 'Primer mes en que aplica este ingreso.',
               required: true,
               child: MonthYearPicker(
                 value: PeriodKey.fromIso(_startPeriod),
@@ -358,9 +280,10 @@ class _BillFormScreenState extends State<BillFormScreen> {
               label: 'Solo este mes',
               hint: _isOneShot
                   ? 'Aparece únicamente en el mes "Desde".'
-                  : 'Activá si es un gasto puntual (ej: una compra al contado).',
+                  : 'Activá si es un ingreso puntual (ej: aguinaldo, venta, bonus).',
               child: FormFieldShell(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 onTap: () => setState(() {
                   if (_isOneShot) {
                     _endPeriod = null;
@@ -372,7 +295,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
                   children: [
                     const Expanded(
                       child: Text(
-                        'Gasto puntual',
+                        'Ingreso puntual',
                         style: TextStyle(
                           fontFamily: FzType.sans,
                           fontSize: 14,
@@ -396,7 +319,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
               FormFieldWrap(
                 label: 'Hasta',
                 hint:
-                    'Opcional. Si lo dejás vacío, la cuenta sigue activa indefinidamente.',
+                    'Opcional. Si lo dejás vacío, el ingreso sigue activo indefinidamente.',
                 child: MonthYearPicker(
                   value: _endPeriod == null
                       ? null
@@ -423,20 +346,20 @@ class _BillFormScreenState extends State<BillFormScreen> {
               FormActiveToggle(
                 value: _active,
                 onChanged: (v) => setState(() => _active = v),
-                subtitleOn: 'La cuenta aparece en Mes',
-                subtitleOff: 'La cuenta queda oculta',
+                subtitleOn: 'El ingreso aparece en Mes',
+                subtitleOff: 'El ingreso queda oculto',
               ),
             ],
             const SizedBox(height: 20),
             FormSaveButton(
-              label: widget.isEditing ? 'Guardar' : 'Crear cuenta',
+              label: widget.isEditing ? 'Guardar' : 'Crear ingreso',
               loading: _saving,
               onPressed: _submit,
             ),
             if (widget.isEditing) ...[
               const SizedBox(height: 10),
               FormDeleteButton(
-                label: 'Eliminar cuenta',
+                label: 'Eliminar ingreso',
                 onPressed: _saving ? null : _delete,
               ),
             ],
@@ -447,18 +370,16 @@ class _BillFormScreenState extends State<BillFormScreen> {
   }
 }
 
-/// Selector del tipo (BillKind) — abre un bottom sheet con todas las
-/// opciones cada una con su BillKindIcon.
 class _KindSelector extends StatelessWidget {
   const _KindSelector({required this.value, required this.onChanged});
-  final BillKind value;
-  final ValueChanged<BillKind> onChanged;
+  final IncomeKind value;
+  final ValueChanged<IncomeKind> onChanged;
 
   @override
   Widget build(BuildContext context) {
     return FormFieldShell(
       onTap: () async {
-        final picked = await showModalBottomSheet<BillKind>(
+        final picked = await showModalBottomSheet<IncomeKind>(
           context: context,
           backgroundColor: FzColors.card,
           shape: const RoundedRectangleBorder(
@@ -470,11 +391,14 @@ class _KindSelector extends StatelessWidget {
       },
       child: Row(
         children: [
-          Icon(BillKindIcon.iconFor(value), size: 16, color: FzColors.text),
+          Text(
+            kIncomeKindEmoji[value] ?? '💰',
+            style: const TextStyle(fontSize: 14),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              kBillKindLabels[value] ?? '—',
+              kIncomeKindLabels[value] ?? '—',
               style: const TextStyle(
                 fontFamily: FzType.sans,
                 fontSize: 14,
@@ -495,7 +419,7 @@ class _KindSelector extends StatelessWidget {
 
 class _KindSheet extends StatelessWidget {
   const _KindSheet({required this.selected});
-  final BillKind selected;
+  final IncomeKind selected;
 
   @override
   Widget build(BuildContext context) {
@@ -514,21 +438,19 @@ class _KindSheet extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            for (final k in BillKind.values)
+            for (final k in IncomeKind.values)
               ListTile(
-                leading: Icon(
-                  BillKindIcon.iconFor(k),
-                  size: 20,
-                  color: FzColors.text,
+                leading: Text(
+                  kIncomeKindEmoji[k] ?? '💰',
+                  style: const TextStyle(fontSize: 18),
                 ),
                 title: Text(
-                  kBillKindLabels[k] ?? '—',
+                  kIncomeKindLabels[k] ?? '—',
                   style: TextStyle(
                     fontFamily: FzType.sans,
                     fontSize: 14,
-                    fontWeight: k == selected
-                        ? FontWeight.w600
-                        : FontWeight.w400,
+                    fontWeight:
+                        k == selected ? FontWeight.w600 : FontWeight.w400,
                     color: FzColors.text,
                   ),
                 ),
@@ -544,169 +466,6 @@ class _KindSheet extends StatelessWidget {
             const SizedBox(height: 8),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Selector de tarjeta para débito automático. Permite "Ninguna" (null).
-class _AutoDebitSelector extends StatelessWidget {
-  const _AutoDebitSelector({
-    required this.cards,
-    required this.selectedCardId,
-    required this.onChanged,
-  });
-
-  final List<CreditCard> cards;
-  final String? selectedCardId;
-  final ValueChanged<String?> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final selectedCard = selectedCardId == null
-        ? null
-        : cards.cast<CreditCard?>().firstWhere(
-            (c) => c?.id == selectedCardId,
-            orElse: () => null,
-          );
-    return FormFieldShell(
-      onTap: () async {
-        final picked = await showModalBottomSheet<_AutoDebitPick?>(
-          context: context,
-          backgroundColor: FzColors.card,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-          ),
-          builder: (_) =>
-              _AutoDebitSheet(cards: cards, selectedCardId: selectedCardId),
-        );
-        if (picked != null) onChanged(picked.cardId);
-      },
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              selectedCard?.name ?? 'Ninguna',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 14,
-                color: selectedCard == null ? FzColors.textMute : FzColors.text,
-              ),
-            ),
-          ),
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 16,
-            color: FzColors.textDim,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Sentinel para distinguir "elegí null" de "cancelé el sheet".
-class _AutoDebitPick {
-  const _AutoDebitPick(this.cardId);
-  final String? cardId;
-}
-
-class _AutoDebitSheet extends StatelessWidget {
-  const _AutoDebitSheet({required this.cards, required this.selectedCardId});
-
-  final List<CreditCard> cards;
-  final String? selectedCardId;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 12),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: FzColors.borderHi,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            ListTile(
-              title: Text(
-                'Ninguna',
-                style: TextStyle(
-                  fontFamily: FzType.sans,
-                  fontSize: 14,
-                  fontWeight: selectedCardId == null
-                      ? FontWeight.w600
-                      : FontWeight.w400,
-                  color: FzColors.text,
-                ),
-              ),
-              trailing: selectedCardId == null
-                  ? const Icon(
-                      Icons.check_rounded,
-                      color: FzColors.primary,
-                      size: 20,
-                    )
-                  : null,
-              onTap: () =>
-                  Navigator.of(context).pop(const _AutoDebitPick(null)),
-            ),
-            for (final c in cards)
-              ListTile(
-                leading: _CardSwatch(brand: c.brand),
-                title: Text(
-                  c.name,
-                  style: TextStyle(
-                    fontFamily: FzType.sans,
-                    fontSize: 14,
-                    fontWeight: c.id == selectedCardId
-                        ? FontWeight.w600
-                        : FontWeight.w400,
-                    color: FzColors.text,
-                  ),
-                ),
-                trailing: c.id == selectedCardId
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: FzColors.primary,
-                        size: 20,
-                      )
-                    : null,
-                onTap: () => Navigator.of(context).pop(_AutoDebitPick(c.id)),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _CardSwatch extends StatelessWidget {
-  const _CardSwatch({required this.brand});
-  final CardBrand? brand;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = switch (brand) {
-      CardBrand.visa => FzColors.visaBg,
-      CardBrand.mastercard => FzColors.mastercardBg,
-      CardBrand.amex => FzColors.mpBg,
-      CardBrand.other => FzColors.cardHi,
-      null => FzColors.cardHi,
-    };
-    return Container(
-      width: 22,
-      height: 14,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(3),
-        border: brand == null ? Border.all(color: FzColors.border) : null,
       ),
     );
   }

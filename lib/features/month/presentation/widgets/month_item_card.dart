@@ -196,6 +196,12 @@ class _NameRow extends StatelessWidget {
   final MonthItem item;
   final bool isOverdue;
 
+  bool get _isOneShot {
+    final bill = item.bill;
+    if (bill == null) return false;
+    return bill.endPeriod != null && bill.endPeriod == bill.startPeriod;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Row(
@@ -220,8 +226,34 @@ class _NameRow extends StatelessWidget {
           const SizedBox(width: 6),
           _BrandChip(brand: item.card!.brand!),
         ],
+        if (_isOneShot) ...[const SizedBox(width: 6), const _OneShotBadge()],
         if (isOverdue) ...[const SizedBox(width: 6), const _OverdueBadge()],
       ],
+    );
+  }
+}
+
+class _OneShotBadge extends StatelessWidget {
+  const _OneShotBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: FzColors.primarySoft,
+        borderRadius: BorderRadius.circular(FzRadius.xs),
+      ),
+      child: const Text(
+        'PUNTUAL',
+        style: TextStyle(
+          fontFamily: FzType.mono,
+          fontSize: 9,
+          fontWeight: FontWeight.w600,
+          letterSpacing: 0.36,
+          color: FzColors.primaryHi,
+        ),
+      ),
     );
   }
 }

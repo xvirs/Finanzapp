@@ -51,3 +51,17 @@ const Map<CardBrand, String> kCardBrandLabels = {
   CardBrand.amex: 'Amex',
   CardBrand.other: 'Otra',
 };
+
+const Map<IncomeKind, String> kIncomeKindLabels = {
+  IncomeKind.salary: 'Sueldo',
+  IncomeKind.freelance: 'Freelance',
+  IncomeKind.rental: 'Alquiler que cobro',
+  IncomeKind.other: 'Otro',
+};
+
+const Map<IncomeKind, String> kIncomeKindEmoji = {
+  IncomeKind.salary: '💼',
+  IncomeKind.freelance: '🧑‍💻',
+  IncomeKind.rental: '🏠',
+  IncomeKind.other: '💰',
+};

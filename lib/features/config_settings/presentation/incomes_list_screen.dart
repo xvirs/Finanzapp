@@ -5,18 +5,15 @@ import 'package:go_router/go_router.dart';
 import '../../../core/format.dart';
 import '../../../design/tokens.dart';
 import '../../../design/widgets.dart';
-import '../../../domain/period.dart';
-import '../../../models/bill.dart';
-import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
-import '../../../widgets/bill_kind_icon.dart';
+import '../../../models/income.dart';
 import '../../../widgets/shimmer_box.dart';
-import 'bloc/bills_list_bloc.dart';
+import 'bloc/incomes_list_bloc.dart';
 
-/// Pantalla 9 — Cuentas fijas (lista).
-/// Port del JSX `AFixedAccounts` (handoff/screens-a-config.jsx).
-class BillsListScreen extends StatelessWidget {
-  const BillsListScreen({super.key});
+/// Lista de ingresos del usuario (sueldo, freelance, alquileres que cobra,
+/// etc.). Espejo simétrico de [BillsListScreen] del lado del haber.
+class IncomesListScreen extends StatelessWidget {
+  const IncomesListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,21 +21,21 @@ class BillsListScreen extends StatelessWidget {
       backgroundColor: FzColors.bg,
       body: SafeArea(
         bottom: false,
-        child: BlocBuilder<BillsListBloc, BillsListBlocState>(
+        child: BlocBuilder<IncomesListBloc, IncomesListBlocState>(
           builder: (context, state) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 FzAppBar(
-                  title: 'Cuentas fijas',
+                  title: 'Ingresos',
                   trailing: _AddButton(
                     onPressed: () async {
-                      final bloc = context.read<BillsListBloc>();
+                      final bloc = context.read<IncomesListBloc>();
                       final result = await context.push<bool>(
-                        '/config/bills/new',
+                        '/config/incomes/new',
                       );
                       if (result == true) {
-                        bloc.add(const BillsListRefreshRequested());
+                        bloc.add(const IncomesListRefreshRequested());
                       }
                     },
                   ),
@@ -53,8 +50,6 @@ class BillsListScreen extends StatelessWidget {
   }
 }
 
-/// Botón "+" cuadrado primary verde con sombra — para el trailing del
-/// AppBar.
 class _AddButton extends StatelessWidget {
   const _AddButton({required this.onPressed});
   final VoidCallback onPressed;
@@ -96,42 +91,42 @@ class _AddButton extends StatelessWidget {
 
 class _Body extends StatelessWidget {
   const _Body({required this.state});
-  final BillsListBlocState state;
+  final IncomesListBlocState state;
 
   @override
   Widget build(BuildContext context) {
     switch (state.status) {
-      case BillsListStatus.failure:
+      case IncomesListStatus.failure:
         return _ErrorView(
           message: state.errorMessage ?? 'Error',
-          onRetry: () => context.read<BillsListBloc>().add(
-            const BillsListRefreshRequested(),
+          onRetry: () => context.read<IncomesListBloc>().add(
+            const IncomesListRefreshRequested(),
           ),
         );
 
-      case BillsListStatus.initial:
-      case BillsListStatus.loading:
+      case IncomesListStatus.initial:
+      case IncomesListStatus.loading:
         return RefreshIndicator(
           color: FzColors.primary,
           backgroundColor: FzColors.card,
           onRefresh: () async {
-            context.read<BillsListBloc>().add(
-              const BillsListRefreshRequested(),
+            context.read<IncomesListBloc>().add(
+              const IncomesListRefreshRequested(),
             );
           },
           child: const _Shimmer(),
         );
 
-      case BillsListStatus.success:
+      case IncomesListStatus.success:
         return RefreshIndicator(
           color: FzColors.primary,
           backgroundColor: FzColors.card,
           onRefresh: () async {
-            context.read<BillsListBloc>().add(
-              const BillsListRefreshRequested(),
+            context.read<IncomesListBloc>().add(
+              const IncomesListRefreshRequested(),
             );
           },
-          child: state.bills.isEmpty
+          child: state.incomes.isEmpty
               ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: const [_EmptyView()],
@@ -142,30 +137,27 @@ class _Body extends StatelessWidget {
                   children: [
                     _SummaryRow(state: state),
                     const SizedBox(height: 12),
-                    ..._buildBillTiles(context, state),
+                    ..._buildTiles(context, state),
                   ],
                 ),
         );
     }
   }
 
-  List<Widget> _buildBillTiles(BuildContext context, BillsListBlocState state) {
+  List<Widget> _buildTiles(BuildContext context, IncomesListBlocState state) {
     return [
-      for (final bill in state.bills) ...[
+      for (final income in state.incomes) ...[
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: _BillTile(
-            bill: bill,
-            autoDebitCard: bill.autoDebitCardId != null
-                ? state.cardsById[bill.autoDebitCardId]
-                : null,
+          child: _IncomeTile(
+            income: income,
             onTap: () async {
-              final bloc = context.read<BillsListBloc>();
+              final bloc = context.read<IncomesListBloc>();
               final result = await context.push<bool>(
-                '/config/bills/${bill.id}',
+                '/config/incomes/${income.id}',
               );
               if (result == true) {
-                bloc.add(const BillsListRefreshRequested());
+                bloc.add(const IncomesListRefreshRequested());
               }
             },
           ),
@@ -178,13 +170,14 @@ class _Body extends StatelessWidget {
 
 class _SummaryRow extends StatelessWidget {
   const _SummaryRow({required this.state});
-  final BillsListBlocState state;
+  final IncomesListBlocState state;
 
   @override
   Widget build(BuildContext context) {
-    final activeBills = state.bills.where((b) => b.active).toList();
-    final activeCount = activeBills.length;
-    final fixedCount = activeBills.where((b) => b.defaultAmount != null).length;
+    final activeIncomes = state.incomes.where((i) => i.active).toList();
+    final activeCount = activeIncomes.length;
+    final fixedCount =
+        activeIncomes.where((i) => i.defaultAmount != null).length;
     final variableCount = activeCount - fixedCount;
 
     return Padding(
@@ -193,7 +186,7 @@ class _SummaryRow extends StatelessWidget {
         spacing: 18,
         runSpacing: 6,
         children: [
-          _SummaryStat(value: activeCount, label: 'activas'),
+          _SummaryStat(value: activeCount, label: 'activos'),
           _SummaryStat(value: fixedCount, label: 'con monto fijo'),
           _SummaryStat(value: variableCount, label: 'variables'),
         ],
@@ -237,19 +230,16 @@ class _SummaryStat extends StatelessWidget {
   }
 }
 
-class _BillTile extends StatelessWidget {
-  const _BillTile({
-    required this.bill,
-    required this.autoDebitCard,
-    required this.onTap,
-  });
+class _IncomeTile extends StatelessWidget {
+  const _IncomeTile({required this.income, required this.onTap});
 
-  final Bill bill;
-  final CreditCard? autoDebitCard;
+  final Income income;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final isOneShot =
+        income.endPeriod != null && income.endPeriod == income.startPeriod;
     return Material(
       color: FzColors.card,
       borderRadius: BorderRadius.circular(FzRadius.lg),
@@ -265,8 +255,8 @@ class _BillTile extends StatelessWidget {
           child: Row(
             children: [
               Opacity(
-                opacity: bill.active ? 1.0 : 0.5,
-                child: BillKindIcon(kind: bill.kind),
+                opacity: income.active ? 1.0 : 0.5,
+                child: _IncomeKindIcon(kind: income.kind),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -278,12 +268,12 @@ class _BillTile extends StatelessWidget {
                       children: [
                         Flexible(
                           child: Text(
-                            bill.name,
+                            income.name,
                             style: TextStyle(
                               fontFamily: FzType.sans,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
-                              color: bill.active
+                              color: income.active
                                   ? FzColors.text
                                   : FzColors.textDim,
                             ),
@@ -291,26 +281,23 @@ class _BillTile extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        if (!bill.active) ...[
+                        if (!income.active) ...[
                           const SizedBox(width: 6),
                           const _InactivePill(),
                         ],
-                        if (_isOneShot(bill)) ...[
+                        if (isOneShot) ...[
                           const SizedBox(width: 6),
                           const _OneShotPill(),
-                        ] else if (_isArchived(bill)) ...[
-                          const SizedBox(width: 6),
-                          const _ArchivedPill(),
                         ],
                       ],
                     ),
                     const SizedBox(height: 2),
-                    _Subtitle(bill: bill, autoDebitCard: autoDebitCard),
+                    _Subtitle(income: income),
                   ],
                 ),
               ),
               const SizedBox(width: 12),
-              _AmountOrVariable(amount: bill.defaultAmount),
+              _AmountOrVariable(amount: income.defaultAmount),
             ],
           ),
         ),
@@ -320,78 +307,43 @@ class _BillTile extends StatelessWidget {
 }
 
 class _Subtitle extends StatelessWidget {
-  const _Subtitle({required this.bill, required this.autoDebitCard});
-
-  final Bill bill;
-  final CreditCard? autoDebitCard;
+  const _Subtitle({required this.income});
+  final Income income;
 
   @override
   Widget build(BuildContext context) {
-    final base = StringBuffer(kBillKindLabels[bill.kind] ?? '—');
-    if (bill.dayOfMonth != null) base.write(' · Día ${bill.dayOfMonth}');
-
-    return Wrap(
-      crossAxisAlignment: WrapCrossAlignment.center,
-      spacing: 6,
-      children: [
-        Text(
-          base.toString(),
-          style: const TextStyle(
-            fontFamily: FzType.mono,
-            fontSize: 11,
-            color: FzColors.textMute,
-            letterSpacing: 0.44,
-          ),
-        ),
-        if (autoDebitCard != null)
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                '· ',
-                style: TextStyle(
-                  fontFamily: FzType.mono,
-                  fontSize: 11,
-                  color: FzColors.textMute,
-                ),
-              ),
-              _CardSwatch(brand: autoDebitCard!.brand),
-              const SizedBox(width: 4),
-              Text(
-                autoDebitCard!.name,
-                style: const TextStyle(
-                  fontFamily: FzType.mono,
-                  fontSize: 11,
-                  color: FzColors.textDim,
-                  letterSpacing: 0.44,
-                ),
-              ),
-            ],
-          ),
-      ],
+    final base = StringBuffer(kIncomeKindLabels[income.kind] ?? '—');
+    if (income.dayOfMonth != null) base.write(' · Día ${income.dayOfMonth}');
+    return Text(
+      base.toString(),
+      style: const TextStyle(
+        fontFamily: FzType.mono,
+        fontSize: 11,
+        color: FzColors.textMute,
+        letterSpacing: 0.44,
+      ),
     );
   }
 }
 
-class _CardSwatch extends StatelessWidget {
-  const _CardSwatch({required this.brand});
-  final CardBrand? brand;
+class _IncomeKindIcon extends StatelessWidget {
+  const _IncomeKindIcon({required this.kind});
+  final IncomeKind kind;
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (brand) {
-      CardBrand.visa => FzColors.visaBg,
-      CardBrand.mastercard => FzColors.mastercardBg,
-      CardBrand.amex => FzColors.mpBg,
-      CardBrand.other => FzColors.cardHi,
-      null => FzColors.cardHi,
-    };
     return Container(
-      width: 14,
-      height: 9,
+      width: 38,
+      height: 38,
+      alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(2),
+        color: FzColors.cardHi,
+        borderRadius: BorderRadius.circular(FzRadius.md),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: Text(
+        kIncomeKindEmoji[kind] ?? '💰',
+        style: const TextStyle(fontSize: 18),
       ),
     );
   }
@@ -429,7 +381,7 @@ class _AmountOrVariable extends StatelessWidget {
         fontSize: 14,
         fontWeight: FontWeight.w600,
         fontFeatures: FzType.tabularNums,
-        color: FzColors.text,
+        color: FzColors.primary,
       ),
     );
   }
@@ -446,7 +398,7 @@ class _InactivePill extends StatelessWidget {
         borderRadius: BorderRadius.circular(FzRadius.xs),
       ),
       child: const Text(
-        'INACTIVA',
+        'INACTIVO',
         style: TextStyle(
           fontFamily: FzType.mono,
           fontSize: 9,
@@ -483,43 +435,6 @@ class _OneShotPill extends StatelessWidget {
   }
 }
 
-class _ArchivedPill extends StatelessWidget {
-  const _ArchivedPill();
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: FzColors.cardLate,
-        borderRadius: BorderRadius.circular(FzRadius.xs),
-      ),
-      child: const Text(
-        'ARCHIVADO',
-        style: TextStyle(
-          fontFamily: FzType.mono,
-          fontSize: 9,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.36,
-          color: FzColors.lateInk,
-        ),
-      ),
-    );
-  }
-}
-
-/// Un bill es "puntual" cuando su rango de validez es de un solo mes.
-bool _isOneShot(Bill bill) =>
-    bill.endPeriod != null && bill.endPeriod == bill.startPeriod;
-
-/// Un bill está "archivado" si tiene end_period en el pasado (soft-deleted o
-/// dado de baja). NO incluye los puntuales del mes actual.
-bool _isArchived(Bill bill) {
-  final end = bill.endPeriod;
-  if (end == null) return false;
-  if (_isOneShot(bill)) return false;
-  return PeriodKey.fromIso(end).compareTo(PeriodKey.current()) < 0;
-}
-
 class _Shimmer extends StatelessWidget {
   const _Shimmer();
 
@@ -531,24 +446,20 @@ class _Shimmer extends StatelessWidget {
       children: const [
         Padding(
           padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
-          child: ShimmerBox(width: 220, height: 11, radius: 2),
+          child: ShimmerBox(width: 180, height: 11, radius: 2),
         ),
-        _BillRowShimmer(),
+        _IncomeRowShimmer(),
         SizedBox(height: 6),
-        _BillRowShimmer(),
+        _IncomeRowShimmer(),
         SizedBox(height: 6),
-        _BillRowShimmer(),
-        SizedBox(height: 6),
-        _BillRowShimmer(),
-        SizedBox(height: 6),
-        _BillRowShimmer(),
+        _IncomeRowShimmer(),
       ],
     );
   }
 }
 
-class _BillRowShimmer extends StatelessWidget {
-  const _BillRowShimmer();
+class _IncomeRowShimmer extends StatelessWidget {
+  const _IncomeRowShimmer();
 
   @override
   Widget build(BuildContext context) {
@@ -605,7 +516,7 @@ class _ErrorView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             const Text(
-              'No se pudieron cargar las cuentas',
+              'No se pudieron cargar los ingresos',
               style: TextStyle(
                 fontFamily: FzType.sans,
                 fontSize: 15,
@@ -648,13 +559,13 @@ class _EmptyView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: const [
             Icon(
-              Icons.receipt_long_outlined,
+              Icons.savings_outlined,
               size: 48,
               color: FzColors.primary,
             ),
             SizedBox(height: 12),
             Text(
-              'No tenés cuentas fijas',
+              'No tenés ingresos cargados',
               style: TextStyle(
                 fontFamily: FzType.sans,
                 fontSize: 15,
@@ -665,7 +576,7 @@ class _EmptyView extends StatelessWidget {
             ),
             SizedBox(height: 4),
             Text(
-              'Tocá "+" arriba para crear una.',
+              'Tocá "+" arriba para crear uno.',
               style: TextStyle(
                 fontFamily: FzType.sans,
                 fontSize: 12,

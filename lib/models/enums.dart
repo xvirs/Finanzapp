@@ -53,3 +53,14 @@ enum PaymentStatus {
   @JsonValue('skipped')
   skipped,
 }
+
+enum IncomeKind {
+  @JsonValue('salary')
+  salary,
+  @JsonValue('freelance')
+  freelance,
+  @JsonValue('rental')
+  rental,
+  @JsonValue('other')
+  other,
+}

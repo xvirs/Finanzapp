@@ -3,6 +3,7 @@ import '../../../domain/period.dart';
 import '../../../models/bill.dart';
 import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
+import '../../../models/income.dart';
 import '../../../models/installment_purchase.dart';
 import '../../../models/payment.dart';
 import 'month_item.dart';
@@ -272,7 +273,10 @@ MonthGroup _buildGroup({
   );
 }
 
-MonthSummary summarizeChecklist(List<MonthItem> items) {
+MonthSummary summarizeChecklist(
+  List<MonthItem> items, {
+  List<Income> incomes = const [],
+}) {
   var estimatedTotal = 0.0;
   var paidTotal = 0.0;
   var pendingCount = 0;
@@ -286,11 +290,19 @@ MonthSummary summarizeChecklist(List<MonthItem> items) {
       pendingCount++;
     }
   }
+
+  var incomeTotal = 0.0;
+  for (final income in incomes) {
+    if (!income.active) continue;
+    if (income.defaultAmount != null) incomeTotal += income.defaultAmount!;
+  }
+
   return MonthSummary(
     estimatedTotal: estimatedTotal,
     paidTotal: paidTotal,
     pendingCount: pendingCount,
     paidCount: paidCount,
     totalCount: items.length,
+    incomeTotal: incomeTotal,
   );
 }

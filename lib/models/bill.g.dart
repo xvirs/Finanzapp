@@ -20,6 +20,8 @@ _$BillImpl _$$BillImplFromJson(Map<String, dynamic> json) => _$BillImpl(
   notes: json['notes'] as String?,
   autoDebitCardId: json['auto_debit_card_id'] as String?,
   url: json['url'] as String?,
+  startPeriod: json['start_period'] as String,
+  endPeriod: json['end_period'] as String?,
   createdAt: DateTime.parse(json['created_at'] as String),
   updatedAt: DateTime.parse(json['updated_at'] as String),
 );
@@ -40,6 +42,8 @@ Map<String, dynamic> _$$BillImplToJson(
   if (instance.notes case final value?) 'notes': value,
   if (instance.autoDebitCardId case final value?) 'auto_debit_card_id': value,
   if (instance.url case final value?) 'url': value,
+  'start_period': instance.startPeriod,
+  if (instance.endPeriod case final value?) 'end_period': value,
   'created_at': instance.createdAt.toIso8601String(),
   'updated_at': instance.updatedAt.toIso8601String(),
 };
