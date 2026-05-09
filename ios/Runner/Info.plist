@@ -48,14 +48,14 @@
 		<key>NSFaceIDUsageDescription</key>
 		<string>Usamos Face ID para proteger tus datos financieros</string>
 		<key>GIDClientID</key>
-		<string>637631327229-3te66anat922qaufrpd3cp4avnlg1hdq.apps.googleusercontent.com</string>
+		<string>637631327229-g7bs1r8b0ujopn548e0643oova4st9sd.apps.googleusercontent.com</string>
 		<key>CFBundleURLTypes</key>
 		<array>
 			<dict>
 				<key>CFBundleTypeRole</key>
 				<string>Editor</string>
 				<key>CFBundleURLName</key>
-				<string>com.xavier.finanzapp</string>
+				<string>app.finanzapp.client</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
 					<string>finanzapp</string>
@@ -65,10 +65,10 @@
 				<key>CFBundleTypeRole</key>
 				<string>Editor</string>
 				<key>CFBundleURLName</key>
-				<string>com.xavier.finanzapp.google</string>
+				<string>app.finanzapp.client.google</string>
 				<key>CFBundleURLSchemes</key>
 				<array>
-					<string>com.googleusercontent.apps.637631327229-3te66anat922qaufrpd3cp4avnlg1hdq</string>
+					<string>com.googleusercontent.apps.637631327229-g7bs1r8b0ujopn548e0643oova4st9sd</string>
 				</array>
 			</dict>
 		</array>

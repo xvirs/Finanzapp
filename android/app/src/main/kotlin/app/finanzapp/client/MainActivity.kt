@@ -1,4 +1,4 @@
-package com.xavier.finanzapp
+package app.finanzapp.client
 
 import io.flutter.embedding.android.FlutterFragmentActivity
 

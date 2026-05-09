@@ -9,7 +9,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.xavier.finanzapp</string>
+	<string>app.finanzapp.client</string>
 	<key>PROJECT_ID</key>
 	<string>finanzapp-76dab</string>
 	<key>STORAGE_BUCKET</key>
@@ -25,6 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:442834749504:ios:6cf6d649358461743bf7a5</string>
+	<string>1:442834749504:ios:09ef661a7ac2a1fa3bf7a5</string>
 </dict>
 </plist>

@@ -24,7 +24,7 @@ if (hasKeystore) {
 }
 
 android {
-    namespace = "com.xavier.finanzapp"
+    namespace = "app.finanzapp.client"
     // Pin explícito a 36 (Android 16). Play Store exige targetSdk >= 35
     // desde Aug 2025 — compilando contra 36 cumplimos con margen.
     compileSdk = 36
@@ -43,7 +43,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.xavier.finanzapp"
+        applicationId = "app.finanzapp.client"
         minSdk = flutter.minSdkVersion
         targetSdk = 36
         versionCode = flutter.versionCode

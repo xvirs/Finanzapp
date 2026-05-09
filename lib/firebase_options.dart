@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBBcwCDoHwsEwzuEWG9NThYWgiFmqByILc',
-    appId: '1:442834749504:android:b9067799b34089233bf7a5',
+    appId: '1:442834749504:android:6a480eb0688196563bf7a5',
     messagingSenderId: '442834749504',
     projectId: 'finanzapp-76dab',
     storageBucket: 'finanzapp-76dab.firebasestorage.app',
@@ -59,10 +59,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBXuWGgH5XUycrwsApljchVb_eqTl4RV4k',
-    appId: '1:442834749504:ios:6cf6d649358461743bf7a5',
+    appId: '1:442834749504:ios:09ef661a7ac2a1fa3bf7a5',
     messagingSenderId: '442834749504',
     projectId: 'finanzapp-76dab',
     storageBucket: 'finanzapp-76dab.firebasestorage.app',
-    iosBundleId: 'com.xavier.finanzapp',
+    iosBundleId: 'app.finanzapp.client',
   );
+
 }
