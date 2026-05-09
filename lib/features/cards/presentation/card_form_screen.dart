@@ -15,6 +15,7 @@ import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
+import '../../../widgets/fz_snackbar.dart';
 
 /// Pantalla 7 — Editar tarjeta (o crear nueva si cardId == null).
 /// Port del JSX `AEditCard` (handoff/screens-a-cards.jsx).
@@ -106,7 +107,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
     final repo = context.read<CardsRepository>();
     final analytics = context.read<AnalyticsService>();
     final isNew = widget.cardId == null;
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
@@ -137,8 +137,10 @@ class _CardFormScreenState extends State<CardFormScreen> {
       router.pop(true);
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('No se pudo guardar: $error')),
+      showFzSnack(
+        context,
+        'No se pudo guardar: $error',
+        kind: FzSnackKind.error,
       );
       setState(() => _saving = false);
     }
@@ -155,7 +157,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
 
     setState(() => _saving = true);
     final repo = context.read<CardsRepository>();
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
@@ -164,8 +165,10 @@ class _CardFormScreenState extends State<CardFormScreen> {
       router.go('/cards');
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('No se pudo eliminar: $error')),
+      showFzSnack(
+        context,
+        'No se pudo eliminar: $error',
+        kind: FzSnackKind.error,
       );
       setState(() => _saving = false);
     }

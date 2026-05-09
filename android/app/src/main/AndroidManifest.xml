@@ -19,6 +19,7 @@
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
+            android:resizeableActivity="true"
             android:windowSoftInputMode="adjustResize">
             <!-- Specifies an Android theme to apply to this Activity as soon as
                  the Android process has started. This theme is visible to the user
@@ -45,6 +46,15 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- Impeller habilitado (renderer Vulkan, default de Flutter en
+             Android). Anteriormente lo teníamos en `false` por un crash en
+             el detail pane del Mes en Fold inner, pero la causa raíz era un
+             `IntrinsicHeight` envolviendo cards con AnimatedCurrency dentro
+             que generaba un loop de re-layout. Ya corregido. Si reaparecen
+             crashes nativos en algún device específico, volver a `false`. -->
+        <meta-data
+            android:name="io.flutter.embedding.android.EnableImpeller"
+            android:value="true" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
@@ -55,6 +65,49 @@
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>
+        </intent>
+        <!-- Apps de pago / wallets / bancos (Argentina). Sin estas
+             entradas, Android 11+ oculta las apps con scheme custom
+             de nuestro launchUrl(). Agregar acá cualquier scheme
+             nuevo que se vaya soportando. -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="mercadopago"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="modo"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="uala"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="naranjax"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="brubank"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="bgalicia"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="santandermobile"/>
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="bbvanetcash"/>
+        </intent>
+        <!-- HTTPS (App Links): permite que launchUrl resuelva URLs
+             https a la app correspondiente cuando esté instalada
+             (Mercado Pago, Modo, etc. soportan App Links). -->
+        <intent>
+            <action android:name="android.intent.action.VIEW"/>
+            <data android:scheme="https"/>
         </intent>
     </queries>
 </manifest>

@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/adaptive_scaffold.dart';
 import '../../../core/analytics_service.dart';
 import '../../../core/biometric_service.dart';
 import '../../../data/bills_repository.dart';
@@ -13,6 +14,7 @@ import '../../../data/incomes_repository.dart';
 import '../../../design/tokens.dart';
 import '../../../widgets/shimmer_box.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
+import 'widgets/config_expanded_layout.dart';
 
 /// Pantalla 8 — Configuración.
 /// Port del JSX `AConfig` (handoff/screens-a-config.jsx).
@@ -75,49 +77,64 @@ class _ConfigScreenState extends State<ConfigScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FzColors.bg,
-      body: SafeArea(
-        bottom: false,
-        child: BlocBuilder<AuthBloc, AuthBlocState>(
-          builder: (context, authState) {
-            return RefreshIndicator(
-              color: FzColors.primary,
-              backgroundColor: FzColors.card,
-              onRefresh: _loadCounts,
-              child: ListView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.zero,
-                children: [
-                  const _Header(),
-                  if (authState.email != null)
-                    _SessionCard(email: authState.email!),
-                  const SizedBox(height: 18),
-                  const _SectionCaplabel('DATOS'),
-                  const SizedBox(height: 8),
-                  _DataRows(
-                    billsCount: _billsCount,
-                    cardsCount: _cardsCount,
-                    incomesCount: _incomesCount,
-                    loading:
-                        _loadingCounts &&
-                        _billsCount == null &&
-                        _cardsCount == null &&
-                        _incomesCount == null,
-                    error: _countsError,
-                  ),
-                  const SizedBox(height: 18),
-                  const _SectionCaplabel('SEGURIDAD'),
-                  const SizedBox(height: 8),
-                  const _BiometricCard(),
-                  const SizedBox(height: 24),
-                  const _LogoutButton(),
-                  const SizedBox(height: 20),
-                  const _Footer(),
-                  const SizedBox(height: 12),
-                ],
+      body: BlocBuilder<AuthBloc, AuthBlocState>(
+        builder: (context, authState) {
+          return AdaptiveScaffold(
+            compact: (_) => SafeArea(
+              bottom: false,
+              child: RefreshIndicator(
+                color: FzColors.primary,
+                backgroundColor: FzColors.card,
+                onRefresh: _loadCounts,
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  children: [
+                    const _Header(),
+                    if (authState.email != null)
+                      _SessionCard(email: authState.email!),
+                    const SizedBox(height: 18),
+                    const _SectionCaplabel('DATOS'),
+                    const SizedBox(height: 8),
+                    _DataRows(
+                      billsCount: _billsCount,
+                      cardsCount: _cardsCount,
+                      incomesCount: _incomesCount,
+                      loading:
+                          _loadingCounts &&
+                          _billsCount == null &&
+                          _cardsCount == null &&
+                          _incomesCount == null,
+                      error: _countsError,
+                    ),
+                    const SizedBox(height: 18),
+                    const _SectionCaplabel('SEGURIDAD'),
+                    const SizedBox(height: 8),
+                    const _BiometricCard(),
+                    const SizedBox(height: 24),
+                    const _LogoutButton(),
+                    const SizedBox(height: 20),
+                    const _Footer(),
+                    const SizedBox(height: 12),
+                  ],
+                ),
               ),
-            );
-          },
-        ),
+            ),
+            expanded: (_) => SafeArea(
+              bottom: false,
+              child: ConfigExpandedLayout(
+                email: authState.email,
+                billsCount: _billsCount,
+                cardsCount: _cardsCount,
+                incomesCount: _incomesCount,
+                loading: _loadingCounts,
+                error: _countsError,
+                biometricCard: const _BiometricCard(),
+                logoutButton: const _LogoutButton(),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -131,7 +148,7 @@ class _Header extends StatelessWidget {
     return const Padding(
       padding: EdgeInsets.fromLTRB(20, 14, 20, 18),
       child: Text(
-        'Configuración',
+        'Gestión',
         style: TextStyle(
           fontFamily: FzType.sans,
           fontSize: 26,
@@ -277,7 +294,7 @@ class _DataRows extends StatelessWidget {
           const SizedBox(height: 8),
           _DataRow(
             icon: Icons.description_outlined,
-            label: 'Cuentas fijas',
+            label: 'Gastos',
             count: billsCount,
             loading: loading,
             error: error != null,

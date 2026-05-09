@@ -53,5 +53,7 @@ class MonthSummary with _$MonthSummary {
     required int paidCount,
     required int totalCount,
     @Default(0.0) double incomeTotal,
+    @Default(0.0) double overdueTotal,
+    @Default(0) int overdueCount,
   }) = _MonthSummary;
 }

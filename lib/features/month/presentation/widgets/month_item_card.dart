@@ -4,11 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/format.dart';
-import '../../../../core/url.dart';
 import '../../../../design/tokens.dart';
 import '../../../../domain/period.dart';
 import '../../../../domain/urgency.dart';
 import '../../../../models/enums.dart';
+import '../../../../widgets/fz_snackbar.dart';
 import '../../domain/month_builder.dart';
 import '../../domain/month_item.dart';
 import '../bloc/month_bloc.dart';
@@ -408,23 +408,28 @@ class _ItemActionsState extends State<_ItemActions> {
     final code = widget.item.bill?.providerCode;
     if (code != null && code.isNotEmpty) {
       await Clipboard.setData(ClipboardData(text: code));
+      if (mounted) {
+        _snack('Código $code copiado', kind: FzSnackKind.success);
+      }
     }
     final uri = Uri.tryParse(raw);
-    if (uri == null) return _snack('El link no es válido.');
+    if (uri == null) {
+      _snack('El link no es válido.', kind: FzSnackKind.error);
+      return;
+    }
     try {
       final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
-      if (!ok) _snack('No se pudo abrir el link.');
+      if (!ok) _snack('No se pudo abrir el link.', kind: FzSnackKind.error);
     } catch (_) {
-      _snack('No se pudo abrir el link.');
+      _snack('No se pudo abrir el link.', kind: FzSnackKind.error);
     }
-    isWebUrl(raw); // referencia para mantener import
   }
 
   void _submitPaid() {
     final raw = _amountController.text.trim().replaceAll(',', '.');
     final value = double.tryParse(raw);
     if (value == null || value <= 0) {
-      _snack('Ingresá un monto válido.');
+      _snack('Ingresá un monto válido.', kind: FzSnackKind.error);
       return;
     }
     FocusScope.of(context).unfocus();
@@ -437,9 +442,9 @@ class _ItemActionsState extends State<_ItemActions> {
     context.read<MonthBloc>().add(MonthMarkPendingRequested(item: widget.item));
   }
 
-  void _snack(String msg) {
+  void _snack(String msg, {FzSnackKind kind = FzSnackKind.info}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    showFzSnack(context, msg, kind: kind);
   }
 
   @override

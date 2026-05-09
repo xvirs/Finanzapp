@@ -774,6 +774,8 @@ mixin _$MonthSummary {
   int get paidCount => throw _privateConstructorUsedError;
   int get totalCount => throw _privateConstructorUsedError;
   double get incomeTotal => throw _privateConstructorUsedError;
+  double get overdueTotal => throw _privateConstructorUsedError;
+  int get overdueCount => throw _privateConstructorUsedError;
 
   /// Create a copy of MonthSummary
   /// with the given fields replaced by the non-null parameter values.
@@ -796,6 +798,8 @@ abstract class $MonthSummaryCopyWith<$Res> {
     int paidCount,
     int totalCount,
     double incomeTotal,
+    double overdueTotal,
+    int overdueCount,
   });
 }
 
@@ -820,6 +824,8 @@ class _$MonthSummaryCopyWithImpl<$Res, $Val extends MonthSummary>
     Object? paidCount = null,
     Object? totalCount = null,
     Object? incomeTotal = null,
+    Object? overdueTotal = null,
+    Object? overdueCount = null,
   }) {
     return _then(
       _value.copyWith(
@@ -847,6 +853,14 @@ class _$MonthSummaryCopyWithImpl<$Res, $Val extends MonthSummary>
                 ? _value.incomeTotal
                 : incomeTotal // ignore: cast_nullable_to_non_nullable
                       as double,
+            overdueTotal: null == overdueTotal
+                ? _value.overdueTotal
+                : overdueTotal // ignore: cast_nullable_to_non_nullable
+                      as double,
+            overdueCount: null == overdueCount
+                ? _value.overdueCount
+                : overdueCount // ignore: cast_nullable_to_non_nullable
+                      as int,
           )
           as $Val,
     );
@@ -869,6 +883,8 @@ abstract class _$$MonthSummaryImplCopyWith<$Res>
     int paidCount,
     int totalCount,
     double incomeTotal,
+    double overdueTotal,
+    int overdueCount,
   });
 }
 
@@ -892,6 +908,8 @@ class __$$MonthSummaryImplCopyWithImpl<$Res>
     Object? paidCount = null,
     Object? totalCount = null,
     Object? incomeTotal = null,
+    Object? overdueTotal = null,
+    Object? overdueCount = null,
   }) {
     return _then(
       _$MonthSummaryImpl(
@@ -919,6 +937,14 @@ class __$$MonthSummaryImplCopyWithImpl<$Res>
             ? _value.incomeTotal
             : incomeTotal // ignore: cast_nullable_to_non_nullable
                   as double,
+        overdueTotal: null == overdueTotal
+            ? _value.overdueTotal
+            : overdueTotal // ignore: cast_nullable_to_non_nullable
+                  as double,
+        overdueCount: null == overdueCount
+            ? _value.overdueCount
+            : overdueCount // ignore: cast_nullable_to_non_nullable
+                  as int,
       ),
     );
   }
@@ -934,6 +960,8 @@ class _$MonthSummaryImpl implements _MonthSummary {
     required this.paidCount,
     required this.totalCount,
     this.incomeTotal = 0.0,
+    this.overdueTotal = 0.0,
+    this.overdueCount = 0,
   });
 
   @override
@@ -949,10 +977,16 @@ class _$MonthSummaryImpl implements _MonthSummary {
   @override
   @JsonKey()
   final double incomeTotal;
+  @override
+  @JsonKey()
+  final double overdueTotal;
+  @override
+  @JsonKey()
+  final int overdueCount;
 
   @override
   String toString() {
-    return 'MonthSummary(estimatedTotal: $estimatedTotal, paidTotal: $paidTotal, pendingCount: $pendingCount, paidCount: $paidCount, totalCount: $totalCount, incomeTotal: $incomeTotal)';
+    return 'MonthSummary(estimatedTotal: $estimatedTotal, paidTotal: $paidTotal, pendingCount: $pendingCount, paidCount: $paidCount, totalCount: $totalCount, incomeTotal: $incomeTotal, overdueTotal: $overdueTotal, overdueCount: $overdueCount)';
   }
 
   @override
@@ -971,7 +1005,11 @@ class _$MonthSummaryImpl implements _MonthSummary {
             (identical(other.totalCount, totalCount) ||
                 other.totalCount == totalCount) &&
             (identical(other.incomeTotal, incomeTotal) ||
-                other.incomeTotal == incomeTotal));
+                other.incomeTotal == incomeTotal) &&
+            (identical(other.overdueTotal, overdueTotal) ||
+                other.overdueTotal == overdueTotal) &&
+            (identical(other.overdueCount, overdueCount) ||
+                other.overdueCount == overdueCount));
   }
 
   @override
@@ -983,6 +1021,8 @@ class _$MonthSummaryImpl implements _MonthSummary {
     paidCount,
     totalCount,
     incomeTotal,
+    overdueTotal,
+    overdueCount,
   );
 
   /// Create a copy of MonthSummary
@@ -1002,6 +1042,8 @@ abstract class _MonthSummary implements MonthSummary {
     required final int paidCount,
     required final int totalCount,
     final double incomeTotal,
+    final double overdueTotal,
+    final int overdueCount,
   }) = _$MonthSummaryImpl;
 
   @override
@@ -1016,6 +1058,10 @@ abstract class _MonthSummary implements MonthSummary {
   int get totalCount;
   @override
   double get incomeTotal;
+  @override
+  double get overdueTotal;
+  @override
+  int get overdueCount;
 
   /// Create a copy of MonthSummary
   /// with the given fields replaced by the non-null parameter values.

@@ -14,6 +14,7 @@ analyzer:
     # Archivos de referencia del paquete de diseño — son fuente de verdad
     # exportada por Claude Design, no código del proyecto.
     - handoff/**
+    - handoff-fold/**
 
 linter:
   # The lint rules applied to this project can be customized in the

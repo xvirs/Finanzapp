@@ -17,6 +17,7 @@ import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
+import '../../../widgets/fz_snackbar.dart';
 
 /// Pantalla 6 — Nueva/Editar compra en cuotas.
 /// Port del JSX `ANewPurchase` (handoff/screens-a-cards.jsx).
@@ -140,7 +141,6 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
     final analytics = context.read<AnalyticsService>();
     final isNew = widget.installmentId == null;
     final installmentCount = int.parse(_countController.text.trim());
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
@@ -168,8 +168,10 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
       router.pop(true);
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('No se pudo guardar: $error')),
+      showFzSnack(
+        context,
+        'No se pudo guardar: $error',
+        kind: FzSnackKind.error,
       );
       setState(() => _saving = false);
     }
@@ -185,7 +187,6 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
 
     setState(() => _saving = true);
     final repo = context.read<InstallmentsRepository>();
-    final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
@@ -194,8 +195,10 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
       router.pop(true);
     } catch (error) {
       if (!mounted) return;
-      messenger.showSnackBar(
-        SnackBar(content: Text('No se pudo eliminar: $error')),
+      showFzSnack(
+        context,
+        'No se pudo eliminar: $error',
+        kind: FzSnackKind.error,
       );
       setState(() => _saving = false);
     }

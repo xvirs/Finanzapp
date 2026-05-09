@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../core/adaptive_scaffold.dart';
 import '../../../core/analytics_service.dart';
 import '../../../design/tokens.dart';
 import '../../../domain/period.dart';
 import '../../../widgets/animated_amount.dart';
 import 'bloc/cards_bloc.dart';
 import 'widgets/card_list_item.dart';
+import 'widgets/cards_expanded_layout.dart';
+import 'widgets/cards_expanded_shimmer.dart';
 import 'widgets/cards_shimmer.dart';
 
 /// Pantalla 4 — Tarjetas (lista).
@@ -25,6 +28,9 @@ class CardsScreen extends StatefulWidget {
 }
 
 class _CardsScreenState extends State<CardsScreen> {
+  /// Tarjeta seleccionada en master/detail (expanded/desktop).
+  String? _selectedCardId;
+
   @override
   void initState() {
     super.initState();
@@ -34,26 +40,47 @@ class _CardsScreenState extends State<CardsScreen> {
     });
   }
 
+  void _selectCard(String id) => setState(() => _selectedCardId = id);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FzColors.bg,
-      body: SafeArea(
-        bottom: false,
-        child: BlocBuilder<CardsBloc, CardsBlocState>(
-          builder: (context, state) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Material(
-                  color: FzColors.bg,
-                  child: _CardsHeader(state: state),
+      body: BlocBuilder<CardsBloc, CardsBlocState>(
+        builder: (context, state) {
+          return AdaptiveScaffold(
+            compact: (_) {
+              final isLoading = state.status == CardsStatus.loading ||
+                  state.status == CardsStatus.initial;
+              return SafeArea(
+                bottom: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Material(
+                      color: FzColors.bg,
+                      child: isLoading
+                          ? const CardsHeaderShimmer()
+                          : _CardsHeader(state: state),
+                    ),
+                    Expanded(child: _Body(state: state)),
+                  ],
                 ),
-                Expanded(child: _Body(state: state)),
-              ],
-            );
-          },
-        ),
+              );
+            },
+            expanded: (_) => SafeArea(
+              bottom: false,
+              child: state.status == CardsStatus.loading ||
+                      state.status == CardsStatus.initial
+                  ? const CardsExpandedShimmer()
+                  : CardsExpandedLayout(
+                      state: state,
+                      selectedCardId: _selectedCardId,
+                      onSelect: _selectCard,
+                    ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -104,8 +131,20 @@ class _Body extends StatelessWidget {
                   itemBuilder: (ctx, i) {
                     final item = state.items[i];
                     return CardListItem(
+                      key: ValueKey(item.card.id),
                       data: item,
                       period: state.period,
+                      mutating: state.mutatingCardId == item.card.id,
+                      onMarkPaid: (amount) =>
+                          ctx.read<CardsBloc>().add(
+                            CardsMarkPaidRequested(
+                              cardId: item.card.id,
+                              amount: amount,
+                            ),
+                          ),
+                      onMarkPending: () => ctx.read<CardsBloc>().add(
+                        CardsMarkPendingRequested(cardId: item.card.id),
+                      ),
                       onTap: () async {
                         final bloc = ctx.read<CardsBloc>();
                         final result = await ctx.push<bool>(

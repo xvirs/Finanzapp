@@ -32,6 +32,8 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
     on<CardsRequested>(_onRequested);
     on<CardsRefreshRequested>(_onRefreshRequested);
     on<CardsSilentRefreshRequested>(_onSilentRefreshRequested);
+    on<CardsMarkPaidRequested>(_onMarkPaidRequested);
+    on<CardsMarkPendingRequested>(_onMarkPendingRequested);
 
     _realtimeSubscription = realtimeService.changes.listen((_) {
       _refreshDebounce?.cancel();
@@ -85,6 +87,22 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
           .where((b) => b.active && b.autoDebitCardId == card.id)
           .toList();
 
+      // Cuotas activas en el período actual (con su índice 1..N).
+      final activeInstallments = <ActiveInstallment>[];
+      for (final purchase in cardPurchases) {
+        final result = installmentForPeriod(purchase, period);
+        if (result == null) continue;
+        activeInstallments.add(
+          ActiveInstallment(
+            purchase: purchase,
+            cuotaIndex: result.cuotaIndex,
+          ),
+        );
+      }
+      activeInstallments.sort(
+        (a, b) => a.purchase.description.compareTo(b.purchase.description),
+      );
+
       final summary = summarizeCardForPeriod(
         purchases: cardPurchases,
         target: period,
@@ -99,8 +117,8 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
       items.add(
         CardListItemData(
           card: card,
-          installmentsCount: summary.installmentsCount,
-          autoDebitsCount: summary.autoDebitsCount,
+          activeInstallments: activeInstallments,
+          autoDebitBills: cardAutoDebits,
           total: summary.total,
           payment: payment,
         ),
@@ -160,6 +178,70 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
       );
     } catch (error) {
       emit(state.copyWith(errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onMarkPaidRequested(
+    CardsMarkPaidRequested event,
+    Emitter<CardsBlocState> emit,
+  ) async {
+    final item = _findItem(event.cardId);
+    if (item == null) return;
+    emit(state.copyWith(mutatingCardId: event.cardId, clearError: true));
+    try {
+      await _paymentsRepository.savePaidPayment(
+        existingPaymentId: item.payment?.id,
+        periodIso: state.period.toIso(),
+        kind: PaymentKind.cardTotal,
+        cardId: event.cardId,
+        amount: event.amount,
+      );
+      await _silentRefreshAfterMutation(emit);
+    } catch (error) {
+      emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));
+    }
+  }
+
+  Future<void> _onMarkPendingRequested(
+    CardsMarkPendingRequested event,
+    Emitter<CardsBlocState> emit,
+  ) async {
+    final item = _findItem(event.cardId);
+    final paymentId = item?.payment?.id;
+    if (paymentId == null) return;
+    emit(state.copyWith(mutatingCardId: event.cardId, clearError: true));
+    try {
+      await _paymentsRepository.deletePayment(paymentId);
+      await _silentRefreshAfterMutation(emit);
+    } catch (error) {
+      emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));
+    }
+  }
+
+  CardListItemData? _findItem(String cardId) {
+    for (final item in state.items) {
+      if (item.card.id == cardId) return item;
+    }
+    return null;
+  }
+
+  /// Refresh tras mutación: recarga + limpia mutating en una sola
+  /// emisión, para evitar flicker entre el spinner y el estado nuevo.
+  Future<void> _silentRefreshAfterMutation(
+    Emitter<CardsBlocState> emit,
+  ) async {
+    try {
+      final data = await _loadCardsData();
+      emit(
+        state.copyWith(
+          period: data.period,
+          items: data.items,
+          totalForPeriod: data.totalForPeriod,
+          clearMutating: true,
+        ),
+      );
+    } catch (error) {
+      emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));
     }
   }
 }

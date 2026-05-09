@@ -20,7 +20,7 @@ import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
 import '../../../widgets/month_year_picker.dart';
 
-/// Pantallas 10/11 — Nueva/Editar cuenta fija.
+/// Pantallas 10/11 — Nuevo/Editar gasto.
 /// Port del JSX `ANewFixedAccount` + `AEditFixedAccount`
 /// (handoff/screens-a-config.jsx).
 class BillFormScreen extends StatefulWidget {
@@ -92,7 +92,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
 
       if (widget.isEditing && bill == null) {
         setState(() {
-          _loadError = 'No se encontró la cuenta fija.';
+          _loadError = 'No se encontró el gasto.';
           _loading = false;
         });
         return;
@@ -184,7 +184,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
   Future<void> _delete() async {
     final confirmed = await showConfirmDeleteDialog(
       context,
-      title: 'Eliminar cuenta fija',
+      title: 'Eliminar gasto',
       message: 'Esta acción no se puede deshacer.',
     );
     if (!confirmed || !mounted) return;
@@ -217,7 +217,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             FzAppBar(
-              title: widget.isEditing ? 'Editar cuenta' : 'Nueva cuenta fija',
+              title: widget.isEditing ? 'Editar gasto' : 'Nuevo gasto',
             ),
             Expanded(
               child: _loading

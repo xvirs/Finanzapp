@@ -8,6 +8,7 @@ import '../../../design/tokens.dart';
 import '../../../models/bill.dart';
 import '../../../models/enums.dart';
 import '../../../widgets/animated_amount.dart';
+import '../../../widgets/fz_snackbar.dart';
 import '../../../widgets/shimmer_box.dart';
 import 'bloc/card_detail_bloc.dart';
 import 'widgets/installment_progress_tag.dart';
@@ -98,10 +99,101 @@ class _Body extends StatelessWidget {
             children: [
               _InstallmentsSection(state: state),
               _DebitsSection(state: state),
+              if (state.card?.url != null) _PayCta(url: state.card!.url!),
             ],
           ),
         );
     }
+  }
+}
+
+/// CTA "Ir a pagar" al final del body — abre la app/web del proveedor
+/// (deep link o HTTPS App Link). Aparece solo si la tarjeta tiene `url`.
+/// Va al final por read-flow: primero hero (situación) → cuotas/débitos
+/// (revisión) → CTA externo.
+class _PayCta extends StatelessWidget {
+  const _PayCta({required this.url});
+
+  final String url;
+
+  Future<void> _open(BuildContext context) async {
+    final uri = Uri.tryParse(url);
+    if (uri == null) {
+      if (context.mounted) {
+        showFzSnack(
+          context,
+          'El link no es válido.',
+          kind: FzSnackKind.error,
+        );
+      }
+      return;
+    }
+    try {
+      final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!ok && context.mounted) {
+        showFzSnack(
+          context,
+          'No se pudo abrir el link.',
+          kind: FzSnackKind.error,
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        showFzSnack(
+          context,
+          'No se pudo abrir el link.',
+          kind: FzSnackKind.error,
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      child: Material(
+        color: FzColors.primary,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        child: InkWell(
+          onTap: () => _open(context),
+          borderRadius: BorderRadius.circular(FzRadius.lg),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(FzRadius.lg),
+              boxShadow: FzShadow.ctaPrimary,
+            ),
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.open_in_new_rounded,
+                  size: 14,
+                  color: FzColors.primaryInk,
+                ),
+                SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    'Ir a pagar',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontFamily: FzType.sans,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -0.14,
+                      color: FzColors.primaryInk,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -244,7 +336,10 @@ class _BrandChip extends StatelessWidget {
   }
 }
 
-/// Hero card grande con halo radial verde si está pagada.
+/// Hero card grande del detail — solo info (caplabel + monto + breakdown).
+/// Las acciones de pago (input + Marcar pagado) viven en el item de la
+/// lista de Tarjetas (`CardListItem`), no acá. El "Ir a pagar" es un CTA
+/// separado al final del body.
 class _HeroCard extends StatelessWidget {
   const _HeroCard({required this.state});
   final CardDetailBlocState state;
@@ -256,9 +351,13 @@ class _HeroCard extends StatelessWidget {
     if (summary == null || card == null) return const SizedBox.shrink();
 
     final paid = state.isPaid;
-    final amount = paid && state.payment?.amountReal != null
-        ? state.payment!.amountReal!
-        : summary.total;
+    final estimated = summary.total;
+    final amountReal = state.payment?.amountReal;
+    final displayAmount = paid && amountReal != null ? amountReal : estimated;
+    // "estimado: $X" como referencia solo si pagaste un monto distinto
+    // al estimado del mes (caso frecuente en tarjetas).
+    final showEstimatedHint =
+        paid && amountReal != null && (amountReal - estimated).abs() > 0.5;
 
     final breakdownParts = <String>[];
     if (summary.installmentsCount > 0) {
@@ -277,8 +376,6 @@ class _HeroCard extends StatelessWidget {
     final breakdown = breakdownParts.isEmpty
         ? 'Sin cargos este mes'
         : breakdownParts.join(' · ');
-
-    final url = card.url;
 
     return Container(
       decoration: BoxDecoration(
@@ -310,7 +407,7 @@ class _HeroCard extends StatelessWidget {
                   ),
                 const SizedBox(height: 4),
                 AnimatedCurrency(
-                  value: amount,
+                  value: displayAmount,
                   style: TextStyle(
                     fontFamily: FzType.sans,
                     fontSize: 36,
@@ -330,13 +427,16 @@ class _HeroCard extends StatelessWidget {
                     letterSpacing: 0.24,
                   ),
                 ),
-                if (url != null) ...[
-                  const SizedBox(height: 14),
-                  _OutlinePillButton(
-                    icon: Icons.open_in_new_rounded,
-                    label: 'Ir a pagar',
-                    borderColor: paid ? FzColors.borderPaid : FzColors.border,
-                    onPressed: () => _openUrl(context, url),
+                if (showEstimatedHint) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    'estimado: ${formatCurrency(estimated)}',
+                    style: const TextStyle(
+                      fontFamily: FzType.mono,
+                      fontSize: 11,
+                      color: FzColors.textMute,
+                      letterSpacing: 0.44,
+                    ),
                   ),
                 ],
               ],
@@ -345,20 +445,6 @@ class _HeroCard extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  Future<void> _openUrl(BuildContext context, String url) async {
-    final uri = Uri.tryParse(url);
-    if (uri == null) return;
-    try {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } catch (_) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No se pudo abrir el link.')),
-        );
-      }
-    }
   }
 }
 
@@ -407,55 +493,6 @@ class _GreenHalo extends StatelessWidget {
               ],
               stops: const [0.0, 0.7],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _OutlinePillButton extends StatelessWidget {
-  const _OutlinePillButton({
-    required this.icon,
-    required this.label,
-    required this.onPressed,
-    this.borderColor = FzColors.border,
-  });
-
-  final IconData icon;
-  final String label;
-  final VoidCallback? onPressed;
-  final Color borderColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(FzRadius.md),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(FzRadius.md),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            border: Border.all(color: borderColor),
-            borderRadius: BorderRadius.circular(FzRadius.md),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 13, color: FzColors.text),
-              const SizedBox(width: 8),
-              Text(
-                label,
-                style: const TextStyle(
-                  fontFamily: FzType.sans,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: FzColors.text,
-                ),
-              ),
-            ],
           ),
         ),
       ),

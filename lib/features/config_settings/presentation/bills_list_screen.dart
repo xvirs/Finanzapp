@@ -13,10 +13,15 @@ import '../../../widgets/bill_kind_icon.dart';
 import '../../../widgets/shimmer_box.dart';
 import 'bloc/bills_list_bloc.dart';
 
-/// Pantalla 9 — Cuentas fijas (lista).
+/// Pantalla 9 — Gastos (lista).
 /// Port del JSX `AFixedAccounts` (handoff/screens-a-config.jsx).
 class BillsListScreen extends StatelessWidget {
-  const BillsListScreen({super.key});
+  const BillsListScreen({this.showAppBar = true, super.key});
+
+  /// Cuando se embebe en el detail pane de Config (expanded), el master
+  /// ya provee el contexto de la sección, así que no necesitamos otro
+  /// `FzAppBar` con botón "atrás" que no tendría a dónde volver.
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context) {
@@ -29,20 +34,21 @@ class BillsListScreen extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                FzAppBar(
-                  title: 'Cuentas fijas',
-                  trailing: _AddButton(
-                    onPressed: () async {
-                      final bloc = context.read<BillsListBloc>();
-                      final result = await context.push<bool>(
-                        '/config/bills/new',
-                      );
-                      if (result == true) {
-                        bloc.add(const BillsListRefreshRequested());
-                      }
-                    },
+                if (showAppBar)
+                  FzAppBar(
+                    title: 'Gastos',
+                    trailing: _AddButton(
+                      onPressed: () async {
+                        final bloc = context.read<BillsListBloc>();
+                        final result = await context.push<bool>(
+                          '/config/bills/new',
+                        );
+                        if (result == true) {
+                          bloc.add(const BillsListRefreshRequested());
+                        }
+                      },
+                    ),
                   ),
-                ),
                 Expanded(child: _Body(state: state)),
               ],
             );
@@ -654,7 +660,7 @@ class _EmptyView extends StatelessWidget {
             ),
             SizedBox(height: 12),
             Text(
-              'No tenés cuentas fijas',
+              'No tenés gastos',
               style: TextStyle(
                 fontFamily: FzType.sans,
                 fontSize: 15,

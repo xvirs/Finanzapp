@@ -3,6 +3,34 @@ import 'package:flutter/material.dart';
 import '../../../../design/tokens.dart';
 import '../../../../widgets/shimmer_box.dart';
 
+/// Skeleton del header de Tarjetas (compact). Replica el título · fecha
+/// · caplabel "TOTAL DEL MES" · monto display.
+class CardsHeaderShimmer extends StatelessWidget {
+  const CardsHeaderShimmer({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
+      decoration: const BoxDecoration(
+        border: Border(bottom: BorderSide(color: FzColors.border)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: const [
+          ShimmerBox(width: 130, height: 26, radius: 5),
+          SizedBox(height: 6),
+          ShimmerBox(width: 110, height: 12, radius: 2),
+          SizedBox(height: 14),
+          ShimmerBox(width: 96, height: 11, radius: 2),
+          SizedBox(height: 6),
+          ShimmerBox(width: 200, height: 32, radius: 5),
+        ],
+      ),
+    );
+  }
+}
+
 /// Skeleton para la lista de tarjetas mientras carga.
 class CardsShimmer extends StatelessWidget {
   const CardsShimmer({super.key});

@@ -1,5 +1,6 @@
 import '../../../domain/installments.dart';
 import '../../../domain/period.dart';
+import '../../../domain/urgency.dart';
 import '../../../models/bill.dart';
 import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
@@ -273,21 +274,40 @@ MonthGroup _buildGroup({
   );
 }
 
+/// Resumen agregado del mes. [period] se usa para calcular urgencia
+/// (cuántos items con monto > 0 están atrasados respecto al día de hoy).
+/// Si no se pasa, se asume el período actual.
 MonthSummary summarizeChecklist(
   List<MonthItem> items, {
   List<Income> incomes = const [],
+  PeriodKey? period,
 }) {
+  final p = period ?? PeriodKey.current();
   var estimatedTotal = 0.0;
   var paidTotal = 0.0;
   var pendingCount = 0;
   var paidCount = 0;
+  var overdueTotal = 0.0;
+  var overdueCount = 0;
   for (final item in items) {
-    if (item.estimatedAmount != null) estimatedTotal += item.estimatedAmount!;
-    if (item.payment?.status == PaymentStatus.paid) {
-      paidTotal += item.payment?.amountReal ?? item.estimatedAmount ?? 0;
+    final estimated = item.estimatedAmount;
+    if (estimated != null) estimatedTotal += estimated;
+    final isPaid = item.payment?.status == PaymentStatus.paid;
+    if (isPaid) {
+      paidTotal += item.payment?.amountReal ?? estimated ?? 0;
       paidCount++;
-    } else {
-      pendingCount++;
+      continue;
+    }
+    pendingCount++;
+    if (estimated == null || estimated <= 0) continue;
+    final urgency = getUrgency(
+      dayOfMonth: item.dayOfMonth,
+      paid: false,
+      period: p,
+    );
+    if (urgency is UrgencyOverdue) {
+      overdueTotal += estimated;
+      overdueCount++;
     }
   }
 
@@ -304,5 +324,7 @@ MonthSummary summarizeChecklist(
     paidCount: paidCount,
     totalCount: items.length,
     incomeTotal: incomeTotal,
+    overdueTotal: overdueTotal,
+    overdueCount: overdueCount,
   );
 }

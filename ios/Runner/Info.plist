@@ -83,5 +83,19 @@
 		     App Store Connect. -->
 		<key>LSApplicationCategoryType</key>
 		<string>public.app-category.finance</string>
+		<!-- Schemes de apps externas que Finanzapp puede abrir desde
+		     un bill (deep link "Ir a pagar"). En iOS, sin esta lista
+		     canLaunchUrl() devuelve false aunque la app esté instalada. -->
+		<key>LSApplicationQueriesSchemes</key>
+		<array>
+			<string>mercadopago</string>
+			<string>modo</string>
+			<string>uala</string>
+			<string>naranjax</string>
+			<string>brubank</string>
+			<string>bgalicia</string>
+			<string>santandermobile</string>
+			<string>bbvanetcash</string>
+		</array>
 	</dict>
 </plist>

@@ -19,6 +19,29 @@ String formatCurrencyOrVariable(num? value) {
 
 String formatMonthYear(DateTime date) => DateFormat.yMMMM('es_AR').format(date);
 
+/// "1 cuenta" / "3 cuentas". Helper para evitar templates como
+/// `'$n cuenta${n == 1 ? "" : "s"}'` repartidos por el código.
+String pluralizeCount(int count, String singular, String plural) {
+  return '$count ${count == 1 ? singular : plural}';
+}
+
+/// Versión corta del kind para subtítulos en filas estrechas (master
+/// row del expanded, etc). Mantiene `kBillKindLabels` como fuente de
+/// verdad para descripciones largas y este mapa para cuando hay
+/// poco espacio.
+const Map<BillKind, String> kBillKindShortLabels = {
+  BillKind.rent: 'ALQUILER',
+  BillKind.electricity: 'LUZ',
+  BillKind.water: 'AGUA',
+  BillKind.gas: 'GAS',
+  BillKind.internet: 'INTERNET',
+  BillKind.health: 'SALUD',
+  BillKind.tax: 'IMPUESTO',
+  BillKind.consortium: 'EXPENSAS',
+  BillKind.subscription: 'SUSCR',
+  BillKind.other: 'OTRO',
+};
+
 const Map<BillKind, String> kBillKindLabels = {
   BillKind.rent: 'Alquiler',
   BillKind.electricity: 'Luz',

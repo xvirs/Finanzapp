@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../design/tokens.dart';
 import '../models/enums.dart';
 
-/// Container 38x38 con icono Material según el tipo de cuenta fija.
+/// Container 38x38 con icono Material según el tipo de gasto.
 /// Reemplaza al `BillKindTag` viejo que usaba emojis (regla "no emojis
 /// en UI" del handoff).
 ///

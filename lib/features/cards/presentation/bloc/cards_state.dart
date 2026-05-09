@@ -9,6 +9,7 @@ final class CardsBlocState extends Equatable {
     this.items = const [],
     this.totalForPeriod = 0,
     this.errorMessage,
+    this.mutatingCardId,
   }) : period = period ?? PeriodKey.current();
 
   final CardsStatus status;
@@ -17,6 +18,10 @@ final class CardsBlocState extends Equatable {
   final double totalForPeriod;
   final String? errorMessage;
 
+  /// Id de la tarjeta cuyo pago está siendo mutado (mark paid/pending).
+  /// La fila correspondiente muestra spinner y desactiva su botón.
+  final String? mutatingCardId;
+
   CardsBlocState copyWith({
     CardsStatus? status,
     PeriodKey? period,
@@ -24,6 +29,8 @@ final class CardsBlocState extends Equatable {
     double? totalForPeriod,
     String? errorMessage,
     bool clearError = false,
+    String? mutatingCardId,
+    bool clearMutating = false,
   }) {
     return CardsBlocState(
       status: status ?? this.status,
@@ -31,6 +38,9 @@ final class CardsBlocState extends Equatable {
       items: items ?? this.items,
       totalForPeriod: totalForPeriod ?? this.totalForPeriod,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
+      mutatingCardId: clearMutating
+          ? null
+          : (mutatingCardId ?? this.mutatingCardId),
     );
   }
 
@@ -41,5 +51,6 @@ final class CardsBlocState extends Equatable {
     items,
     totalForPeriod,
     errorMessage,
+    mutatingCardId,
   ];
 }

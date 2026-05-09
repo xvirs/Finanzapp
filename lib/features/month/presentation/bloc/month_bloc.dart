@@ -107,7 +107,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
 
     return (
       groups: groupChecklistByCategory(items),
-      summary: summarizeChecklist(items, incomes: incomes),
+      summary: summarizeChecklist(items, incomes: incomes, period: period),
       incomes: incomes,
     );
   }

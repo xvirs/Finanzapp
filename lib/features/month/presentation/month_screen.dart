@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../core/adaptive_scaffold.dart';
 import '../../../core/analytics_service.dart';
-import '../../../core/format.dart';
 import '../../../design/tokens.dart';
-import '../../../models/income.dart';
+import '../../../domain/period.dart';
+import '../../../widgets/fz_snackbar.dart';
 import 'bloc/month_bloc.dart';
+import 'widgets/month_expanded_layout.dart';
+import 'widgets/month_expanded_shimmer.dart';
 import 'widgets/month_group_section.dart';
 import 'widgets/month_header_section.dart';
 import 'widgets/month_shimmer.dart';
@@ -27,7 +30,17 @@ class MonthScreen extends StatefulWidget {
 }
 
 class _MonthScreenState extends State<MonthScreen> {
+  /// Item expandido (compact: card abre detail inline al tocar).
   String? _expandedKey;
+
+  /// Item seleccionado (expanded/desktop: master/detail).
+  String? _selectedItemKey;
+
+  /// Último período visto, usado en el [BlocConsumer] listener para
+  /// detectar cambios reales de mes y limpiar la selección master/detail.
+  /// Sin esto, el listener también disparaba al completar mutaciones y
+  /// borraba el hero recién marcado como pagado.
+  PeriodKey? _lastSeenPeriod;
 
   @override
   void initState() {
@@ -40,6 +53,10 @@ class _MonthScreenState extends State<MonthScreen> {
 
   void _toggleExpanded(String key) {
     setState(() => _expandedKey = _expandedKey == key ? null : key);
+  }
+
+  void _selectItem(String key) {
+    setState(() => _selectedItemKey = key);
   }
 
   @override
@@ -55,34 +72,67 @@ class _MonthScreenState extends State<MonthScreen> {
                 current.mutatingItemKey == null),
         listener: (context, state) {
           if (state.errorMessage != null) {
-            ScaffoldMessenger.of(
+            showFzSnack(
               context,
-            ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+              state.errorMessage!,
+              kind: FzSnackKind.error,
+            );
           }
-          if (_expandedKey != null) {
+          // Cambio de período → cerrar tarjetas expandidas + limpiar
+          // selección master/detail. Comparamos contra el último visto
+          // porque el listener también dispara por error/mutación.
+          final isPeriodChange =
+              _lastSeenPeriod != null && _lastSeenPeriod != state.period;
+          if (isPeriodChange) {
+            setState(() {
+              _expandedKey = null;
+              _selectedItemKey = null;
+            });
+          } else if (_expandedKey != null) {
+            // Mutación completada → cerrar la card expandida del compact
+            // pero respetar la selección master/detail del expanded.
             setState(() => _expandedKey = null);
           }
+          _lastSeenPeriod = state.period;
         },
         builder: (context, state) {
-          return SafeArea(
-            bottom: false,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header anclado siempre — se mantiene durante carga
-                // y solo cambian sus valores cuando llegan los datos.
-                Material(
-                  color: FzColors.bg,
-                  child: MonthHeaderSection(state: state),
+          return AdaptiveScaffold(
+            compact: (_) {
+              final isLoading = state.status == MonthStatus.loading ||
+                  state.status == MonthStatus.initial;
+              return SafeArea(
+                bottom: false,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Material(
+                      color: FzColors.bg,
+                      child: isLoading
+                          ? const MonthHeaderShimmer()
+                          : MonthHeaderSection(state: state),
+                    ),
+                    Expanded(
+                      child: _Body(
+                        state: state,
+                        expandedKey: _expandedKey,
+                        onToggle: _toggleExpanded,
+                      ),
+                    ),
+                  ],
                 ),
-                Expanded(
-                  child: _Body(
-                    state: state,
-                    expandedKey: _expandedKey,
-                    onToggle: _toggleExpanded,
-                  ),
-                ),
-              ],
+              );
+            },
+            expanded: (_) => SafeArea(
+              bottom: false,
+              child:
+                  state.status == MonthStatus.loading ||
+                      state.status == MonthStatus.initial
+                  ? const MonthExpandedShimmer()
+                  : MonthExpandedLayout(
+                      state: state,
+                      selectedKey: _selectedItemKey,
+                      onSelect: _selectItem,
+                    ),
             ),
           );
         },
@@ -129,14 +179,13 @@ class _Body extends StatelessWidget {
 
       case MonthStatus.success:
         final hasGroups = state.groups.isNotEmpty;
-        final hasIncomes = state.incomes.isNotEmpty;
         return RefreshIndicator(
           color: FzColors.primary,
           backgroundColor: FzColors.card,
           onRefresh: () async {
             context.read<MonthBloc>().add(const MonthRefreshRequested());
           },
-          child: !hasGroups && !hasIncomes
+          child: !hasGroups
               ? ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
                   children: const [_EmptyView()],
@@ -154,126 +203,10 @@ class _Body extends StatelessWidget {
                         mutatingItemKey: state.mutatingItemKey,
                         onToggle: onToggle,
                       ),
-                    if (hasIncomes) _IncomesSection(incomes: state.incomes),
                   ],
                 ),
         );
     }
-  }
-}
-
-class _IncomesSection extends StatelessWidget {
-  const _IncomesSection({required this.incomes});
-
-  final List<Income> incomes;
-
-  @override
-  Widget build(BuildContext context) {
-    final total = incomes.fold<double>(
-      0,
-      (sum, i) => sum + (i.defaultAmount ?? 0),
-    );
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: FzColors.cardPaid,
-          borderRadius: BorderRadius.circular(FzRadius.xl),
-          border: Border.all(color: FzColors.borderPaid),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Row(
-                  children: [
-                    Text('💰', style: TextStyle(fontSize: 16)),
-                    SizedBox(width: 8),
-                    Text(
-                      'Ingresos',
-                      style: TextStyle(
-                        fontFamily: FzType.sans,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: FzColors.text,
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  formatCurrency(total),
-                  style: const TextStyle(
-                    fontFamily: FzType.sans,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    fontFeatures: FzType.tabularNums,
-                    color: FzColors.primaryHi,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            for (final income in incomes) ...[
-              _IncomeRow(income: income),
-              if (income != incomes.last) const SizedBox(height: 4),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _IncomeRow extends StatelessWidget {
-  const _IncomeRow({required this.income});
-
-  final Income income;
-
-  @override
-  Widget build(BuildContext context) {
-    final amount = income.defaultAmount;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            income.name,
-            style: const TextStyle(
-              fontFamily: FzType.sans,
-              fontSize: 13,
-              color: FzColors.text,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        if (income.dayOfMonth != null) ...[
-          const SizedBox(width: 8),
-          Text(
-            'día ${income.dayOfMonth}',
-            style: const TextStyle(
-              fontFamily: FzType.mono,
-              fontSize: 11,
-              color: FzColors.textDim,
-              letterSpacing: 0.44,
-            ),
-          ),
-        ],
-        const SizedBox(width: 8),
-        Text(
-          amount == null ? 'variable' : formatCurrency(amount),
-          style: TextStyle(
-            fontFamily: FzType.sans,
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            fontFeatures: FzType.tabularNums,
-            color: amount == null ? FzColors.textDim : FzColors.text,
-          ),
-        ),
-      ],
-    );
   }
 }
 

@@ -270,9 +270,9 @@ class FzBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = const [
-      ('Mes', Icons.calendar_today_outlined),
+      ('Inicio', Icons.home_outlined),
       ('Tarjetas', Icons.credit_card_outlined),
-      ('Config', Icons.settings_outlined),
+      ('Gestión', Icons.tune),
     ];
     return Container(
       decoration: const BoxDecoration(
@@ -326,6 +326,130 @@ class FzBottomNav extends StatelessWidget {
               ),
             ),
         ],
+      ),
+    );
+  }
+}
+
+/// Rail de navegación vertical (3 tabs: Inicio / Tarjetas / Gestión) para
+/// layouts `expanded` y `desktop`. Espejo de [FzBottomNav]: misma data,
+/// misma estética (pill verde para activo), mismo color de marca.
+///
+/// Por defecto mide 88 dp de ancho (Fold inner / tablet vertical). En
+/// desktop se puede pasar [extended] = true para que crezca a ~220 dp
+/// con labels más prominentes.
+class FzNavRail extends StatelessWidget {
+  final int index;
+  final ValueChanged<int> onChange;
+  final bool extended;
+  const FzNavRail({
+    super.key,
+    required this.index,
+    required this.onChange,
+    this.extended = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final items = const [
+      ('Inicio', Icons.home_outlined),
+      ('Tarjetas', Icons.credit_card_outlined),
+      ('Gestión', Icons.tune),
+    ];
+
+    return Container(
+      width: extended ? 220 : 88,
+      decoration: const BoxDecoration(
+        color: FzColors.bg,
+        border: Border(right: BorderSide(color: FzColors.border)),
+      ),
+      child: SafeArea(
+        right: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 10),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              for (var i = 0; i < items.length; i++)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: _RailItem(
+                    label: items[i].$1,
+                    icon: items[i].$2,
+                    selected: i == index,
+                    extended: extended,
+                    onTap: () => onChange(i),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _RailItem extends StatelessWidget {
+  const _RailItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.extended,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final bool extended;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? FzColors.primary : FzColors.textMute;
+    return Material(
+      color: selected ? FzColors.primarySoft : Colors.transparent,
+      borderRadius: BorderRadius.circular(FzRadius.md),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(FzRadius.md),
+        child: Padding(
+          padding: extended
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 12)
+              : const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+          child: extended
+              ? Row(
+                  children: [
+                    Icon(icon, size: 20, color: fg),
+                    const SizedBox(width: 12),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontFamily: FzType.sans,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: fg,
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(icon, size: 20, color: fg),
+                    const SizedBox(height: 6),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontFamily: FzType.sans,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        color: fg,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }

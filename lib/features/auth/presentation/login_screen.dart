@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
+import '../../../core/responsive.dart';
 import '../../../design/tokens.dart';
 import '../../../design/widgets.dart';
 import 'bloc/auth_bloc.dart';
@@ -92,92 +93,355 @@ class _LoginScreenState extends State<LoginScreen> {
             children: [
               const _RadialHalo(),
               SafeArea(
-                child: Center(
-                  child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: 28),
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 380),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const SizedBox(height: 24),
-                          // Logo
-                          const Center(child: FzLogo(size: 64, shadow: true)),
-                          const SizedBox(height: 28),
-                          // Título
-                          Text(
-                            'Finanzapp',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 30,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: -0.75,
-                              color: FzColors.text,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          // Subtítulo
-                          Text(
-                            'Tus pagos del mes, ordenados.',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.inter(
-                              fontSize: 14,
-                              color: FzColors.textDim,
-                              height: 1.5,
-                            ),
-                          ),
-                          const SizedBox(height: 44),
-                          // Botón "Continuar con Apple" — solo iOS.
-                          // Apple Review Guideline 4.8 lo exige cuando
-                          // ofrecemos Google Sign-In. En Android no lo
-                          // mostramos para no agregar fricción.
-                          if (Platform.isIOS) ...[
-                            _AppleButton(
-                              onPressed: isLoading ? null : _submitApple,
-                            ),
-                            const SizedBox(height: 12),
-                          ],
-                          // Botón Google (blanco)
-                          _GoogleButton(
-                            onPressed: isLoading ? null : _submitGoogle,
-                            loading: isLoading,
-                          ),
-                          const SizedBox(height: 24),
-                          // Divider "o por email"
-                          const _OrDivider(),
-                          const SizedBox(height: 24),
-                          // Email field con label flotante "EMAIL"
-                          _EmailInput(controller: _emailController),
-                          const SizedBox(height: 10),
-                          // CTA "Enviarme el link →"
-                          _PrimaryCta(
-                            onPressed: (isLoading || !_emailHasContent)
-                                ? null
-                                : _submitMagicLink,
-                            loading: isLoading,
-                          ),
-                          const SizedBox(height: 28),
-                          // Footer mono
-                          Text(
-                            'v2.0 · finanzapp.app',
-                            textAlign: TextAlign.center,
-                            style: GoogleFonts.jetBrainsMono(
-                              fontSize: 11.5,
-                              letterSpacing: 0.46,
-                              color: FzColors.textMute,
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                  ),
+                child: LayoutBuilder(
+                  builder: (ctx, constraints) {
+                    final factor = constraints.formFactor;
+                    if (factor == FormFactor.compact) {
+                      return _CompactLogin(
+                        emailController: _emailController,
+                        emailHasContent: _emailHasContent,
+                        isLoading: isLoading,
+                        onSubmitGoogle: _submitGoogle,
+                        onSubmitApple: _submitApple,
+                        onSubmitMagicLink: _submitMagicLink,
+                      );
+                    }
+                    return _SplitLogin(
+                      emailController: _emailController,
+                      emailHasContent: _emailHasContent,
+                      isLoading: isLoading,
+                      onSubmitGoogle: _submitGoogle,
+                      onSubmitApple: _submitApple,
+                      onSubmitMagicLink: _submitMagicLink,
+                      formWidth: factor == FormFactor.desktop ? 480 : 380,
+                      brandPadding: factor == FormFactor.desktop
+                          ? const EdgeInsets.fromLTRB(64, 56, 48, 56)
+                          : const EdgeInsets.all(40),
+                      logoSize: factor == FormFactor.desktop ? 96 : 80,
+                      titleSize: factor == FormFactor.desktop ? 56 : 44,
+                    );
+                  },
                 ),
               ),
             ],
           ),
         );
       },
+    );
+  }
+}
+
+/// Layout compact (mobile): logo + título + tagline + form de auth todo
+/// stackeado y centrado. Es lo que ya estaba en producción.
+class _CompactLogin extends StatelessWidget {
+  const _CompactLogin({
+    required this.emailController,
+    required this.emailHasContent,
+    required this.isLoading,
+    required this.onSubmitGoogle,
+    required this.onSubmitApple,
+    required this.onSubmitMagicLink,
+  });
+
+  final TextEditingController emailController;
+  final bool emailHasContent;
+  final bool isLoading;
+  final VoidCallback onSubmitGoogle;
+  final VoidCallback onSubmitApple;
+  final VoidCallback onSubmitMagicLink;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 380),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 24),
+              const Center(child: FzLogo(size: 64, shadow: true)),
+              const SizedBox(height: 28),
+              Text(
+                'Finanzapp',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 30,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.75,
+                  color: FzColors.text,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tus pagos del mes, ordenados.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  fontSize: 14,
+                  color: FzColors.textDim,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 44),
+              _AuthForm(
+                emailController: emailController,
+                emailHasContent: emailHasContent,
+                isLoading: isLoading,
+                onSubmitGoogle: onSubmitGoogle,
+                onSubmitApple: onSubmitApple,
+                onSubmitMagicLink: onSubmitMagicLink,
+              ),
+              const SizedBox(height: 28),
+              Text(
+                'v2.0 · finanzapp.app',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.jetBrainsMono(
+                  fontSize: 11.5,
+                  letterSpacing: 0.46,
+                  color: FzColors.textMute,
+                ),
+              ),
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Layout expanded/desktop: panel de marca a la izquierda + form a la
+/// derecha. Reusa los mismos botones/inputs que [_CompactLogin].
+class _SplitLogin extends StatelessWidget {
+  const _SplitLogin({
+    required this.emailController,
+    required this.emailHasContent,
+    required this.isLoading,
+    required this.onSubmitGoogle,
+    required this.onSubmitApple,
+    required this.onSubmitMagicLink,
+    required this.formWidth,
+    required this.brandPadding,
+    required this.logoSize,
+    required this.titleSize,
+  });
+
+  final TextEditingController emailController;
+  final bool emailHasContent;
+  final bool isLoading;
+  final VoidCallback onSubmitGoogle;
+  final VoidCallback onSubmitApple;
+  final VoidCallback onSubmitMagicLink;
+  final double formWidth;
+  final EdgeInsetsGeometry brandPadding;
+  final double logoSize;
+  final double titleSize;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // Panel de marca (izquierda)
+        Expanded(
+          child: SingleChildScrollView(
+            padding: brandPadding,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FzLogo(size: logoSize, shadow: true),
+                const SizedBox(height: 36),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 460),
+                  child: Text(
+                    'Ordenados.\nA tiempo.\nSin olvidos.',
+                    style: GoogleFonts.inter(
+                      fontSize: titleSize,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: -1.5,
+                      height: 1.05,
+                      color: FzColors.text,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 420),
+                  child: Text(
+                    'Tus gastos del mes en una sola pantalla. '
+                    'Marcá pagado en un toque y nunca más se te '
+                    'pase un vencimiento.',
+                    style: GoogleFonts.inter(
+                      fontSize: 15,
+                      color: FzColors.textDim,
+                      height: 1.55,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 36),
+                _BrandFeature(
+                  icon: Icons.calendar_today_outlined,
+                  text: 'Vista mensual con todos tus pagos agrupados',
+                ),
+                const SizedBox(height: 14),
+                _BrandFeature(
+                  icon: Icons.check_circle_outline_rounded,
+                  text: 'Marcá pagado en un toque',
+                ),
+                const SizedBox(height: 14),
+                _BrandFeature(
+                  icon: Icons.fingerprint_rounded,
+                  text: 'Bloqueo biométrico opcional',
+                ),
+                const SizedBox(height: 36),
+                Text(
+                  'FINANZAPP.APP · ©2026 · HECHO EN ARGENTINA',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10.5,
+                    letterSpacing: 0.66,
+                    color: FzColors.textMute,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Panel de form (derecha)
+        SizedBox(
+          width: formWidth,
+          child: Container(
+            decoration: const BoxDecoration(
+              border: Border(left: BorderSide(color: FzColors.border)),
+            ),
+            child: Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 36,
+                  vertical: 40,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'INICIAR SESIÓN',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 11,
+                        letterSpacing: 1.1,
+                        fontWeight: FontWeight.w500,
+                        color: FzColors.textMute,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Bienvenido de vuelta',
+                      style: GoogleFonts.inter(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: -0.6,
+                        color: FzColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: 28),
+                    _AuthForm(
+                      emailController: emailController,
+                      emailHasContent: emailHasContent,
+                      isLoading: isLoading,
+                      onSubmitGoogle: onSubmitGoogle,
+                      onSubmitApple: onSubmitApple,
+                      onSubmitMagicLink: onSubmitMagicLink,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BrandFeature extends StatelessWidget {
+  const _BrandFeature({required this.icon, required this.text});
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: FzColors.primarySoft,
+            borderRadius: BorderRadius.circular(FzRadius.md),
+          ),
+          alignment: Alignment.center,
+          child: Icon(icon, size: 16, color: FzColors.primary),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: Text(
+              text,
+              style: GoogleFonts.inter(
+                fontSize: 13.5,
+                color: FzColors.textDim,
+                height: 1.45,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Bloque de auth (Apple/Google + email + CTA). Reutilizado por compact
+/// y split.
+class _AuthForm extends StatelessWidget {
+  const _AuthForm({
+    required this.emailController,
+    required this.emailHasContent,
+    required this.isLoading,
+    required this.onSubmitGoogle,
+    required this.onSubmitApple,
+    required this.onSubmitMagicLink,
+  });
+
+  final TextEditingController emailController;
+  final bool emailHasContent;
+  final bool isLoading;
+  final VoidCallback onSubmitGoogle;
+  final VoidCallback onSubmitApple;
+  final VoidCallback onSubmitMagicLink;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (Platform.isIOS) ...[
+          _AppleButton(onPressed: isLoading ? null : onSubmitApple),
+          const SizedBox(height: 12),
+        ],
+        _GoogleButton(
+          onPressed: isLoading ? null : onSubmitGoogle,
+          loading: isLoading,
+        ),
+        const SizedBox(height: 24),
+        const _OrDivider(),
+        const SizedBox(height: 24),
+        _EmailInput(controller: emailController),
+        const SizedBox(height: 10),
+        _PrimaryCta(
+          onPressed: (isLoading || !emailHasContent) ? null : onSubmitMagicLink,
+          loading: isLoading,
+        ),
+      ],
     );
   }
 }

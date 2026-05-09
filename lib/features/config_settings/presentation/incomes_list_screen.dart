@@ -13,7 +13,11 @@ import 'bloc/incomes_list_bloc.dart';
 /// Lista de ingresos del usuario (sueldo, freelance, alquileres que cobra,
 /// etc.). Espejo simétrico de [BillsListScreen] del lado del haber.
 class IncomesListScreen extends StatelessWidget {
-  const IncomesListScreen({super.key});
+  const IncomesListScreen({this.showAppBar = true, super.key});
+
+  /// Igual que en [BillsListScreen]: cuando se embebe en Config detail,
+  /// el master ya provee el título de sección.
+  final bool showAppBar;
 
   @override
   Widget build(BuildContext context) {
@@ -26,20 +30,21 @@ class IncomesListScreen extends StatelessWidget {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                FzAppBar(
-                  title: 'Ingresos',
-                  trailing: _AddButton(
-                    onPressed: () async {
-                      final bloc = context.read<IncomesListBloc>();
-                      final result = await context.push<bool>(
-                        '/config/incomes/new',
-                      );
-                      if (result == true) {
-                        bloc.add(const IncomesListRefreshRequested());
-                      }
-                    },
+                if (showAppBar)
+                  FzAppBar(
+                    title: 'Ingresos',
+                    trailing: _AddButton(
+                      onPressed: () async {
+                        final bloc = context.read<IncomesListBloc>();
+                        final result = await context.push<bool>(
+                          '/config/incomes/new',
+                        );
+                        if (result == true) {
+                          bloc.add(const IncomesListRefreshRequested());
+                        }
+                      },
+                    ),
                   ),
-                ),
                 Expanded(child: _Body(state: state)),
               ],
             );
