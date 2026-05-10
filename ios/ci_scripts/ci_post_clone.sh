@@ -27,7 +27,16 @@ export PATH="$PATH:$HOME/flutter/bin"
 flutter --version
 flutter doctor -v || true  # `|| true` porque doctor puede emitir warnings que no son bloqueantes
 
-# 3. Bajar dependencias Dart.
+# 3. Instalar FlutterFire CLI. Lo necesita un build phase script de
+#    Crashlytics que sube los dSYMs (`flutterfire
+#    upload-crashlytics-symbols`). Sin esto, el archive falla con
+#    "flutterfire: command not found".
+echo "--- Instalando FlutterFire CLI ---"
+dart pub global activate flutterfire_cli
+export PATH="$PATH:$HOME/.pub-cache/bin"
+flutterfire --version
+
+# 4. Bajar dependencias Dart.
 echo "--- flutter pub get ---"
 cd "$CI_WORKSPACE"
 flutter pub get
