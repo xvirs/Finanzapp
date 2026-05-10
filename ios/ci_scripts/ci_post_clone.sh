@@ -1,0 +1,48 @@
+#!/bin/sh
+
+# Xcode Cloud post-clone script para apps Flutter.
+#
+# Apple Cloud hace `xcodebuild archive` directo después de clonar el
+# repo, pero proyectos Flutter requieren `flutter pub get` + `pod
+# install` ANTES — si los Pods no existen, el archive falla.
+#
+# Apple ejecuta automáticamente este script después de clone si está
+# en `ios/ci_scripts/ci_post_clone.sh` con permisos de ejecución.
+#
+# Docs: https://developer.apple.com/documentation/xcode/writing-custom-build-scripts
+
+set -e  # Abortar al primer error
+
+echo "=== ci_post_clone.sh — preparando build Flutter ==="
+
+# 1. Instalar Flutter SDK fresco. Apple Cloud no lo trae preinstalado.
+#    Usamos la versión stable más reciente; si el build se rompe por
+#    incompatibilidad, podemos pinear a una versión específica con
+#    `git clone -b 3.35.7 ...`.
+echo "--- Instalando Flutter SDK ---"
+git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$HOME/flutter"
+export PATH="$PATH:$HOME/flutter/bin"
+
+# 2. Verificar Flutter funcional.
+flutter --version
+flutter doctor -v || true  # `|| true` porque doctor puede emitir warnings que no son bloqueantes
+
+# 3. Bajar dependencias Dart.
+echo "--- flutter pub get ---"
+cd "$CI_WORKSPACE"
+flutter pub get
+
+# 4. Pre-cache iOS artifacts (libflutter.framework, etc).
+echo "--- flutter precache ---"
+flutter precache --ios
+
+# 5. Build iOS sin firma para que Generated.xcconfig + Pods existan.
+echo "--- flutter build ios --release --no-codesign ---"
+flutter build ios --release --no-codesign
+
+# 6. pod install ahora que Generated.xcconfig está presente.
+echo "--- pod install ---"
+cd "$CI_WORKSPACE/ios"
+pod install
+
+echo "=== ci_post_clone.sh terminado OK ==="
