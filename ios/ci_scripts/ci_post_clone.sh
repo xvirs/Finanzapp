@@ -45,13 +45,16 @@ flutter pub get
 echo "--- flutter precache ---"
 flutter precache --ios
 
-# 5. Build iOS sin firma para que Generated.xcconfig + Pods existan.
+# 5. Build iOS sin firma. `flutter build ios` corre `flutter pub get`
+#    + `pod install` + `xcodebuild` internamente, dejando los Pods +
+#    Generated.xcconfig listos para que el archive de Xcode Cloud (que
+#    corre después de este script) los encuentre OK.
+#
+#    NOTA: NO hace falta un `pod install` adicional al final — el de
+#    flutter build ya lo dejó hecho. Un cd a "$CI_WORKSPACE/ios" acá
+#    fallaba porque $CI_WORKSPACE se vacía después de los comandos
+#    intermedios (no es estable entre subshells del runner).
 echo "--- flutter build ios --release --no-codesign ---"
 flutter build ios --release --no-codesign
-
-# 6. pod install ahora que Generated.xcconfig está presente.
-echo "--- pod install ---"
-cd "$CI_WORKSPACE/ios"
-pod install
 
 echo "=== ci_post_clone.sh terminado OK ==="
