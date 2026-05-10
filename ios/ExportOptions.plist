@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- App Store distribution: el IPA se firma con el cert "Apple
+         Distribution" + un provisioning profile App Store. Xcode los
+         genera automáticamente con auto-signing. -->
+    <key>method</key>
+    <string>app-store</string>
+
+    <!-- Team ID del Apple Developer account. -->
+    <key>teamID</key>
+    <string>SJVXS34P6P</string>
+
+    <!-- Bitcode: deprecated por Apple desde Xcode 14, false. -->
+    <key>uploadBitcode</key>
+    <false/>
+
+    <!-- Symbols: incluir dSYMs en el IPA. Útiles para Crashlytics
+         deobfuscation y para que App Store Connect muestre stack
+         traces legibles. -->
+    <key>uploadSymbols</key>
+    <true/>
+
+    <!-- Auto-signing: Xcode resuelve cert + profile match con el Team
+         ID. Para CI/CD a futuro podríamos cambiar a "manual" con
+         provisioningProfiles dict explícito, pero para builds locales
+         "automatic" es lo más simple. -->
+    <key>signingStyle</key>
+    <string>automatic</string>
+
+    <!-- Compresión: deja que Apple Connect optimice el IPA. -->
+    <key>destination</key>
+    <string>export</string>
+</dict>
+</plist>
