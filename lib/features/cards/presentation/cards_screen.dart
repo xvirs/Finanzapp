@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/adaptive_scaffold.dart';
 import '../../../core/analytics_service.dart';
+import '../../../core/format.dart';
 import '../../../design/tokens.dart';
 import '../../../domain/period.dart';
 import '../../../widgets/animated_amount.dart';
@@ -169,6 +170,10 @@ class _CardsHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final estimated = state.totalForPeriod;
+    final paid = state.paidForPeriod;
+    final pending = (estimated - paid).clamp(0, double.infinity);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 14, 20, 18),
       decoration: const BoxDecoration(
@@ -198,26 +203,27 @@ class _CardsHeader extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          const Text(
-            'TOTAL DEL MES',
-            style: TextStyle(
-              fontFamily: FzType.mono,
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.66,
-              color: FzColors.textMute,
-            ),
-          ),
-          const SizedBox(height: 4),
-          AnimatedCurrency(
-            value: state.totalForPeriod,
-            style: const TextStyle(
-              fontFamily: FzType.sans,
-              fontSize: 32,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.8,
-              fontFeatures: FzType.tabularNums,
-              color: FzColors.text,
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _SummaryCard(
+                    label: 'ESTIMADO',
+                    amount: estimated,
+                    paid: false,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _SummaryCard(
+                    label: 'PAGADO',
+                    amount: paid,
+                    paid: true,
+                    footer: 'falta ${formatCurrency(pending)}',
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -227,6 +233,80 @@ class _CardsHeader extends StatelessWidget {
 
   // "abril de 2026" lowercase como en el JSX.
   String _formatLowerMonth(PeriodKey p) => p.formatLong().toLowerCase();
+}
+
+/// Card "ESTIMADO" / "PAGADO" del header de /cards. Replica el lenguaje
+/// visual de las stat cards del Inicio (`MonthHeaderSection._SummaryCard`)
+/// para que el usuario lea el total del mes de tarjetas igual que el del
+/// mes completo: estimado neutro + pagado en verde tinted.
+class _SummaryCard extends StatelessWidget {
+  const _SummaryCard({
+    required this.label,
+    required this.amount,
+    required this.paid,
+    this.footer,
+  });
+
+  final String label;
+  final double amount;
+  final bool paid;
+  final String? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = paid ? FzColors.cardPaid : FzColors.card;
+    final border = paid ? FzColors.borderPaid : FzColors.border;
+    final labelColor = paid
+        ? FzColors.primary.withValues(alpha: 0.85)
+        : FzColors.textMute;
+    final amountColor = paid ? FzColors.primaryHi : FzColors.text;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(FzRadius.xl),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.63,
+              color: labelColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          AnimatedCurrency(
+            value: amount,
+            style: TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.44,
+              fontFeatures: FzType.tabularNums,
+              color: amountColor,
+            ),
+          ),
+          if (footer != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              footer!,
+              style: const TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 11,
+                color: FzColors.textMute,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
 }
 
 class _ErrorView extends StatelessWidget {

@@ -137,7 +137,12 @@ class _SummaryGrid extends StatelessWidget {
     final estimated = summary?.estimatedTotal ?? 0;
     final paid = summary?.paidTotal ?? 0;
     final pending = (estimated - paid).clamp(0, double.infinity);
-    final balance = income - estimated;
+    // Saldo = lo que te queda disponible HOY. Sólo descontamos lo
+    // efectivamente pagado (no lo estimado), porque lo estimado todavía
+    // no salió de la cuenta. El "saldo proyectado a fin de mes" sería
+    // `income - estimated`, pero el usuario lee este número como saldo
+    // actual.
+    final balance = income - paid;
     final hasIncome = income > 0;
 
     return Column(

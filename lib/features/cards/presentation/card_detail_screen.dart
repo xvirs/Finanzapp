@@ -197,8 +197,9 @@ class _PayCta extends StatelessWidget {
   }
 }
 
-/// AppBar custom — port del `ACBackBar` del JSX. Back square + título +
-/// brand chip + ⚙.
+/// AppBar custom — back square + título + brand chip. La edición de la
+/// tarjeta vive en Gestión (`/config/cards/:id`), por eso no hay
+/// trailing ⚙ acá.
 class _DetailAppBar extends StatelessWidget {
   const _DetailAppBar({required this.state});
   final CardDetailBlocState state;
@@ -251,36 +252,17 @@ class _DetailAppBar extends StatelessWidget {
                     ],
                   ),
           ),
-          if (card != null)
-            _SquareIconButton(
-              icon: Icons.settings_outlined,
-              iconColor: FzColors.textDim,
-              onPressed: () => _editCard(context, card.id),
-            ),
         ],
       ),
     );
   }
-
-  Future<void> _editCard(BuildContext context, String cardId) async {
-    final bloc = context.read<CardDetailBloc>();
-    final result = await context.push<bool>('/cards/$cardId/edit');
-    if (result == true) {
-      bloc.add(const CardDetailRefreshRequested());
-    }
-  }
 }
 
 class _SquareIconButton extends StatelessWidget {
-  const _SquareIconButton({
-    required this.icon,
-    required this.onPressed,
-    this.iconColor = FzColors.text,
-  });
+  const _SquareIconButton({required this.icon, required this.onPressed});
 
   final IconData icon;
   final VoidCallback? onPressed;
-  final Color iconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -297,7 +279,7 @@ class _SquareIconButton extends StatelessWidget {
             border: Border.all(color: FzColors.border),
             borderRadius: BorderRadius.circular(FzRadius.md),
           ),
-          child: Icon(icon, size: 18, color: iconColor),
+          child: Icon(icon, size: 18, color: FzColors.text),
         ),
       ),
     );

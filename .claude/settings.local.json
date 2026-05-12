@@ -55,7 +55,8 @@
       "Bash(supabase migration *)",
       "Bash(supabase db *)",
       "Bash(grep -n \"formatCurrency\\(item\\\\|Text\\(\\\\$\\\\|Text\\(formatCurrency\" /Users/xavier/Proyectos/Finanzapp/lib/features/cards/presentation/widgets/cards_expanded_layout.dart)",
-      "Bash(./gradlew signingReport)"
+      "Bash(./gradlew signingReport)",
+      "Bash(fvm flutter *)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"

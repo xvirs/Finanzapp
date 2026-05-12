@@ -60,7 +60,12 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
   }
 
   Future<
-    ({PeriodKey period, List<CardListItemData> items, double totalForPeriod})
+    ({
+      PeriodKey period,
+      List<CardListItemData> items,
+      double totalForPeriod,
+      double paidForPeriod,
+    })
   >
   _loadCardsData() async {
     final period = PeriodKey.current();
@@ -78,6 +83,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
 
     final items = <CardListItemData>[];
     var totalForPeriod = 0.0;
+    var paidForPeriod = 0.0;
 
     for (final card in cards) {
       final cardPurchases = purchases
@@ -125,9 +131,17 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
       );
 
       totalForPeriod += summary.total;
+      if (payment?.status == PaymentStatus.paid) {
+        paidForPeriod += payment?.amountReal ?? summary.total;
+      }
     }
 
-    return (period: period, items: items, totalForPeriod: totalForPeriod);
+    return (
+      period: period,
+      items: items,
+      totalForPeriod: totalForPeriod,
+      paidForPeriod: paidForPeriod,
+    );
   }
 
   Future<void> _onRequested(
@@ -143,6 +157,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
           period: data.period,
           items: data.items,
           totalForPeriod: data.totalForPeriod,
+          paidForPeriod: data.paidForPeriod,
         ),
       );
     } catch (error) {
@@ -174,6 +189,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
           period: data.period,
           items: data.items,
           totalForPeriod: data.totalForPeriod,
+          paidForPeriod: data.paidForPeriod,
         ),
       );
     } catch (error) {
@@ -237,6 +253,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
           period: data.period,
           items: data.items,
           totalForPeriod: data.totalForPeriod,
+          paidForPeriod: data.paidForPeriod,
           clearMutating: true,
         ),
       );

@@ -56,8 +56,8 @@ class CardsExpandedLayout extends StatelessWidget {
         ),
         Expanded(
           child: _Detail(
+            state: state,
             item: selected,
-            period: state.period,
             mutating: mutating,
           ),
         ),
@@ -116,15 +116,10 @@ class _Master extends StatelessWidget {
                     color: FzColors.text,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Total mes · ${formatCurrency(state.totalForPeriod)}',
-                  style: const TextStyle(
-                    fontFamily: FzType.mono,
-                    fontSize: 11,
-                    color: FzColors.textDim,
-                    letterSpacing: 0.44,
-                  ),
+                const SizedBox(height: 10),
+                _MasterTotals(
+                  estimated: state.totalForPeriod,
+                  paid: state.paidForPeriod,
                 ),
               ],
             ),
@@ -155,6 +150,103 @@ class _Master extends StatelessWidget {
                       );
                     },
                   ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Stat pair "ESTIMADO / PAGADO" del master sidebar (expanded). Versión
+/// compacta del grid del header compact: dos columnas pequeñas, mono
+/// para el caplabel y sans tabular para el monto.
+class _MasterTotals extends StatelessWidget {
+  const _MasterTotals({required this.estimated, required this.paid});
+
+  final double estimated;
+  final double paid;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(
+            child: _MasterTotalCard(
+              label: 'ESTIMADO',
+              amount: estimated,
+              paid: false,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _MasterTotalCard(
+              label: 'PAGADO',
+              amount: paid,
+              paid: true,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MasterTotalCard extends StatelessWidget {
+  const _MasterTotalCard({
+    required this.label,
+    required this.amount,
+    required this.paid,
+  });
+
+  final String label;
+  final double amount;
+  final bool paid;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = paid ? FzColors.cardPaid : FzColors.card;
+    final border = paid ? FzColors.borderPaid : FzColors.border;
+    final labelColor = paid
+        ? FzColors.primary.withValues(alpha: 0.85)
+        : FzColors.textMute;
+    final amountColor = paid ? FzColors.primaryHi : FzColors.text;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 9.5,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.55,
+              color: labelColor,
+            ),
+          ),
+          const SizedBox(height: 3),
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: AnimatedCurrency(
+              value: amount,
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: -0.28,
+                fontFeatures: FzType.tabularNums,
+                color: amountColor,
+              ),
+            ),
           ),
         ],
       ),
@@ -205,6 +297,13 @@ class _MasterRow extends StatelessWidget {
         ? 'VENCE DÍA ${card.dueDay}'
         : 'SIN DÍA CONFIGURADO';
     final amountLabel = paid ? 'PAGADO' : 'A PAGAR';
+    // Cuando está pagada, mostramos `amountReal` (lo que efectivamente
+    // se pagó) — no el estimado. Si el payment no tiene `amountReal`
+    // explícito, caemos al estimado. Mismo criterio que `CardListItem`
+    // (compact).
+    final amountForDisplay = paid && item.payment?.amountReal != null
+        ? item.payment!.amountReal!
+        : item.total;
 
     return Material(
       color: Colors.transparent,
@@ -248,7 +347,7 @@ class _MasterRow extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         AnimatedCurrency(
-                          value: item.total,
+                          value: amountForDisplay,
                           style: TextStyle(
                             fontFamily: FzType.sans,
                             fontSize: 14,
@@ -340,23 +439,23 @@ class _BrandChip extends StatelessWidget {
 
 class _Detail extends StatelessWidget {
   const _Detail({
+    required this.state,
     required this.item,
-    required this.period,
     required this.mutating,
   });
 
+  final CardsBlocState state;
   final CardListItemData? item;
-  final PeriodKey period;
   final bool mutating;
 
   @override
   Widget build(BuildContext context) {
     if (item == null) {
-      return const _DetailEmpty();
+      return _DetailEmpty(state: state);
     }
     return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
-      child: _Hero(item: item!, period: period, mutating: mutating),
+      child: _Hero(item: item!, period: state.period, mutating: mutating),
     );
   }
 }
@@ -1086,51 +1185,422 @@ class _NoChargesNote extends StatelessWidget {
   }
 }
 
+/// Empty state del detail (cuando no hay tarjeta seleccionada).
+/// Aprovechamos el espacio para mostrar el resumen del mes en lugar de
+/// dejar la mitad derecha vacía: estimado/pagado + breakdown de cuántas
+/// están pagas y próximas a vencer.
 class _DetailEmpty extends StatelessWidget {
-  const _DetailEmpty();
+  const _DetailEmpty({required this.state});
+
+  final CardsBlocState state;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Container(
-          padding: const EdgeInsets.all(40),
-          decoration: BoxDecoration(
-            color: FzColors.card,
-            borderRadius: BorderRadius.circular(FzRadius.xxl),
-            border: Border.all(color: FzColors.border),
+    final estimated = state.totalForPeriod;
+    final paid = state.paidForPeriod;
+    final pending = (estimated - paid).clamp(0, double.infinity).toDouble();
+
+    final paidCount = state.items
+        .where((it) => it.payment?.status == PaymentStatus.paid)
+        .length;
+    final pendingCount = state.items.length - paidCount;
+
+    final upcoming = state.items
+        .where((it) => it.payment?.status != PaymentStatus.paid)
+        .toList()
+      ..sort((a, b) {
+        final da = a.card.dueDay ?? 99;
+        final db = b.card.dueDay ?? 99;
+        if (da != db) return da - db;
+        return a.card.name.compareTo(b.card.name);
+      });
+    final upcomingTop = upcoming.take(3).toList();
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Text(
+            'RESUMEN DEL MES',
+            style: TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 10.5,
+              letterSpacing: 1.1,
+              color: FzColors.primary,
+            ),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(
-                Icons.credit_card_outlined,
-                size: 36,
+          const SizedBox(height: 2),
+          Text(
+            _formatMonth(state.period),
+            style: const TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.44,
+              color: FzColors.text,
+            ),
+          ),
+          const SizedBox(height: 14),
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: _EmptyStatCard(
+                    label: 'ESTIMADO',
+                    amount: estimated,
+                    paid: false,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _EmptyStatCard(
+                    label: 'PAGADO',
+                    amount: paid,
+                    paid: true,
+                    footer: pending > 0
+                        ? 'falta ${formatCurrency(pending)}'
+                        : 'al día',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (state.items.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            _StatusRow(
+              total: state.items.length,
+              paidCount: paidCount,
+              pendingCount: pendingCount,
+            ),
+          ],
+          if (upcomingTop.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _UpcomingPanel(items: upcomingTop),
+          ],
+          const SizedBox(height: 14),
+          const _SelectHint(),
+        ],
+      ),
+    );
+  }
+
+  String _formatMonth(PeriodKey p) =>
+      p.formatLong().replaceFirst(' de ', ' ');
+}
+
+class _EmptyStatCard extends StatelessWidget {
+  const _EmptyStatCard({
+    required this.label,
+    required this.amount,
+    required this.paid,
+    this.footer,
+  });
+
+  final String label;
+  final double amount;
+  final bool paid;
+  final String? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = paid ? FzColors.cardPaid : FzColors.card;
+    final border = paid ? FzColors.borderPaid : FzColors.border;
+    final labelColor = paid
+        ? FzColors.primary.withValues(alpha: 0.85)
+        : FzColors.textMute;
+    final amountColor = paid ? FzColors.primaryHi : FzColors.text;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(FzRadius.xl),
+        border: Border.all(color: border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.63,
+              color: labelColor,
+            ),
+          ),
+          const SizedBox(height: 6),
+          AnimatedCurrency(
+            value: amount,
+            style: TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 22,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.44,
+              fontFeatures: FzType.tabularNums,
+              color: amountColor,
+            ),
+          ),
+          if (footer != null) ...[
+            const SizedBox(height: 2),
+            Text(
+              footer!,
+              style: const TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 11,
                 color: FzColors.textMute,
               ),
-              SizedBox(height: 10),
-              Text(
-                'Seleccioná una tarjeta',
-                style: TextStyle(
-                  fontFamily: FzType.sans,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: FzColors.text,
-                ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusRow extends StatelessWidget {
+  const _StatusRow({
+    required this.total,
+    required this.paidCount,
+    required this.pendingCount,
+  });
+
+  final int total;
+  final int paidCount;
+  final int pendingCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+      decoration: BoxDecoration(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: Row(
+        children: [
+          _StatusCell(value: total, label: total == 1 ? 'activa' : 'activas'),
+          const _StatusDivider(),
+          _StatusCell(
+            value: paidCount,
+            label: paidCount == 1 ? 'pagada' : 'pagadas',
+            valueColor: FzColors.primaryHi,
+          ),
+          const _StatusDivider(),
+          _StatusCell(
+            value: pendingCount,
+            label: pendingCount == 1 ? 'pendiente' : 'pendientes',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusCell extends StatelessWidget {
+  const _StatusCell({
+    required this.value,
+    required this.label,
+    this.valueColor = FzColors.text,
+  });
+
+  final int value;
+  final String label;
+  final Color valueColor;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            '$value',
+            style: TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.36,
+              fontFeatures: FzType.tabularNums,
+              color: valueColor,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 10,
+              letterSpacing: 0.6,
+              color: FzColors.textMute,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatusDivider extends StatelessWidget {
+  const _StatusDivider();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: 1,
+    height: 28,
+    color: FzColors.border,
+    margin: const EdgeInsets.symmetric(horizontal: 6),
+  );
+}
+
+class _UpcomingPanel extends StatelessWidget {
+  const _UpcomingPanel({required this.items});
+
+  final List<CardListItemData> items;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.xl),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const Row(
+            children: [
+              Icon(
+                Icons.event_outlined,
+                size: 14,
+                color: FzColors.textDim,
               ),
-              SizedBox(height: 4),
+              SizedBox(width: 8),
               Text(
-                'Tocá una tarjeta a la izquierda para ver su detalle.',
+                'PRÓXIMAS A PAGAR',
                 style: TextStyle(
-                  fontFamily: FzType.sans,
-                  fontSize: 12,
+                  fontFamily: FzType.mono,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 1.05,
                   color: FzColors.textDim,
                 ),
               ),
             ],
           ),
+          const SizedBox(height: 10),
+          for (var i = 0; i < items.length; i++) ...[
+            _UpcomingRow(item: items[i]),
+            if (i < items.length - 1)
+              const Divider(
+                height: 12,
+                thickness: 0.5,
+                color: FzColors.border,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _UpcomingRow extends StatelessWidget {
+  const _UpcomingRow({required this.item});
+
+  final CardListItemData item;
+
+  @override
+  Widget build(BuildContext context) {
+    final card = item.card;
+    final dueLabel = card.dueDay != null
+        ? 'VENCE DÍA ${card.dueDay}'
+        : 'SIN DÍA';
+    return Row(
+      children: [
+        _BrandChip(brand: card.brand),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                card.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: const TextStyle(
+                  fontFamily: FzType.sans,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: FzColors.text,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Text(
+                dueLabel,
+                style: const TextStyle(
+                  fontFamily: FzType.mono,
+                  fontSize: 10,
+                  color: FzColors.textMute,
+                  letterSpacing: 0.66,
+                ),
+              ),
+            ],
+          ),
         ),
+        const SizedBox(width: 8),
+        Text(
+          formatCurrency(item.total),
+          style: const TextStyle(
+            fontFamily: FzType.sans,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            fontFeatures: FzType.tabularNums,
+            color: FzColors.text,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SelectHint extends StatelessWidget {
+  const _SelectHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: Row(
+        children: const [
+          Icon(
+            Icons.arrow_back_rounded,
+            size: 16,
+            color: FzColors.textMute,
+          ),
+          SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Tocá una tarjeta a la izquierda para abrir su detalle.',
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 12.5,
+                color: FzColors.textDim,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

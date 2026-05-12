@@ -45,8 +45,14 @@ class _MasterShimmer extends StatelessWidget {
                 ShimmerBox(width: 96, height: 11, radius: 2),
                 SizedBox(height: 8),
                 ShimmerBox(width: 120, height: 22, radius: 4),
-                SizedBox(height: 6),
-                ShimmerBox(width: 160, height: 11, radius: 2),
+                SizedBox(height: 10),
+                Row(
+                  children: [
+                    Expanded(child: _MasterTotalSkeleton()),
+                    SizedBox(width: 8),
+                    Expanded(child: _MasterTotalSkeleton()),
+                  ],
+                ),
               ],
             ),
           ),
@@ -59,6 +65,30 @@ class _MasterShimmer extends StatelessWidget {
               itemBuilder: (_, __) => const _MasterRowSkeleton(),
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MasterTotalSkeleton extends StatelessWidget {
+  const _MasterTotalSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ShimmerBox(width: 60, height: 9, radius: 2),
+          SizedBox(height: 6),
+          ShimmerBox(width: 90, height: 14, radius: 3),
         ],
       ),
     );

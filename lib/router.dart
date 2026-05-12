@@ -23,7 +23,9 @@ import 'features/cards/presentation/installment_form_screen.dart';
 import 'features/config_settings/presentation/bill_form_screen.dart';
 import 'features/config_settings/presentation/bills_list_screen.dart';
 import 'features/config_settings/presentation/bloc/bills_list_bloc.dart';
+import 'features/config_settings/presentation/bloc/cards_list_bloc.dart';
 import 'features/config_settings/presentation/bloc/incomes_list_bloc.dart';
+import 'features/config_settings/presentation/cards_list_screen.dart';
 import 'features/config_settings/presentation/config_screen.dart';
 import 'features/config_settings/presentation/income_form_screen.dart';
 import 'features/config_settings/presentation/incomes_list_screen.dart';
@@ -165,6 +167,30 @@ class AppRouter {
                         name: 'bill-edit',
                         builder: (context, state) =>
                             BillFormScreen(billId: state.pathParameters['id']),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'cards',
+                    name: 'config-cards-list',
+                    builder: (context, state) => BlocProvider(
+                      create: (ctx) => CardsListBloc(
+                        cardsRepository: ctx.read<CardsRepository>(),
+                        realtimeService: ctx.read<RealtimeService>(),
+                      )..add(const CardsListRequested()),
+                      child: const CardsListScreen(),
+                    ),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        name: 'config-card-new',
+                        builder: (context, state) => const CardFormScreen(),
+                      ),
+                      GoRoute(
+                        path: ':id',
+                        name: 'config-card-edit',
+                        builder: (context, state) =>
+                            CardFormScreen(cardId: state.pathParameters['id']),
                       ),
                     ],
                   ),

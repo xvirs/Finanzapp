@@ -4,7 +4,7 @@ import '../../../../design/tokens.dart';
 import '../../../../widgets/shimmer_box.dart';
 
 /// Skeleton del header de Tarjetas (compact). Replica el título · fecha
-/// · caplabel "TOTAL DEL MES" · monto display.
+/// · grid 2-col (ESTIMADO / PAGADO).
 class CardsHeaderShimmer extends StatelessWidget {
   const CardsHeaderShimmer({super.key});
 
@@ -22,9 +22,37 @@ class CardsHeaderShimmer extends StatelessWidget {
           SizedBox(height: 6),
           ShimmerBox(width: 110, height: 12, radius: 2),
           SizedBox(height: 14),
-          ShimmerBox(width: 96, height: 11, radius: 2),
-          SizedBox(height: 6),
-          ShimmerBox(width: 200, height: 32, radius: 5),
+          Row(
+            children: [
+              Expanded(child: _SummaryCardShimmer()),
+              SizedBox(width: 10),
+              Expanded(child: _SummaryCardShimmer()),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SummaryCardShimmer extends StatelessWidget {
+  const _SummaryCardShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.xl),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ShimmerBox(width: 72, height: 10, radius: 2),
+          SizedBox(height: 8),
+          ShimmerBox(width: 140, height: 22, radius: 4),
         ],
       ),
     );

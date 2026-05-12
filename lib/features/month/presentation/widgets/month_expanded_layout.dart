@@ -69,39 +69,65 @@ class _MasterPane extends StatelessWidget {
   final String? selectedKey;
   final ValueChanged<String> onSelect;
 
-  /// Aplana los items de todos los grupos en una sola lista plana,
-  /// respetando el filter activo del bloc.
-  List<MonthItem> _flatItems() {
-    final all = <MonthItem>[];
-    for (final g in state.groups) {
-      all.addAll(g.items);
-    }
+  bool _passesFilter(MonthItem item) {
     switch (state.filter) {
       case MonthFilter.all:
-        return all;
+        return true;
       case MonthFilter.pending:
-        return all
-            .where((i) => i.payment?.status != PaymentStatus.paid)
-            .toList();
+        return item.payment?.status != PaymentStatus.paid;
       case MonthFilter.overdue:
-        return all.where((i) {
-          if (i.payment?.status == PaymentStatus.paid) return false;
-          if (i.estimatedAmount == null || i.estimatedAmount! <= 0) {
-            return false;
-          }
-          final urgency = getUrgency(
-            dayOfMonth: i.dayOfMonth,
-            paid: false,
-            period: state.period,
-          );
-          return urgency is UrgencyOverdue;
-        }).toList();
+        if (item.payment?.status == PaymentStatus.paid) return false;
+        if (item.estimatedAmount == null || item.estimatedAmount! <= 0) {
+          return false;
+        }
+        final urgency = getUrgency(
+          dayOfMonth: item.dayOfMonth,
+          paid: false,
+          period: state.period,
+        );
+        return urgency is UrgencyOverdue;
     }
   }
 
+  /// Aplana los grupos del mes en una lista mixta `[header, item, item,
+  /// header, item, ...]`, respetando el filter activo. Si tras filtrar
+  /// un grupo no tiene items visibles, su header se omite.
+  List<_MasterEntry> _buildEntries() {
+    final entries = <_MasterEntry>[];
+    for (final group in state.groups) {
+      final visibleItems = group.items.where(_passesFilter).toList();
+      if (visibleItems.isEmpty) continue;
+
+      final hasVariable = visibleItems.any((i) => i.estimatedAmount == null);
+      final total = hasVariable
+          ? null
+          : visibleItems.fold<double>(
+              0,
+              (acc, i) => acc + (i.estimatedAmount ?? 0),
+            );
+
+      entries.add(
+        _MasterHeaderEntry(
+          groupKey: group.key,
+          title: group.title,
+          count: visibleItems.length,
+          totalLabel: hasVariable ? '—' : formatCurrency(total),
+        ),
+      );
+      for (final item in visibleItems) {
+        entries.add(_MasterItemEntry(item));
+      }
+    }
+    return entries;
+  }
+
+  int _visibleItemCount(List<_MasterEntry> entries) =>
+      entries.whereType<_MasterItemEntry>().length;
+
   @override
   Widget build(BuildContext context) {
-    final items = _flatItems();
+    final entries = _buildEntries();
+    final itemCount = _visibleItemCount(entries);
     final overdueCount = state.summary?.overdueCount ?? 0;
 
     return Container(
@@ -172,9 +198,9 @@ class _MasterPane extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         overdueCount > 0
-                            ? '${pluralizeCount(items.length, "cuenta", "cuentas")} · '
+                            ? '${pluralizeCount(itemCount, "cuenta", "cuentas")} · '
                                   '${pluralizeCount(overdueCount, "atrasada", "atrasadas")}'
-                            : pluralizeCount(items.length, 'cuenta', 'cuentas'),
+                            : pluralizeCount(itemCount, 'cuenta', 'cuentas'),
                         style: const TextStyle(
                           fontFamily: FzType.mono,
                           fontSize: 11,
@@ -219,22 +245,44 @@ class _MasterPane extends StatelessWidget {
               ],
             ),
           ),
-          // Lista plana
+          // Lista agrupada por categoría — headers + items intercalados,
+          // espejo de `MonthGroupSection` del compact. Categorías sin
+          // items visibles (por el filter) se omiten.
           Expanded(
-            child: items.isEmpty
+            child: entries.isEmpty
                 ? const _MasterEmpty()
-                : ListView.separated(
+                : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(14, 0, 14, 14),
-                    itemCount: items.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 5),
+                    itemCount: entries.length,
                     itemBuilder: (ctx, i) {
-                      final item = items[i];
-                      return _MasterRow(
-                        item: item,
-                        period: state.period,
-                        selected: item.key == selectedKey,
-                        onTap: () => onSelect(item.key),
-                      );
+                      final entry = entries[i];
+                      switch (entry) {
+                        case _MasterHeaderEntry header:
+                          return Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              4,
+                              i == 0 ? 0 : 12,
+                              4,
+                              6,
+                            ),
+                            child: _MasterCategoryHeader(
+                              icon: _categoryIcon(header.groupKey),
+                              title: header.title,
+                              count: header.count,
+                              totalLabel: header.totalLabel,
+                            ),
+                          );
+                        case _MasterItemEntry itemEntry:
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 5),
+                            child: _MasterRow(
+                              item: itemEntry.item,
+                              period: state.period,
+                              selected: itemEntry.item.key == selectedKey,
+                              onTap: () => onSelect(itemEntry.item.key),
+                            ),
+                          );
+                      }
                     },
                   ),
           ),
@@ -493,6 +541,115 @@ class _MasterEmpty extends StatelessWidget {
   }
 }
 
+/// Entradas que componen el master cuando los items se agrupan por
+/// categoría: o bien el header de la categoría, o bien una fila de item.
+sealed class _MasterEntry {
+  const _MasterEntry();
+}
+
+class _MasterHeaderEntry extends _MasterEntry {
+  const _MasterHeaderEntry({
+    required this.groupKey,
+    required this.title,
+    required this.count,
+    required this.totalLabel,
+  });
+
+  final String groupKey;
+  final String title;
+  final int count;
+  final String totalLabel;
+}
+
+class _MasterItemEntry extends _MasterEntry {
+  const _MasterItemEntry(this.item);
+  final MonthItem item;
+}
+
+/// Header compacto de categoría dentro del master expanded. Versión
+/// reducida del `_CategoryHeader` del compact: icono + título mono +
+/// count, con el total alineado a la derecha.
+class _MasterCategoryHeader extends StatelessWidget {
+  const _MasterCategoryHeader({
+    required this.icon,
+    required this.title,
+    required this.count,
+    required this.totalLabel,
+  });
+
+  final IconData icon;
+  final String title;
+  final int count;
+  final String totalLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, size: 13, color: FzColors.textDim),
+        const SizedBox(width: 7),
+        Flexible(
+          child: Text(
+            title.toUpperCase(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontFamily: FzType.mono,
+              fontSize: 10.5,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 1.05,
+              color: FzColors.textDim,
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '· $count',
+          style: const TextStyle(
+            fontFamily: FzType.mono,
+            fontSize: 10.5,
+            color: FzColors.textMute,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          totalLabel,
+          style: const TextStyle(
+            fontFamily: FzType.mono,
+            fontSize: 11,
+            color: FzColors.textMute,
+            fontFeatures: FzType.tabularNums,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Icono Material para cada macrocategoría — espejo del `_categoryIcon`
+/// usado en `MonthGroupSection` (compact).
+IconData _categoryIcon(String macroKey) {
+  switch (macroKey) {
+    case 'cards':
+      return Icons.credit_card_outlined;
+    case 'housing':
+      return Icons.home_outlined;
+    case 'services':
+      return Icons.bolt_outlined;
+    case 'internet':
+      return Icons.wifi;
+    case 'health':
+      return Icons.local_hospital_outlined;
+    case 'tax':
+      return Icons.account_balance_outlined;
+    case 'subscription':
+      return Icons.subscriptions_outlined;
+    case 'other':
+    default:
+      return Icons.label_outline;
+  }
+}
+
 // ============================================================
 //  DETAIL
 // ============================================================
@@ -524,7 +681,10 @@ class _DetailPane extends StatelessWidget {
     final overdueAmount = summary?.overdueTotal ?? 0;
     final overdueCount = summary?.overdueCount ?? 0;
     final income = summary?.incomeTotal ?? 0;
-    final balance = income - estimated;
+    // Saldo = ingreso − pagado (no − estimado): lo que queda disponible
+    // hoy. Lo estimado todavía no salió de la cuenta. Ver nota en
+    // `month_header_section.dart`.
+    final balance = income - paid;
     final hasIncome = income > 0;
 
     final hasGroups = state.groups.isNotEmpty;

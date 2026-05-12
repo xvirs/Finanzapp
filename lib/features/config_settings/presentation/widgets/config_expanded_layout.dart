@@ -10,7 +10,9 @@ import '../../../../design/tokens.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../bills_list_screen.dart';
 import '../bloc/bills_list_bloc.dart';
+import '../bloc/cards_list_bloc.dart';
 import '../bloc/incomes_list_bloc.dart';
+import '../cards_list_screen.dart';
 import '../incomes_list_screen.dart';
 
 /// Master/detail para Configuración en Fold inner.
@@ -414,7 +416,19 @@ class _Detail extends StatelessWidget {
           ),
         );
       case _Section.cards:
-        return const _CardsRedirect();
+        return BlocProvider(
+          create: (ctx) => CardsListBloc(
+            cardsRepository: ctx.read<CardsRepository>(),
+            realtimeService: ctx.read<RealtimeService>(),
+          )..add(const CardsListRequested()),
+          child: _SectionFrame(
+            eyebrow: 'DATOS',
+            title: 'Tarjetas',
+            ctaLabel: '+ Nueva tarjeta',
+            onCta: () => context.push('/config/cards/new'),
+            child: const CardsListScreen(showAppBar: false),
+          ),
+        );
     }
   }
 }
@@ -465,58 +479,6 @@ class _SecurityDetail extends StatelessWidget {
           ),
         );
       },
-    );
-  }
-}
-
-class _CardsRedirect extends StatelessWidget {
-  const _CardsRedirect();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Container(
-          padding: const EdgeInsets.all(40),
-          decoration: BoxDecoration(
-            color: FzColors.card,
-            borderRadius: BorderRadius.circular(FzRadius.xxl),
-            border: Border.all(color: FzColors.border),
-          ),
-          child: const Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.credit_card_outlined,
-                size: 36,
-                color: FzColors.textMute,
-              ),
-              SizedBox(height: 10),
-              Text(
-                'Tarjetas',
-                style: TextStyle(
-                  fontFamily: FzType.sans,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: FzColors.text,
-                ),
-              ),
-              SizedBox(height: 4),
-              Text(
-                'Usá la pestaña "Tarjetas" del rail lateral para ver y editar tus tarjetas.',
-                style: TextStyle(
-                  fontFamily: FzType.sans,
-                  fontSize: 12,
-                  color: FzColors.textDim,
-                  height: 1.45,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

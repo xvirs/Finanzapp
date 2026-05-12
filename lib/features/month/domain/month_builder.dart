@@ -103,12 +103,14 @@ List<MonthItem> buildMonthChecklist({
       (sum, b) => sum + (b.defaultAmount ?? 0),
     );
 
-    if (installmentsCount == 0 && cardAutoDebits.isEmpty) continue;
-
     final payment = payments
         .where((p) => p.kind == PaymentKind.cardTotal && p.cardId == card.id)
         .cast<Payment?>()
         .firstWhere((_) => true, orElse: () => null);
+
+    if (installmentsCount == 0 && cardAutoDebits.isEmpty && payment == null) {
+      continue;
+    }
 
     final avg = averageFor(
       (p) => p.kind == PaymentKind.cardTotal && p.cardId == card.id,

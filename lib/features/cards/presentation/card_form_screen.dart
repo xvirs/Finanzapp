@@ -162,7 +162,7 @@ class _CardFormScreenState extends State<CardFormScreen> {
     try {
       await repo.deleteCard(widget.cardId!);
       if (!mounted) return;
-      router.go('/cards');
+      router.pop(true);
     } catch (error) {
       if (!mounted) return;
       showFzSnack(

@@ -8,6 +8,7 @@ final class CardsBlocState extends Equatable {
     PeriodKey? period,
     this.items = const [],
     this.totalForPeriod = 0,
+    this.paidForPeriod = 0,
     this.errorMessage,
     this.mutatingCardId,
   }) : period = period ?? PeriodKey.current();
@@ -15,7 +16,15 @@ final class CardsBlocState extends Equatable {
   final CardsStatus status;
   final PeriodKey period;
   final List<CardListItemData> items;
+
+  /// Estimado del mes: suma de cuotas activas + débitos automáticos en
+  /// todas las tarjetas activas.
   final double totalForPeriod;
+
+  /// Pagado del mes: suma de `Payment.amountReal` (o estimado si no hay
+  /// amountReal explícito) de las tarjetas marcadas como pagadas.
+  final double paidForPeriod;
+
   final String? errorMessage;
 
   /// Id de la tarjeta cuyo pago está siendo mutado (mark paid/pending).
@@ -27,6 +36,7 @@ final class CardsBlocState extends Equatable {
     PeriodKey? period,
     List<CardListItemData>? items,
     double? totalForPeriod,
+    double? paidForPeriod,
     String? errorMessage,
     bool clearError = false,
     String? mutatingCardId,
@@ -37,6 +47,7 @@ final class CardsBlocState extends Equatable {
       period: period ?? this.period,
       items: items ?? this.items,
       totalForPeriod: totalForPeriod ?? this.totalForPeriod,
+      paidForPeriod: paidForPeriod ?? this.paidForPeriod,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       mutatingCardId: clearMutating
           ? null
@@ -50,6 +61,7 @@ final class CardsBlocState extends Equatable {
     period,
     items,
     totalForPeriod,
+    paidForPeriod,
     errorMessage,
     mutatingCardId,
   ];
