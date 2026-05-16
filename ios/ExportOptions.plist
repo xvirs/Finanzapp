@@ -22,12 +22,19 @@
     <key>uploadSymbols</key>
     <true/>
 
-    <!-- Auto-signing: Xcode resuelve cert + profile match con el Team
-         ID. Para CI/CD a futuro podríamos cambiar a "manual" con
-         provisioningProfiles dict explícito, pero para builds locales
-         "automatic" es lo más simple. -->
+    <!-- Manual signing: sin device físico, no se puede usar automatic
+         porque Xcode intenta crear un profile de Development que
+         requiere al menos un device. Usamos el profile App Store
+         creado manualmente en developer.apple.com. -->
     <key>signingStyle</key>
-    <string>automatic</string>
+    <string>manual</string>
+    <key>signingCertificate</key>
+    <string>Apple Distribution</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>app.finanzapp.client</key>
+        <string>Finanzapp App Store</string>
+    </dict>
 
     <!-- Compresión: deja que Apple Connect optimice el IPA. -->
     <key>destination</key>
