@@ -537,8 +537,10 @@ class _GoogleButton extends StatelessWidget {
 
 /// Botón "Continuar con Apple" — usa el widget oficial del package
 /// para cumplir las Apple HIG (color, logo, espaciado son estrictos).
-/// Forzamos height para matchear visualmente con _GoogleButton (46pt)
-/// y estilo black porque nuestro theme es dark.
+/// Forzamos height para matchear visualmente con _GoogleButton (46pt).
+/// Style white: en theme dark un botón negro queda sin contraste contra el
+/// background y App Review rechaza por no parecer botón (Guideline 4 - Design,
+/// rechazo del 2026-05-18 en submission 1.0(1)).
 class _AppleButton extends StatelessWidget {
   const _AppleButton({required this.onPressed});
 
@@ -553,7 +555,7 @@ class _AppleButton extends StatelessWidget {
         onPressed: disabled ? () {} : onPressed!,
         text: 'Continuar con Apple',
         height: 46,
-        style: SignInWithAppleButtonStyle.black,
+        style: SignInWithAppleButtonStyle.white,
         borderRadius: BorderRadius.circular(FzRadius.xl),
       ),
     );

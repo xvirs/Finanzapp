@@ -19,6 +19,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
     on<AuthGoogleSignInRequested>(_onGoogleSignInRequested);
     on<AuthAppleSignInRequested>(_onAppleSignInRequested);
     on<AuthSignOutRequested>(_onSignOutRequested);
+    on<AuthDeleteAccountRequested>(_onDeleteAccountRequested);
 
     add(const AuthSubscriptionRequested());
   }
@@ -144,6 +145,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthBlocState> {
   ) async {
     try {
       await _repository.signOut();
+    } catch (error) {
+      emit(
+        state.copyWith(
+          actionStatus: AuthActionStatus.failure,
+          errorMessage: error.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onDeleteAccountRequested(
+    AuthDeleteAccountRequested event,
+    Emitter<AuthBlocState> emit,
+  ) async {
+    emit(
+      state.copyWith(actionStatus: AuthActionStatus.loading, clearError: true),
+    );
+    try {
+      await _repository.deleteAccount();
+      // El signOut interno dispara onAuthStateChange(null) → _onSessionChanged
+      // emite unauthenticated + idle, así que no hace falta emit extra acá.
     } catch (error) {
       emit(
         state.copyWith(

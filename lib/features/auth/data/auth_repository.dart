@@ -137,4 +137,40 @@ class AuthRepository {
     }
     await supabase.auth.signOut();
   }
+
+  /// Elimina permanentemente la cuenta del usuario actual.
+  ///
+  /// Requerido por Apple App Review Guideline 5.1.1(v): toda app con
+  /// creación de cuenta debe ofrecer eliminación in-app.
+  ///
+  /// `auth.users` no es modificable desde el cliente (no tiene RLS abierta),
+  /// así que la operación se delega a la Edge Function `delete-account` que
+  /// usa el service role key para llamar `auth.admin.deleteUser`. Postgres
+  /// borra en cascada todas las filas de bills, credit_cards, incomes,
+  /// installment_purchases y payments (FKs con ON DELETE CASCADE).
+  Future<void> deleteAccount() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      throw const AuthException('No hay sesión activa.');
+    }
+
+    final response = await supabase.functions.invoke('delete-account');
+    if (response.status != 200) {
+      final data = response.data;
+      final message = data is Map && data['error'] is String
+          ? data['error'] as String
+          : 'No se pudo eliminar la cuenta (HTTP ${response.status}).';
+      throw Exception(message);
+    }
+
+    // Limpieza local: el user ya no existe en el backend, pero el SDK
+    // todavía tiene la session cacheada. signOut() limpia storage + dispara
+    // onAuthStateChange(null) para que el router redirija a /login.
+    try {
+      await GoogleSignIn.instance.signOut();
+    } catch (_) {
+      // Idem signOut(): silencio si no había sesión Google.
+    }
+    await supabase.auth.signOut();
+  }
 }

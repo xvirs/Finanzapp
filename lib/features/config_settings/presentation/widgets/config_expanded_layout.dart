@@ -28,6 +28,7 @@ class ConfigExpandedLayout extends StatefulWidget {
     required this.error,
     required this.biometricCard,
     required this.logoutButton,
+    required this.deleteAccountButton,
     super.key,
   });
 
@@ -39,6 +40,7 @@ class ConfigExpandedLayout extends StatefulWidget {
   final String? error;
   final Widget biometricCard;
   final Widget logoutButton;
+  final Widget deleteAccountButton;
 
   @override
   State<ConfigExpandedLayout> createState() => _ConfigExpandedLayoutState();
@@ -70,6 +72,7 @@ class _ConfigExpandedLayoutState extends State<ConfigExpandedLayout> {
             section: _selected,
             biometricCard: widget.biometricCard,
             logoutButton: widget.logoutButton,
+            deleteAccountButton: widget.deleteAccountButton,
           ),
         ),
       ],
@@ -372,11 +375,13 @@ class _Detail extends StatelessWidget {
     required this.section,
     required this.biometricCard,
     required this.logoutButton,
+    required this.deleteAccountButton,
   });
 
   final _Section section;
   final Widget biometricCard;
   final Widget logoutButton;
+  final Widget deleteAccountButton;
 
   @override
   Widget build(BuildContext context) {
@@ -385,6 +390,7 @@ class _Detail extends StatelessWidget {
         return _SecurityDetail(
           biometricCard: biometricCard,
           logoutButton: logoutButton,
+          deleteAccountButton: deleteAccountButton,
         );
       case _Section.bills:
         return BlocProvider(
@@ -437,10 +443,12 @@ class _SecurityDetail extends StatelessWidget {
   const _SecurityDetail({
     required this.biometricCard,
     required this.logoutButton,
+    required this.deleteAccountButton,
   });
 
   final Widget biometricCard;
   final Widget logoutButton;
+  final Widget deleteAccountButton;
 
   @override
   Widget build(BuildContext context) {
@@ -475,6 +483,8 @@ class _SecurityDetail extends StatelessWidget {
               biometricCard,
               const SizedBox(height: 20),
               logoutButton,
+              const SizedBox(height: 8),
+              deleteAccountButton,
             ],
           ),
         );

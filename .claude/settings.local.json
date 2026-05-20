@@ -86,7 +86,15 @@
       "Bash(flutter run *)",
       "Read(//Users/xavier/Pictures/**)",
       "Bash(open ~/Desktop/)",
-      "Bash(open ~/Desktop/app_store_screenshots/)"
+      "Bash(open ~/Desktop/app_store_screenshots/)",
+      "Bash(xargs ls -la)",
+      "Bash(supabase projects *)",
+      "Bash(supabase link *)",
+      "Bash(supabase functions *)",
+      "Bash(flutter clean *)",
+      "Bash(security unlock-keychain *)",
+      "Bash(security list-keychains *)",
+      "Bash(open /Users/xavier/Proyectos/Finanzapp/build/ios/ipa/)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"

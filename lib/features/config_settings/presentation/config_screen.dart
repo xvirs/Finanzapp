@@ -113,6 +113,8 @@ class _ConfigScreenState extends State<ConfigScreen> {
                     const _BiometricCard(),
                     const SizedBox(height: 24),
                     const _LogoutButton(),
+                    const SizedBox(height: 8),
+                    const _DeleteAccountButton(),
                     const SizedBox(height: 20),
                     const _Footer(),
                     const SizedBox(height: 12),
@@ -131,6 +133,7 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 error: _countsError,
                 biometricCard: const _BiometricCard(),
                 logoutButton: const _LogoutButton(),
+                deleteAccountButton: const _DeleteAccountButton(),
               ),
             ),
           );
@@ -649,6 +652,201 @@ class _LogoutButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Eliminar cuenta. Requerido por Apple Guideline 5.1.1(v).
+///
+/// Flow:
+///   1. Dialog de confirmación que exige tipear "ELIMINAR" (anti-accidente).
+///   2. Si biometría está habilitada, además pide Face/Touch ID.
+///   3. Dispara AuthDeleteAccountRequested → Edge Function → borra user
+///      → onAuthStateChange(null) → router redirige a /login.
+///   4. Failure: snackbar con el error, botón vuelve a habilitarse.
+class _DeleteAccountButton extends StatefulWidget {
+  const _DeleteAccountButton();
+
+  @override
+  State<_DeleteAccountButton> createState() => _DeleteAccountButtonState();
+}
+
+class _DeleteAccountButtonState extends State<_DeleteAccountButton> {
+  bool _busy = false;
+
+  Future<void> _onPressed() async {
+    final messenger = ScaffoldMessenger.of(context);
+    final authBloc = context.read<AuthBloc>();
+    final biometric = context.read<BiometricService>();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _DeleteAccountConfirmationDialog(),
+    );
+    if (confirmed != true || !mounted) return;
+
+    if (biometric.enabledCached) {
+      try {
+        final ok = await biometric.authenticate(
+          reason: 'Verificá tu identidad para eliminar la cuenta',
+        );
+        if (!mounted) return;
+        if (!ok) {
+          messenger.showSnackBar(
+            const SnackBar(content: Text('Verificación cancelada.')),
+          );
+          return;
+        }
+      } on PlatformException catch (e) {
+        if (!mounted) return;
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              'Biométrico [${e.code}]: ${e.message ?? "sin mensaje"}',
+            ),
+          ),
+        );
+        return;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() => _busy = true);
+    authBloc.add(const AuthDeleteAccountRequested());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocListener<AuthBloc, AuthBlocState>(
+      listenWhen: (prev, curr) =>
+          _busy && prev.actionStatus != curr.actionStatus,
+      listener: (context, state) {
+        if (state.actionStatus == AuthActionStatus.failure) {
+          setState(() => _busy = false);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              backgroundColor: FzColors.lateColor,
+              content: Text(
+                state.errorMessage ?? 'No se pudo eliminar la cuenta.',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          );
+        }
+        // Éxito: el bloc emite idle desde _onSessionChanged cuando la sesión
+        // muere. El router ya redirige solo, este widget se desmonta.
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        child: Center(
+          child: TextButton.icon(
+            style: TextButton.styleFrom(
+              foregroundColor: FzColors.lateColor,
+              padding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 10,
+              ),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: _busy ? null : _onPressed,
+            icon: _busy
+                ? const SizedBox(
+                    width: 13,
+                    height: 13,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation(FzColors.lateColor),
+                    ),
+                  )
+                : const Icon(Icons.delete_outline, size: 15),
+            label: const Text(
+              'Eliminar cuenta',
+              style: TextStyle(
+                fontFamily: FzType.sans,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DeleteAccountConfirmationDialog extends StatefulWidget {
+  const _DeleteAccountConfirmationDialog();
+
+  @override
+  State<_DeleteAccountConfirmationDialog> createState() =>
+      _DeleteAccountConfirmationDialogState();
+}
+
+class _DeleteAccountConfirmationDialogState
+    extends State<_DeleteAccountConfirmationDialog> {
+  static const _phrase = 'ELIMINAR';
+  final _ctrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final canConfirm = _ctrl.text.trim().toUpperCase() == _phrase;
+    return AlertDialog(
+      title: const Text('¿Eliminar tu cuenta?'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Esta acción es PERMANENTE y no se puede deshacer.\n\n'
+            'Se eliminarán para siempre:\n'
+            '• Tus cuentas fijas y servicios\n'
+            '• Tus tarjetas y cuotas\n'
+            '• Tus ingresos y pagos registrados\n'
+            '• Tu perfil y datos de sesión',
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Para confirmar, escribí ELIMINAR:',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _ctrl,
+            autofocus: true,
+            textCapitalization: TextCapitalization.characters,
+            autocorrect: false,
+            decoration: const InputDecoration(
+              hintText: _phrase,
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('Cancelar'),
+        ),
+        FilledButton(
+          style: FilledButton.styleFrom(
+            backgroundColor: scheme.errorContainer,
+            foregroundColor: scheme.onErrorContainer,
+          ),
+          onPressed: canConfirm ? () => Navigator.pop(context, true) : null,
+          child: const Text('Eliminar permanentemente'),
+        ),
+      ],
     );
   }
 }
