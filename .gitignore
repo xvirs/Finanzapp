@@ -43,3 +43,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Store screenshots (originales iOS + versiones procesadas para Play) — pesadas
+# (~22 MB). Viven en las tiendas + Drive del dev. Las curadas y livianas para
+# el README están versionadas en docs/screenshots/.
+/assets/store/screenshots/
