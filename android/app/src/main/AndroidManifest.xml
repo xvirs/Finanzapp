@@ -1,8 +1,15 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
     <!-- Local notifications (recordatorios pre-vencimiento) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>
+    <!-- La app programa notificaciones con alarmas INEXACTAS
+         (AndroidScheduleMode.inexactAllowWhileIdle en notification_service.dart),
+         así que NO necesita permisos de alarma exacta. flutter_local_notifications
+         los inyecta por defecto en su manifest; los removemos del manifest final
+         para cumplir la política de Play (USE_EXACT_ALARM solo se permite en apps
+         cuya función principal es despertador o calendario). -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" tools:node="remove"/>
+    <uses-permission android:name="android.permission.USE_EXACT_ALARM" tools:node="remove"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
 
     <application
