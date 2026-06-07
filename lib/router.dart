@@ -38,7 +38,15 @@ class AppRouter {
 
   final AuthBloc _authBloc;
 
+  /// Navigator raíz — usado para flujos full-screen que deben vivir por
+  /// encima del shell (y no dentro de la rama de un tab), como el alta de
+  /// gasto. Así, al terminar, podemos `go('/')` sin dejar el stack del tab
+  /// colgado.
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
+
   late final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: _AuthRefreshNotifier(_authBloc),
     redirect: _redirect,
@@ -160,6 +168,9 @@ class AppRouter {
                       GoRoute(
                         path: 'new',
                         name: 'bill-new',
+                        // Alta full-screen sobre el shell: al guardar hacemos
+                        // go('/') y no queda nada montado en la rama de config.
+                        parentNavigatorKey: rootNavigatorKey,
                         builder: (context, state) => const BillFormScreen(),
                       ),
                       GoRoute(
@@ -208,6 +219,7 @@ class AppRouter {
                       GoRoute(
                         path: 'new',
                         name: 'income-new',
+                        parentNavigatorKey: rootNavigatorKey,
                         builder: (context, state) => const IncomeFormScreen(),
                       ),
                       GoRoute(

@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/format.dart';
+import '../../../core/realtime_service.dart';
 import '../../../data/incomes_repository.dart';
 import '../../../design/tokens.dart';
 import '../../../design/widgets.dart';
@@ -13,7 +14,19 @@ import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
 import '../../../widgets/month_year_picker.dart';
 
-/// Crear/editar un ingreso. Espejo simétrico de [BillFormScreen].
+/// Frecuencia del ingreso, elegida con un campo dentro del formulario:
+///
+/// - [recurring]: ingreso mes a mes (ej: sueldo, un alquiler que cobro).
+///   Es el default — el caso más común.
+/// - [oneShot]: ingreso puntual (una vez, ej: aguinaldo, venta, bonus).
+///   Por detrás es un `Income` con `endPeriod == startPeriod`.
+enum IncomeFormMode { oneShot, recurring }
+
+/// Crear/editar un ingreso. Espejo simétrico de `BillFormScreen`.
+///
+/// Form único y adaptativo: arranca en modo recurrente y un campo
+/// "¿Cada cuánto?" cambia entre mes a mes y puntual. Al editar, el modo se
+/// deriva del income cargado (puntual si `endPeriod == startPeriod`).
 class IncomeFormScreen extends StatefulWidget {
   const IncomeFormScreen({this.incomeId, super.key});
 
@@ -32,16 +45,18 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   final _dayController = TextEditingController();
   final _notesController = TextEditingController();
 
+  IncomeFormMode _mode = IncomeFormMode.recurring;
   IncomeKind _kind = IncomeKind.salary;
   bool _active = true;
   String _startPeriod = PeriodKey.current().toIso();
   String? _endPeriod;
+  bool _advancedExpanded = false;
 
   bool _loading = true;
   bool _saving = false;
   String? _loadError;
 
-  bool get _isOneShot => _endPeriod != null && _endPeriod == _startPeriod;
+  bool get _isOneShot => _mode == IncomeFormMode.oneShot;
 
   @override
   void initState() {
@@ -78,13 +93,19 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         return;
       }
       _nameController.text = income.name;
-      _amountController.text = income.defaultAmount?.toStringAsFixed(0) ?? '';
+      _amountController.text = income.defaultAmount == null
+          ? ''
+          : formatAmountInput(income.defaultAmount!);
       _dayController.text = income.dayOfMonth?.toString() ?? '';
       _notesController.text = income.notes ?? '';
       _kind = income.kind;
       _active = income.active;
       _startPeriod = income.startPeriod;
       _endPeriod = income.endPeriod;
+      _mode =
+          (income.endPeriod != null && income.endPeriod == income.startPeriod)
+          ? IncomeFormMode.oneShot
+          : IncomeFormMode.recurring;
       setState(() => _loading = false);
     } catch (e) {
       setState(() {
@@ -100,14 +121,21 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     setState(() => _saving = true);
 
     final repo = context.read<IncomesRepository>();
+    final realtime = context.read<RealtimeService>();
+    final isNew = widget.incomeId == null;
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
-      final amountRaw = _amountController.text.trim().replaceAll(',', '.');
+      // El campo agrupa miles con punto ("1.629.560"); los quitamos para
+      // parsear el monto entero.
+      final amountRaw = _amountController.text.replaceAll('.', '').trim();
       final defaultAmount = amountRaw.isEmpty
           ? null
           : double.tryParse(amountRaw);
+
+      // En puntual el ingreso vive un único mes: end == start.
+      final endPeriod = _isOneShot ? _startPeriod : _endPeriod;
 
       await repo.saveIncome(
         existingId: widget.incomeId,
@@ -120,11 +148,21 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
             ? null
             : _notesController.text.trim(),
         startPeriod: _startPeriod,
-        endPeriod: _endPeriod,
+        endPeriod: endPeriod,
       );
 
+      // Avisar a los blocs que escuchan realtime (Mes, lista) para que
+      // refresquen sí o sí, sin depender de Supabase Realtime.
+      realtime.notifyLocalChange(RealtimeTable.incomes);
+
       if (!mounted) return;
-      router.pop(true);
+      // Al crear, volvemos al home (Mes) limpiando el flujo de alta. Al
+      // editar, volvemos a la lista de donde vino.
+      if (isNew) {
+        router.go('/');
+      } else {
+        router.pop(true);
+      }
     } catch (error) {
       if (!mounted) return;
       messenger.showSnackBar(
@@ -144,11 +182,13 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
 
     setState(() => _saving = true);
     final repo = context.read<IncomesRepository>();
+    final realtime = context.read<RealtimeService>();
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
       await repo.softDeleteOrDelete(widget.incomeId!);
+      realtime.notifyLocalChange(RealtimeTable.incomes);
       if (!mounted) return;
       router.pop(true);
     } catch (error) {
@@ -160,6 +200,11 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
     }
   }
 
+  /// Cualquier interacción que no sea con un campo de texto cierra el teclado.
+  void _dismissKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
+
+  String get _title => widget.isEditing ? 'Editar ingreso' : 'Nuevo ingreso';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -169,9 +214,7 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FzAppBar(
-              title: widget.isEditing ? 'Editar ingreso' : 'Nuevo ingreso',
-            ),
+            FzAppBar(title: _title),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -188,285 +231,281 @@ class _IncomeFormScreenState extends State<IncomeFormScreen> {
   Widget _buildForm() {
     return AbsorbPointer(
       absorbing: _saving,
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-          children: [
-            FormFieldWrap(
-              label: 'Nombre',
-              required: true,
-              child: FormTextField(
-                controller: _nameController,
-                hint: 'Ej. Sueldo, Cliente X, Alquiler depto',
-                textInputAction: TextInputAction.next,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Ingresá un nombre'
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Tipo',
-              required: true,
-              child: _KindSelector(
-                value: _kind,
-                onChanged: (v) => setState(() => _kind = v),
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Monto estimado',
-              hint: 'Vacío = monto variable',
-              child: FormTextField(
-                controller: _amountController,
-                hint: '0',
-                prefix: '\$ ',
-                mono: true,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                validator: (v) {
-                  final raw = (v ?? '').trim().replaceAll(',', '.');
-                  if (raw.isEmpty) return null;
-                  final n = double.tryParse(raw);
-                  if (n == null || n <= 0) return 'Inválido';
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Día del mes',
-              hint: '1 a 31 — opcional',
-              child: FormTextField(
-                controller: _dayController,
-                hint: '—',
-                mono: true,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (v) {
-                  final raw = (v ?? '').trim();
-                  if (raw.isEmpty) return null;
-                  final n = int.tryParse(raw);
-                  if (n == null || n < 1 || n > 31) return '1 a 31';
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Desde',
-              hint: 'Primer mes en que aplica este ingreso.',
-              required: true,
-              child: MonthYearPicker(
-                value: PeriodKey.fromIso(_startPeriod),
-                onChanged: (p) {
-                  if (p == null) return;
-                  setState(() {
-                    _startPeriod = p.toIso();
-                    if (_isOneShot) {
-                      _endPeriod = _startPeriod;
-                    } else if (_endPeriod != null &&
-                        PeriodKey.fromIso(_endPeriod!).compareTo(p) < 0) {
-                      _endPeriod = null;
-                    }
-                  });
-                },
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Solo este mes',
-              hint: _isOneShot
-                  ? 'Aparece únicamente en el mes "Desde".'
-                  : 'Activá si es un ingreso puntual (ej: aguinaldo, venta, bonus).',
-              child: FormFieldShell(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                onTap: () => setState(() {
-                  if (_isOneShot) {
-                    _endPeriod = null;
-                  } else {
-                    _endPeriod = _startPeriod;
-                  }
-                }),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Ingreso puntual',
-                        style: TextStyle(
-                          fontFamily: FzType.sans,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: FzColors.text,
-                        ),
-                      ),
-                    ),
-                    Switch(
-                      value: _isOneShot,
-                      onChanged: (v) => setState(() {
-                        _endPeriod = v ? _startPeriod : null;
-                      }),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (!_isOneShot) ...[
-              const SizedBox(height: 14),
-              FormFieldWrap(
-                label: 'Hasta',
-                hint:
-                    'Opcional. Si lo dejás vacío, el ingreso sigue activo indefinidamente.',
-                child: MonthYearPicker(
-                  value: _endPeriod == null
-                      ? null
-                      : PeriodKey.fromIso(_endPeriod!),
-                  minPeriod: PeriodKey.fromIso(_startPeriod),
-                  placeholder: 'Sin fin',
-                  allowClear: true,
-                  onChanged: (p) =>
-                      setState(() => _endPeriod = p?.toIso()),
-                ),
-              ),
-            ],
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Notas',
-              child: FormTextField(
-                controller: _notesController,
-                hint: 'Opcional',
-                maxLines: 4,
-              ),
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 14),
-              FormActiveToggle(
-                value: _active,
-                onChanged: (v) => setState(() => _active = v),
-                subtitleOn: 'El ingreso aparece en Mes',
-                subtitleOff: 'El ingreso queda oculto',
-              ),
-            ],
-            const SizedBox(height: 20),
-            FormSaveButton(
-              label: widget.isEditing ? 'Guardar' : 'Crear ingreso',
-              loading: _saving,
-              onPressed: _submit,
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 10),
-              FormDeleteButton(
-                label: 'Eliminar ingreso',
-                onPressed: _saving ? null : _delete,
-              ),
-            ],
-          ],
+      child: GestureDetector(
+        // Tap en cualquier zona vacía → cierra el teclado.
+        behavior: HitTestBehavior.translucent,
+        onTap: _dismissKeyboard,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+            children: _fields(),
+          ),
         ),
       ),
     );
   }
+
+  /// Form único: lo esencial primero (nombre, monto, categoría), después
+  /// la frecuencia, y según ésta los campos que correspondan.
+  List<Widget> _fields() {
+    return [
+      _nameField(),
+      const SizedBox(height: 14),
+      _amountField(),
+      const SizedBox(height: 14),
+      _categoryField(),
+      const SizedBox(height: 14),
+      _frequencyField(),
+      const SizedBox(height: 14),
+      if (_isOneShot)
+        _monthField()
+      else ...[
+        _dayField(),
+        const SizedBox(height: 6),
+        FormMoreOptions(
+          expanded: _advancedExpanded,
+          onToggle: () {
+            _dismissKeyboard();
+            setState(() => _advancedExpanded = !_advancedExpanded);
+          },
+          children: _advancedFields(),
+        ),
+      ],
+      if (widget.isEditing) ...[
+        const SizedBox(height: 14),
+        FormActiveToggle(
+          value: _active,
+          onChanged: (v) {
+            _dismissKeyboard();
+            setState(() => _active = v);
+          },
+          subtitleOn: 'El ingreso aparece en Mes',
+          subtitleOff: 'El ingreso queda oculto',
+        ),
+      ],
+      const SizedBox(height: 22),
+      _saveButton(),
+      if (widget.isEditing) ...[
+        const SizedBox(height: 10),
+        FormDeleteButton(
+          label: 'Eliminar ingreso',
+          onPressed: _saving ? null : _delete,
+        ),
+      ],
+    ];
+  }
+
+  Widget _frequencyField() {
+    return FormFieldWrap(
+      label: '¿Cada cuánto?',
+      child: FormSegmented(
+        options: const ['Todos los meses', 'Una sola vez'],
+        selectedIndex: _isOneShot ? 1 : 0,
+        onChanged: (i) {
+          _dismissKeyboard();
+          setState(() {
+            _mode = i == 1 ? IncomeFormMode.oneShot : IncomeFormMode.recurring;
+            if (_isOneShot) {
+              _endPeriod = _startPeriod;
+              _advancedExpanded = false;
+            } else {
+              _endPeriod = null;
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _monthField() {
+    return FormFieldWrap(
+      label: 'Mes',
+      required: true,
+      hint: 'Mes en el que registrás este ingreso.',
+      child: MonthYearPicker(
+        value: PeriodKey.fromIso(_startPeriod),
+        onChanged: (p) {
+          if (p == null) return;
+          setState(() {
+            _startPeriod = p.toIso();
+            _endPeriod = _startPeriod;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _dayField() {
+    return FormFieldWrap(
+      label: 'Día del mes',
+      hint: 'Opcional. Día en que lo cobrás (1 a 31).',
+      child: FormTextField(
+        controller: _dayController,
+        hint: '—',
+        mono: true,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        validator: (v) {
+          final raw = (v ?? '').trim();
+          if (raw.isEmpty) return null;
+          final n = int.tryParse(raw);
+          if (n == null || n < 1 || n > 31) return '1 a 31';
+          return null;
+        },
+      ),
+    );
+  }
+
+  List<Widget> _advancedFields() {
+    return [
+      FormFieldWrap(
+        label: 'Desde',
+        hint: 'Primer mes en que aplica este ingreso.',
+        required: true,
+        child: MonthYearPicker(
+          value: PeriodKey.fromIso(_startPeriod),
+          onChanged: (p) {
+            if (p == null) return;
+            setState(() {
+              _startPeriod = p.toIso();
+              if (_endPeriod != null &&
+                  PeriodKey.fromIso(_endPeriod!).compareTo(p) < 0) {
+                _endPeriod = null;
+              }
+            });
+          },
+        ),
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Hasta',
+        hint:
+            'Opcional. Si lo dejás vacío, el ingreso sigue activo indefinidamente.',
+        child: MonthYearPicker(
+          value: _endPeriod == null ? null : PeriodKey.fromIso(_endPeriod!),
+          minPeriod: PeriodKey.fromIso(_startPeriod),
+          placeholder: 'Sin fin',
+          allowClear: true,
+          onChanged: (p) => setState(() => _endPeriod = p?.toIso()),
+        ),
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Notas',
+        child: FormTextField(
+          controller: _notesController,
+          hint: 'Opcional',
+          maxLines: 4,
+        ),
+      ),
+    ];
+  }
+
+  // ─────────────────────────── Campos comunes ────────────────────────
+
+  Widget _nameField() {
+    return FormFieldWrap(
+      label: 'Nombre',
+      required: true,
+      child: FormTextField(
+        controller: _nameController,
+        hint: 'Ej. Sueldo, Cliente X, Aguinaldo',
+        textInputAction: TextInputAction.next,
+        validator: (v) =>
+            (v == null || v.trim().isEmpty) ? 'Ingresá un nombre' : null,
+      ),
+    );
+  }
+
+  Widget _amountField() {
+    // En puntual el monto es obligatorio (ya cobraste, sabés cuánto); en
+    // recurrente es opcional (vacío = variable).
+    final required = _isOneShot;
+    return FormFieldWrap(
+      label: _isOneShot ? 'Monto' : 'Monto estimado',
+      required: required,
+      hint: _isOneShot
+          ? '¿Cuánto cobraste?'
+          : 'Dejalo vacío si el monto varía.',
+      child: FormTextField(
+        controller: _amountController,
+        hint: '0',
+        prefix: '\$ ',
+        mono: true,
+        keyboardType: TextInputType.number,
+        inputFormatters: [ThousandsInputFormatter()],
+        validator: (v) {
+          final raw = (v ?? '').replaceAll('.', '').trim();
+          if (raw.isEmpty) {
+            return required ? 'Ingresá el monto' : null;
+          }
+          final n = int.tryParse(raw);
+          if (n == null || n <= 0) return 'Inválido';
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _categoryField() {
+    return FormFieldWrap(
+      label: 'Categoría',
+      child: _KindChips(
+        value: _kind,
+        onChanged: (v) {
+          _dismissKeyboard();
+          setState(() => _kind = v);
+        },
+      ),
+    );
+  }
+
+  Widget _saveButton() {
+    return FormSaveButton(
+      label: widget.isEditing ? 'Guardar cambios' : 'Guardar ingreso',
+      loading: _saving,
+      onPressed: _submit,
+    );
+  }
 }
 
-class _KindSelector extends StatelessWidget {
-  const _KindSelector({required this.value, required this.onChanged});
+/// Icono Material por tipo de ingreso (sin emojis, alineado al resto de
+/// la UI del handoff).
+IconData iconForIncomeKind(IncomeKind kind) {
+  switch (kind) {
+    case IncomeKind.salary:
+      return Icons.work_outline_rounded;
+    case IncomeKind.freelance:
+      return Icons.laptop_mac_outlined;
+    case IncomeKind.rental:
+      return Icons.home_outlined;
+    case IncomeKind.other:
+      return Icons.payments_outlined;
+  }
+}
+
+/// Selector de categoría (IncomeKind) como chips inline — 1 tap, sin
+/// bottom sheet.
+class _KindChips extends StatelessWidget {
+  const _KindChips({required this.value, required this.onChanged});
   final IncomeKind value;
   final ValueChanged<IncomeKind> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return FormFieldShell(
-      onTap: () async {
-        final picked = await showModalBottomSheet<IncomeKind>(
-          context: context,
-          backgroundColor: FzColors.card,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final k in IncomeKind.values)
+          FormChoiceChip(
+            icon: iconForIncomeKind(k),
+            label: kIncomeKindLabels[k] ?? '—',
+            selected: k == value,
+            onTap: () => onChanged(k),
           ),
-          builder: (_) => _KindSheet(selected: value),
-        );
-        if (picked != null) onChanged(picked);
-      },
-      child: Row(
-        children: [
-          Text(
-            kIncomeKindEmoji[value] ?? '💰',
-            style: const TextStyle(fontSize: 14),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              kIncomeKindLabels[value] ?? '—',
-              style: const TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 14,
-                color: FzColors.text,
-              ),
-            ),
-          ),
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 16,
-            color: FzColors.textDim,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _KindSheet extends StatelessWidget {
-  const _KindSheet({required this.selected});
-  final IncomeKind selected;
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 12),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: FzColors.borderHi,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            for (final k in IncomeKind.values)
-              ListTile(
-                leading: Text(
-                  kIncomeKindEmoji[k] ?? '💰',
-                  style: const TextStyle(fontSize: 18),
-                ),
-                title: Text(
-                  kIncomeKindLabels[k] ?? '—',
-                  style: TextStyle(
-                    fontFamily: FzType.sans,
-                    fontSize: 14,
-                    fontWeight:
-                        k == selected ? FontWeight.w600 : FontWeight.w400,
-                    color: FzColors.text,
-                  ),
-                ),
-                trailing: k == selected
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: FzColors.primary,
-                        size: 20,
-                      )
-                    : null,
-                onTap: () => Navigator.of(context).pop(k),
-              ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
+      ],
     );
   }
 }

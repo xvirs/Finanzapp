@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../design/tokens.dart';
 
@@ -170,6 +171,7 @@ class FormTextField extends StatelessWidget {
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters?.cast<TextInputFormatter>(),
       validator: validator,
       textInputAction: textInputAction,
       onChanged: onChanged,
@@ -291,6 +293,233 @@ class FormSaveButton extends StatelessWidget {
                 )
               : const Icon(Icons.save_outlined, size: 16),
           label: Text(label),
+        ),
+      ),
+    );
+  }
+}
+
+/// Cabecera "Más opciones" con chevron que rota y contenido que se
+/// despliega con animación de alto + fade. Para esconder campos avanzados
+/// de un formulario y no abrumar (progressive disclosure).
+class FormMoreOptions extends StatelessWidget {
+  const FormMoreOptions({
+    required this.expanded,
+    required this.onToggle,
+    required this.children,
+    this.label = 'Más opciones',
+    super.key,
+  });
+
+  final bool expanded;
+  final VoidCallback onToggle;
+  final List<Widget> children;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(FzRadius.lg),
+          child: InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(FzRadius.lg),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+              child: Row(
+                children: [
+                  Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: FzType.sans,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: FzColors.primaryHi,
+                    ),
+                  ),
+                  const Spacer(),
+                  AnimatedRotation(
+                    turns: expanded ? 0.5 : 0,
+                    duration: FzMotion.normal,
+                    curve: FzMotion.easing,
+                    child: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 20,
+                      color: FzColors.primaryHi,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        ClipRect(
+          child: AnimatedSize(
+            duration: FzMotion.normal,
+            curve: FzMotion.easing,
+            alignment: Alignment.topCenter,
+            child: AnimatedOpacity(
+              opacity: expanded ? 1 : 0,
+              duration: FzMotion.fast,
+              child: expanded
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: children,
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Control segmentado full-width para elegir entre opciones mutuamente
+/// excluyentes sin abrir un sheet (ej: frecuencia "Todos los meses / Una
+/// sola vez"). El segmento activo se resalta con una transición de color.
+class FormSegmented extends StatelessWidget {
+  const FormSegmented({
+    required this.options,
+    required this.selectedIndex,
+    required this.onChanged,
+    super.key,
+  });
+
+  final List<String> options;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < options.length; i++)
+            Expanded(
+              child: _Segment(
+                label: options[i],
+                selected: i == selectedIndex,
+                onTap: () => onChanged(i),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Segment extends StatelessWidget {
+  const _Segment({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(FzRadius.md),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(FzRadius.md),
+        child: AnimatedContainer(
+          duration: FzMotion.fast,
+          curve: FzMotion.easing,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? FzColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(FzRadius.md),
+          ),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontFamily: FzType.sans,
+              fontSize: 13,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+              color: selected ? FzColors.primaryInk : FzColors.textDim,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Chip de selección (icono + label) en forma de pill, con transición de
+/// color al seleccionarse. Pensado para usarse en un [Wrap] como selector
+/// de categoría inline (1 tap, sin bottom sheet).
+class FormChoiceChip extends StatelessWidget {
+  const FormChoiceChip({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    super.key,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(FzRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(FzRadius.pill),
+        child: AnimatedContainer(
+          duration: FzMotion.fast,
+          curve: FzMotion.easing,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? FzColors.primary : FzColors.card,
+            borderRadius: BorderRadius.circular(FzRadius.pill),
+            border: Border.all(
+              color: selected ? FzColors.primary : FzColors.border,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 15,
+                color: selected ? FzColors.primaryInk : FzColors.textDim,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  fontFamily: FzType.sans,
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? FzColors.primaryInk : FzColors.text,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

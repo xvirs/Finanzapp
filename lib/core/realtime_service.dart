@@ -79,6 +79,15 @@ class RealtimeService {
     await supabase.removeChannel(channel);
   }
 
+  /// Emite un cambio "local" — como si Supabase Realtime hubiera avisado.
+  ///
+  /// Lo usamos después de una mutación propia (crear/editar/eliminar) para
+  /// que los blocs que escuchan [changes] refresquen sí o sí, sin depender
+  /// de que Realtime esté habilitado en el Dashboard ni de su latencia.
+  void notifyLocalChange(RealtimeTable table) {
+    if (!_controller.isClosed) _controller.add(table);
+  }
+
   Future<void> dispose() async {
     await stop();
     await _controller.close();

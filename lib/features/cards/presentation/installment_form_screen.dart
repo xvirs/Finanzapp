@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/analytics_service.dart';
 import '../../../core/format.dart';
+import '../../../core/realtime_service.dart';
 import '../../../data/cards_repository.dart';
 import '../../../data/installments_repository.dart';
 import '../../../design/tokens.dart';
@@ -17,6 +17,7 @@ import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
+import '../../../widgets/month_year_picker.dart';
 import '../../../widgets/fz_snackbar.dart';
 
 /// Pantalla 6 — Nueva/Editar compra en cuotas.
@@ -69,9 +70,13 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
 
   void _recompute() => setState(() {});
 
+  /// Cualquier interacción que no sea con un campo de texto cierra el teclado.
+  void _dismissKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
+
   double? get _liveTotal {
+    // El campo agrupa miles con punto; los quitamos para parsear.
     final amount = double.tryParse(
-      _amountController.text.trim().replaceAll(',', '.'),
+      _amountController.text.replaceAll('.', '').trim(),
     );
     final count = int.tryParse(_countController.text.trim());
     if (amount == null || count == null || count <= 0 || amount <= 0) {
@@ -109,7 +114,7 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
 
       if (purchase != null) {
         _descriptionController.text = purchase.description;
-        _amountController.text = purchase.installmentAmount.toStringAsFixed(0);
+        _amountController.text = formatAmountInput(purchase.installmentAmount);
         _countController.text = purchase.installmentCount.toString();
         _notesController.text = purchase.notes ?? '';
         _firstPeriod = PeriodKey.fromIso(purchase.firstPeriod);
@@ -124,14 +129,6 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
     }
   }
 
-  Future<void> _pickPeriod() async {
-    final selected = await showDialog<PeriodKey>(
-      context: context,
-      builder: (ctx) => _MonthYearPicker(initial: _firstPeriod),
-    );
-    if (selected != null) setState(() => _firstPeriod = selected);
-  }
-
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
@@ -139,6 +136,7 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
 
     final repo = context.read<InstallmentsRepository>();
     final analytics = context.read<AnalyticsService>();
+    final realtime = context.read<RealtimeService>();
     final isNew = widget.installmentId == null;
     final installmentCount = int.parse(_countController.text.trim());
     final router = GoRouter.of(context);
@@ -150,7 +148,7 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
         description: _descriptionController.text.trim(),
         installmentCount: installmentCount,
         installmentAmount: double.parse(
-          _amountController.text.trim().replaceAll(',', '.'),
+          _amountController.text.replaceAll('.', '').trim(),
         ),
         firstPeriod: _firstPeriod,
         notes: _notesController.text.trim().isEmpty
@@ -163,6 +161,10 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
           analytics.installmentCreated(totalInstallments: installmentCount),
         );
       }
+
+      // Refresh determinista (Mes y detalle de tarjeta muestran las cuotas),
+      // sin depender de que Supabase Realtime esté habilitado.
+      realtime.notifyLocalChange(RealtimeTable.installmentPurchases);
 
       if (!mounted) return;
       router.pop(true);
@@ -187,10 +189,12 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
 
     setState(() => _saving = true);
     final repo = context.read<InstallmentsRepository>();
+    final realtime = context.read<RealtimeService>();
     final router = GoRouter.of(context);
 
     try {
       await repo.deletePurchase(widget.installmentId!);
+      realtime.notifyLocalChange(RealtimeTable.installmentPurchases);
       if (!mounted) return;
       router.pop(true);
     } catch (error) {
@@ -232,135 +236,121 @@ class _InstallmentFormScreenState extends State<InstallmentFormScreen> {
   Widget _buildForm() {
     return AbsorbPointer(
       absorbing: _saving,
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-          children: [
-            if (_card != null) ...[
-              _ContextCard(card: _card!),
-              const SizedBox(height: 14),
-            ],
-            FormFieldWrap(
-              label: 'Descripción',
-              required: true,
-              child: FormTextField(
-                controller: _descriptionController,
-                hint: 'Ej. Heladera Whirlpool',
-                textInputAction: TextInputAction.next,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Ingresá una descripción'
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: FormFieldWrap(
-                    label: 'Monto por cuota',
-                    required: true,
-                    child: FormTextField(
-                      controller: _amountController,
-                      hint: '0',
-                      prefix: '\$ ',
-                      mono: true,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                      ),
-                      validator: (v) {
-                        final raw = (v ?? '').trim().replaceAll(',', '.');
-                        final n = double.tryParse(raw);
-                        if (n == null || n <= 0) return 'Inválido';
-                        return null;
-                      },
-                    ),
-                  ),
+      child: GestureDetector(
+        // Tap en cualquier zona vacía → cierra el teclado.
+        behavior: HitTestBehavior.translucent,
+        onTap: _dismissKeyboard,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+            children: [
+              if (_card != null) ...[
+                _ContextCard(card: _card!),
+                const SizedBox(height: 14),
+              ],
+              FormFieldWrap(
+                label: 'Descripción',
+                required: true,
+                child: FormTextField(
+                  controller: _descriptionController,
+                  hint: 'Ej. Heladera Whirlpool',
+                  textInputAction: TextInputAction.next,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Ingresá una descripción'
+                      : null,
                 ),
-                const SizedBox(width: 10),
-                SizedBox(
-                  width: 96,
-                  child: FormFieldWrap(
-                    label: 'Cuotas',
-                    required: true,
-                    child: FormTextField(
-                      controller: _countController,
-                      hint: '12',
-                      suffix: 'x',
-                      mono: true,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      validator: (v) {
-                        final n = int.tryParse((v ?? '').trim());
-                        if (n == null || n <= 0) return 'Inválido';
-                        return null;
-                      },
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: FormFieldWrap(
+                      label: 'Monto por cuota',
+                      required: true,
+                      child: FormTextField(
+                        controller: _amountController,
+                        hint: '0',
+                        prefix: '\$ ',
+                        mono: true,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [ThousandsInputFormatter()],
+                        validator: (v) {
+                          final raw = (v ?? '').replaceAll('.', '').trim();
+                          final n = int.tryParse(raw);
+                          if (n == null || n <= 0) return 'Inválido';
+                          return null;
+                        },
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    width: 96,
+                    child: FormFieldWrap(
+                      label: 'Cuotas',
+                      required: true,
+                      child: FormTextField(
+                        controller: _countController,
+                        hint: '12',
+                        suffix: 'x',
+                        mono: true,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        validator: (v) {
+                          final n = int.tryParse((v ?? '').trim());
+                          if (n == null || n <= 0) return 'Inválido';
+                          return null;
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              _TotalCalculated(amount: _liveTotal),
+              const SizedBox(height: 14),
+              FormFieldWrap(
+                label: 'Mes de la primera cuota',
+                required: true,
+                child: MonthYearPicker(
+                  value: _firstPeriod,
+                  onChanged: (p) {
+                    if (p == null) return;
+                    setState(() => _firstPeriod = p);
+                  },
+                ),
+              ),
+              const SizedBox(height: 14),
+              FormFieldWrap(
+                label: 'Notas',
+                child: FormTextField(
+                  controller: _notesController,
+                  hint: 'Opcional. Ej. "compra en black friday"',
+                  maxLines: 4,
+                ),
+              ),
+              const SizedBox(height: 20),
+              FormSaveButton(
+                label: widget.isEditing ? 'Guardar cambios' : 'Crear compra',
+                loading: _saving,
+                onPressed: _submit,
+              ),
+              if (widget.isEditing) ...[
+                const SizedBox(height: 10),
+                FormDeleteButton(
+                  label: 'Eliminar compra',
+                  onPressed: _saving ? null : _delete,
                 ),
               ],
-            ),
-            const SizedBox(height: 14),
-            _TotalCalculated(amount: _liveTotal),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Mes de la primera cuota',
-              required: true,
-              child: FormFieldShell(
-                onTap: _pickPeriod,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        _capitalize(_firstPeriod.formatLong()),
-                        style: const TextStyle(
-                          fontFamily: FzType.sans,
-                          fontSize: 14,
-                          color: FzColors.text,
-                        ),
-                      ),
-                    ),
-                    const Icon(
-                      Icons.calendar_month_outlined,
-                      size: 16,
-                      color: FzColors.textDim,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Notas',
-              child: FormTextField(
-                controller: _notesController,
-                hint: 'Opcional. Ej. "compra en black friday"',
-                maxLines: 4,
-              ),
-            ),
-            const SizedBox(height: 20),
-            FormSaveButton(
-              label: widget.isEditing ? 'Guardar cambios' : 'Crear compra',
-              loading: _saving,
-              onPressed: _submit,
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 10),
-              FormDeleteButton(
-                label: 'Eliminar compra',
-                onPressed: _saving ? null : _delete,
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );
-  }
-
-  String _capitalize(String s) {
-    if (s.isEmpty) return s;
-    return s[0].toUpperCase() + s.substring(1);
   }
 }
 
@@ -497,93 +487,6 @@ class _TotalCalculated extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _MonthYearPicker extends StatefulWidget {
-  const _MonthYearPicker({required this.initial});
-  final PeriodKey initial;
-
-  @override
-  State<_MonthYearPicker> createState() => _MonthYearPickerState();
-}
-
-class _MonthYearPickerState extends State<_MonthYearPicker> {
-  late int _year;
-  late int _monthOneIndexed;
-
-  @override
-  void initState() {
-    super.initState();
-    _year = widget.initial.year;
-    _monthOneIndexed = widget.initial.month + 1;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final years = List.generate(11, (i) => now.year - 5 + i);
-    final months = List.generate(12, (i) => i + 1);
-
-    return AlertDialog(
-      backgroundColor: FzColors.card,
-      title: const Text(
-        'Mes de la primera cuota',
-        style: TextStyle(
-          fontFamily: FzType.sans,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: FzColors.text,
-        ),
-      ),
-      content: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Expanded(
-            child: DropdownButtonFormField<int>(
-              initialValue: _monthOneIndexed,
-              decoration: const InputDecoration(labelText: 'MES'),
-              items: months
-                  .map(
-                    (m) => DropdownMenuItem(
-                      value: m,
-                      child: Text(
-                        DateFormat.MMMM('es_AR').format(DateTime(2000, m, 1)),
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) => setState(() => _monthOneIndexed = v!),
-            ),
-          ),
-          const SizedBox(width: 12),
-          SizedBox(
-            width: 110,
-            child: DropdownButtonFormField<int>(
-              initialValue: _year,
-              decoration: const InputDecoration(labelText: 'AÑO'),
-              items: years
-                  .map((y) => DropdownMenuItem(value: y, child: Text('$y')))
-                  .toList(),
-              onChanged: (v) => setState(() => _year = v!),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancelar'),
-        ),
-        FilledButton(
-          onPressed: () => Navigator.pop(
-            context,
-            PeriodKey(year: _year, month: _monthOneIndexed - 1),
-          ),
-          child: const Text('OK'),
-        ),
-      ],
     );
   }
 }

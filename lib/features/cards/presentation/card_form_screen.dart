@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/analytics_service.dart';
 import '../../../core/format.dart';
+import '../../../core/realtime_service.dart';
 import '../../../core/url.dart';
 import '../../../data/cards_repository.dart';
 import '../../../design/tokens.dart';
@@ -70,6 +71,9 @@ class _CardFormScreenState extends State<CardFormScreen> {
 
   void _onNameChanged() => setState(() {});
 
+  /// Cualquier interacción que no sea con un campo de texto cierra el teclado.
+  void _dismissKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
+
   Future<void> _load() async {
     setState(() => _loading = true);
     try {
@@ -106,6 +110,7 @@ class _CardFormScreenState extends State<CardFormScreen> {
 
     final repo = context.read<CardsRepository>();
     final analytics = context.read<AnalyticsService>();
+    final realtime = context.read<RealtimeService>();
     final isNew = widget.cardId == null;
     final router = GoRouter.of(context);
 
@@ -133,6 +138,10 @@ class _CardFormScreenState extends State<CardFormScreen> {
         unawaited(analytics.cardCreated(brand: _brand?.name ?? 'unknown'));
       }
 
+      // Refresh determinista del resto de vistas (Mes muestra las tarjetas),
+      // sin depender de que Supabase Realtime esté habilitado.
+      realtime.notifyLocalChange(RealtimeTable.creditCards);
+
       if (!mounted) return;
       router.pop(true);
     } catch (error) {
@@ -157,10 +166,12 @@ class _CardFormScreenState extends State<CardFormScreen> {
 
     setState(() => _saving = true);
     final repo = context.read<CardsRepository>();
+    final realtime = context.read<RealtimeService>();
     final router = GoRouter.of(context);
 
     try {
       await repo.deleteCard(widget.cardId!);
+      realtime.notifyLocalChange(RealtimeTable.creditCards);
       if (!mounted) return;
       router.pop(true);
     } catch (error) {
@@ -202,118 +213,133 @@ class _CardFormScreenState extends State<CardFormScreen> {
   Widget _buildForm() {
     return AbsorbPointer(
       absorbing: _saving,
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-          children: [
-            if (widget.isEditing) ...[
-              _PreviewCard(
-                name: _nameController.text.isEmpty
-                    ? (_editingCard?.name ?? 'Tarjeta')
-                    : _nameController.text,
-                brand: _brand,
-                closingDay: int.tryParse(_closingDayController.text.trim()),
-                dueDay: int.tryParse(_dueDayController.text.trim()),
-                active: _active,
+      child: GestureDetector(
+        // Tap en cualquier zona vacía → cierra el teclado.
+        behavior: HitTestBehavior.translucent,
+        onTap: _dismissKeyboard,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+            children: [
+              if (widget.isEditing) ...[
+                _PreviewCard(
+                  name: _nameController.text.isEmpty
+                      ? (_editingCard?.name ?? 'Tarjeta')
+                      : _nameController.text,
+                  brand: _brand,
+                  closingDay: int.tryParse(_closingDayController.text.trim()),
+                  dueDay: int.tryParse(_dueDayController.text.trim()),
+                  active: _active,
+                ),
+                const SizedBox(height: 14),
+              ],
+              FormFieldWrap(
+                label: 'Nombre',
+                required: true,
+                child: FormTextField(
+                  controller: _nameController,
+                  hint: 'Ej. Galicia VISA',
+                  textInputAction: TextInputAction.next,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Ingresá un nombre'
+                      : null,
+                ),
               ),
               const SizedBox(height: 14),
-            ],
-            FormFieldWrap(
-              label: 'Nombre',
-              required: true,
-              child: FormTextField(
-                controller: _nameController,
-                hint: 'Ej. Galicia VISA',
-                textInputAction: TextInputAction.next,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Ingresá un nombre'
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Banco / emisor',
-              child: FormTextField(
-                controller: _issuerController,
-                hint: 'Ej. Banco Galicia',
-                textInputAction: TextInputAction.next,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Marca',
-              child: _BrandSelector(
-                value: _brand,
-                onChanged: (v) => setState(() => _brand = v),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: FormFieldWrap(
-                    label: 'Día cierre',
-                    child: FormTextField(
-                      controller: _closingDayController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      mono: true,
-                      hint: '10',
-                      validator: _validateDay,
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
+              FormFieldWrap(
+                label: 'Banco / emisor',
+                child: FormTextField(
+                  controller: _issuerController,
+                  hint: 'Ej. Banco Galicia',
+                  textInputAction: TextInputAction.next,
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FormFieldWrap(
-                    label: 'Día vencimiento',
-                    child: FormTextField(
-                      controller: _dueDayController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      mono: true,
-                      hint: '15',
-                      validator: _validateDay,
-                      onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 14),
+              FormFieldWrap(
+                label: 'Marca',
+                child: _BrandSelector(
+                  value: _brand,
+                  onChanged: (v) {
+                    _dismissKeyboard();
+                    setState(() => _brand = v);
+                  },
+                ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: FormFieldWrap(
+                      label: 'Día cierre',
+                      child: FormTextField(
+                        controller: _closingDayController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        mono: true,
+                        hint: '10',
+                        validator: _validateDay,
+                        onChanged: (_) => setState(() {}),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FormFieldWrap(
+                      label: 'Día vencimiento',
+                      child: FormTextField(
+                        controller: _dueDayController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        mono: true,
+                        hint: '15',
+                        validator: _validateDay,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              FormFieldWrap(
+                label: 'Link para pagar',
+                child: FormTextField(
+                  controller: _urlController,
+                  hint: 'https://… o app://…',
+                  mono: true,
+                  keyboardType: TextInputType.url,
+                ),
+              ),
+              if (widget.isEditing) ...[
+                const SizedBox(height: 14),
+                FormActiveToggle(
+                  value: _active,
+                  onChanged: (v) {
+                    _dismissKeyboard();
+                    setState(() => _active = v);
+                  },
                 ),
               ],
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Link para pagar',
-              child: FormTextField(
-                controller: _urlController,
-                hint: 'https://… o app://…',
-                mono: true,
-                keyboardType: TextInputType.url,
+              const SizedBox(height: 20),
+              FormSaveButton(
+                label: widget.isEditing ? 'Guardar cambios' : 'Crear tarjeta',
+                loading: _saving,
+                onPressed: _submit,
               ),
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 14),
-              FormActiveToggle(
-                value: _active,
-                onChanged: (v) => setState(() => _active = v),
-              ),
+              if (widget.isEditing) ...[
+                const SizedBox(height: 10),
+                FormDeleteButton(
+                  label: 'Eliminar tarjeta',
+                  onPressed: _saving ? null : _delete,
+                ),
+              ],
             ],
-            const SizedBox(height: 20),
-            FormSaveButton(
-              label: widget.isEditing ? 'Guardar cambios' : 'Crear tarjeta',
-              loading: _saving,
-              onPressed: _submit,
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 10),
-              FormDeleteButton(
-                label: 'Eliminar tarjeta',
-                onPressed: _saving ? null : _delete,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -458,6 +484,7 @@ class _BrandSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return FormFieldShell(
       onTap: () async {
+        FocusManager.instance.primaryFocus?.unfocus();
         final picked = await showModalBottomSheet<CardBrand?>(
           context: context,
           backgroundColor: FzColors.card,

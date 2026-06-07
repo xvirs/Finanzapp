@@ -29,6 +29,9 @@ class MonthYearPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     return FormFieldShell(
       onTap: () async {
+        // Cerrar teclado antes de abrir el sheet: si un campo de texto
+        // tenía foco, al cerrarse el sheet el teclado reaparecía.
+        FocusManager.instance.primaryFocus?.unfocus();
         final picked = await showModalBottomSheet<_PickResult>(
           context: context,
           backgroundColor: FzColors.card,
