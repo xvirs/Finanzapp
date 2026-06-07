@@ -11,6 +11,7 @@ import '../../../../domain/urgency.dart';
 import '../../../../models/bill.dart';
 import '../../../../models/enums.dart';
 import '../../../../widgets/animated_amount.dart';
+import '../../../../widgets/card_brand_logo.dart';
 import '../../../../widgets/animated_progress_bar.dart';
 import '../../domain/card_list_item_data.dart';
 import '../bloc/cards_bloc.dart';
@@ -404,31 +405,10 @@ class _BrandChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, bg) = switch (brand) {
-      CardBrand.visa => ('VISA', FzColors.visaBg),
-      CardBrand.mastercard => ('MC', FzColors.mastercardBg),
-      CardBrand.amex => ('AMEX', FzColors.mpBg),
-      CardBrand.other => ('OTRA', FzColors.cardHi),
-      null => ('—', FzColors.cardHi),
-    };
-    return Container(
+    return SizedBox(
       width: 38,
       height: 26,
-      alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(FzRadius.xs),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          fontFamily: FzType.sans,
-          color: Colors.white,
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.36,
-        ),
-      ),
+      child: Center(child: CardBrandLogo(brand: brand, size: 24)),
     );
   }
 }

@@ -8,6 +8,7 @@ import '../../../core/format.dart';
 import '../../../design/tokens.dart';
 import '../../../domain/period.dart';
 import '../../../widgets/animated_amount.dart';
+import '../../../widgets/empty_state.dart';
 import 'bloc/cards_bloc.dart';
 import 'widgets/card_list_item.dart';
 import 'widgets/cards_expanded_layout.dart';
@@ -121,9 +122,19 @@ class _Body extends StatelessWidget {
             context.read<CardsBloc>().add(const CardsRefreshRequested());
           },
           child: state.items.isEmpty
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [_EmptyView()],
+              ? FzEmptyState(
+                  icon: Icons.credit_card_outlined,
+                  title: 'No tenés tarjetas',
+                  description:
+                      'Agregá tu primera tarjeta para llevar el control de tus cuotas y resúmenes.',
+                  ctaLabel: 'Agregar tarjeta',
+                  onCta: () async {
+                    final bloc = context.read<CardsBloc>();
+                    final result = await context.push<bool>('/cards/new');
+                    if (result == true) {
+                      bloc.add(const CardsRefreshRequested());
+                    }
+                  },
                 )
               : ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -202,30 +213,34 @@ class _CardsHeader extends StatelessWidget {
               letterSpacing: 0.24,
             ),
           ),
-          const SizedBox(height: 14),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'ESTIMADO',
-                    amount: estimated,
-                    paid: false,
+          // Sin tarjetas, el resumen estimado/pagado son ceros que
+          // confunden: lo ocultamos (la guía vive en el estado vacío).
+          if (state.items.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'ESTIMADO',
+                      amount: estimated,
+                      paid: false,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'PAGADO',
-                    amount: paid,
-                    paid: true,
-                    footer: 'falta ${formatCurrency(pending)}',
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'PAGADO',
+                      amount: paid,
+                      paid: true,
+                      footer: 'falta ${formatCurrency(pending)}',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -361,46 +376,3 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(
-              Icons.credit_card_off_outlined,
-              size: 48,
-              color: FzColors.primary,
-            ),
-            SizedBox(height: 12),
-            Text(
-              'No tenés tarjetas activas',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: FzColors.text,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Creá una desde Config → Tarjetas → +.',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 12,
-                color: FzColors.textDim,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
