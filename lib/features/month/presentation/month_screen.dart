@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/adaptive_scaffold.dart';
 import '../../../core/analytics_service.dart';
 import '../../../design/tokens.dart';
 import '../../../domain/period.dart';
+import '../../../widgets/empty_state.dart';
 import '../../../widgets/fz_snackbar.dart';
 import 'bloc/month_bloc.dart';
 import 'widgets/month_expanded_layout.dart';
@@ -186,9 +188,13 @@ class _Body extends StatelessWidget {
             context.read<MonthBloc>().add(const MonthRefreshRequested());
           },
           child: !hasGroups
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [_EmptyView()],
+              ? FzEmptyState(
+                  icon: Icons.description_outlined,
+                  title: 'Sin movimientos este mes',
+                  description:
+                      'Cargá tu primer gasto y empezá a organizar el mes.',
+                  ctaLabel: 'Agregar gasto',
+                  onCta: () => context.push('/config/bills/new'),
                 )
               : ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
@@ -262,46 +268,3 @@ class _ErrorView extends StatelessWidget {
   }
 }
 
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.event_available_outlined,
-              size: 48,
-              color: FzColors.primary,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Sin pagos este mes',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: FzColors.text,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'No hay cuentas ni cuotas activas para este período.',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 12,
-                color: FzColors.textDim,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
