@@ -23,21 +23,24 @@ import '../../../widgets/month_year_picker.dart';
 
 /// Modo del formulario de gasto.
 ///
+/// Frecuencia del gasto, elegida con un campo dentro del formulario:
+///
+/// - [recurring]: gasto mes a mes (un servicio o cuenta fija, ej: Netflix).
+///   Es el default — el caso más común.
 /// - [oneShot]: gasto puntual (una compra única, ej: un sillón al contado).
 ///   Por detrás es un `Bill` con `endPeriod == startPeriod`.
-/// - [recurring]: gasto mes a mes (un servicio o cuenta fija, ej: Netflix).
 enum BillFormMode { oneShot, recurring }
 
 /// Pantallas 10/11 — Nuevo/Editar gasto.
 ///
-/// El alta arranca en [BillTypeChooserScreen], que bifurca según el tipo
-/// y abre este formulario con [initialMode]. Al editar, [billId] != null y
-/// el modo se deriva del bill cargado (puntual si `endPeriod == startPeriod`).
+/// Form único y adaptativo: arranca en modo recurrente y un campo
+/// "¿Cada cuánto?" cambia entre mes a mes y puntual, mostrando/ocultando
+/// los campos que correspondan. Al editar, el modo se deriva del bill
+/// cargado (puntual si `endPeriod == startPeriod`).
 class BillFormScreen extends StatefulWidget {
-  const BillFormScreen({this.billId, this.initialMode, super.key});
+  const BillFormScreen({this.billId, super.key});
 
   final String? billId;
-  final BillFormMode? initialMode;
 
   bool get isEditing => billId != null;
 
@@ -54,7 +57,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
   final _urlController = TextEditingController();
   final _notesController = TextEditingController();
 
-  late BillFormMode _mode = widget.initialMode ?? BillFormMode.recurring;
+  BillFormMode _mode = BillFormMode.recurring;
   BillKind _kind = BillKind.other;
   String? _autoDebitCardId;
   bool _active = true;
@@ -72,10 +75,6 @@ class _BillFormScreenState extends State<BillFormScreen> {
   @override
   void initState() {
     super.initState();
-    // En alta puntual, el gasto vive un solo mes: end == start.
-    if (_mode == BillFormMode.oneShot) {
-      _endPeriod = _startPeriod;
-    }
     _load();
   }
 
@@ -252,10 +251,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
   /// campo de texto cierra el teclado.
   void _dismissKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
 
-  String get _title {
-    if (widget.isEditing) return 'Editar gasto';
-    return _isOneShot ? 'Gasto puntual' : 'Gasto mes a mes';
-  }
+  String get _title => widget.isEditing ? 'Editar gasto' : 'Nuevo gasto';
 
   @override
   Widget build(BuildContext context) {
@@ -291,94 +287,39 @@ class _BillFormScreenState extends State<BillFormScreen> {
           key: _formKey,
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-            children: _isOneShot ? _oneShotFields() : _recurringFields(),
+            children: _fields(),
           ),
         ),
       ),
     );
   }
 
-  // ───────────────────────────── PUNTUAL ─────────────────────────────
-
-  List<Widget> _oneShotFields() {
+  /// Form único: lo esencial primero (nombre, monto, categoría), después
+  /// la frecuencia, y según ésta los campos que correspondan.
+  List<Widget> _fields() {
     return [
-      _nameField(hint: 'Ej. Sillón, Heladera, Notebook'),
+      _nameField(),
       const SizedBox(height: 14),
-      _amountField(
-        label: 'Monto',
-        required: true,
-        hint: '¿Cuánto pagaste por esta compra?',
-      ),
-      const SizedBox(height: 14),
-      FormFieldWrap(
-        label: 'Mes',
-        required: true,
-        hint: 'Mes en el que registrás esta compra.',
-        child: MonthYearPicker(
-          value: PeriodKey.fromIso(_startPeriod),
-          onChanged: (p) {
-            if (p == null) return;
-            setState(() {
-              _startPeriod = p.toIso();
-              _endPeriod = _startPeriod;
-            });
-          },
-        ),
-      ),
+      _amountField(),
       const SizedBox(height: 14),
       _categoryField(),
-      const SizedBox(height: 22),
-      _saveButton(),
-      if (widget.isEditing) ...[
-        const SizedBox(height: 10),
-        FormDeleteButton(
-          label: 'Eliminar gasto',
-          onPressed: _saving ? null : _delete,
+      const SizedBox(height: 14),
+      _frequencyField(),
+      const SizedBox(height: 14),
+      if (_isOneShot)
+        _monthField()
+      else ...[
+        _dayField(),
+        const SizedBox(height: 6),
+        FormMoreOptions(
+          expanded: _advancedExpanded,
+          onToggle: () {
+            _dismissKeyboard();
+            setState(() => _advancedExpanded = !_advancedExpanded);
+          },
+          children: _advancedFields(),
         ),
       ],
-    ];
-  }
-
-  // ──────────────────────────── RECURRENTE ───────────────────────────
-
-  List<Widget> _recurringFields() {
-    return [
-      _nameField(hint: 'Ej. EPEC, Netflix, OSDE'),
-      const SizedBox(height: 14),
-      _categoryField(),
-      const SizedBox(height: 14),
-      _amountField(
-        label: 'Monto estimado',
-        hint: 'Dejalo vacío si el monto varía (ej: la luz).',
-      ),
-      const SizedBox(height: 14),
-      FormFieldWrap(
-        label: 'Día del mes',
-        hint: 'Opcional. Día en que vence (1 a 31).',
-        child: FormTextField(
-          controller: _dayController,
-          hint: '—',
-          mono: true,
-          keyboardType: TextInputType.number,
-          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-          validator: (v) {
-            final raw = (v ?? '').trim();
-            if (raw.isEmpty) return null;
-            final n = int.tryParse(raw);
-            if (n == null || n < 1 || n > 31) return '1 a 31';
-            return null;
-          },
-        ),
-      ),
-      const SizedBox(height: 6),
-      _MoreOptions(
-        expanded: _advancedExpanded,
-        onToggle: () {
-          _dismissKeyboard();
-          setState(() => _advancedExpanded = !_advancedExpanded);
-        },
-        children: _advancedFields(),
-      ),
       if (widget.isEditing) ...[
         const SizedBox(height: 14),
         FormActiveToggle(
@@ -401,6 +342,68 @@ class _BillFormScreenState extends State<BillFormScreen> {
         ),
       ],
     ];
+  }
+
+  Widget _frequencyField() {
+    return FormFieldWrap(
+      label: '¿Cada cuánto?',
+      child: FormSegmented(
+        options: const ['Todos los meses', 'Una sola vez'],
+        selectedIndex: _isOneShot ? 1 : 0,
+        onChanged: (i) {
+          _dismissKeyboard();
+          setState(() {
+            _mode = i == 1 ? BillFormMode.oneShot : BillFormMode.recurring;
+            if (_isOneShot) {
+              // Puntual: vive un solo mes (end == start) y no usa avanzadas.
+              _endPeriod = _startPeriod;
+              _advancedExpanded = false;
+            } else {
+              _endPeriod = null;
+            }
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _monthField() {
+    return FormFieldWrap(
+      label: 'Mes',
+      required: true,
+      hint: 'Mes en el que registrás esta compra.',
+      child: MonthYearPicker(
+        value: PeriodKey.fromIso(_startPeriod),
+        onChanged: (p) {
+          if (p == null) return;
+          setState(() {
+            _startPeriod = p.toIso();
+            _endPeriod = _startPeriod;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _dayField() {
+    return FormFieldWrap(
+      label: 'Día del mes',
+      hint: 'Opcional. Día en que vence (1 a 31).',
+      child: FormTextField(
+        controller: _dayController,
+        hint: '—',
+        mono: true,
+        keyboardType: TextInputType.number,
+        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+        validator: (v) {
+          final raw = (v ?? '').trim();
+          if (raw.isEmpty) return null;
+          final n = int.tryParse(raw);
+          if (n == null || n < 1 || n > 31) return '1 a 31';
+          return null;
+        },
+      ),
+    );
   }
 
   List<Widget> _advancedFields() {
@@ -481,13 +484,13 @@ class _BillFormScreenState extends State<BillFormScreen> {
 
   // ─────────────────────────── Campos comunes ────────────────────────
 
-  Widget _nameField({required String hint}) {
+  Widget _nameField() {
     return FormFieldWrap(
       label: 'Nombre',
       required: true,
       child: FormTextField(
         controller: _nameController,
-        hint: hint,
+        hint: 'Ej. Netflix, EPEC, Sillón',
         textInputAction: TextInputAction.next,
         validator: (v) =>
             (v == null || v.trim().isEmpty) ? 'Ingresá un nombre' : null,
@@ -495,15 +498,16 @@ class _BillFormScreenState extends State<BillFormScreen> {
     );
   }
 
-  Widget _amountField({
-    required String label,
-    bool required = false,
-    String? hint,
-  }) {
+  Widget _amountField() {
+    // En puntual el monto es obligatorio (ya pagaste, sabés cuánto); en
+    // recurrente es opcional (vacío = variable, ej: la luz).
+    final required = _isOneShot;
     return FormFieldWrap(
-      label: label,
+      label: _isOneShot ? 'Monto' : 'Monto estimado',
       required: required,
-      hint: hint,
+      hint: _isOneShot
+          ? '¿Cuánto pagaste?'
+          : 'Dejalo vacío si el monto varía (ej: la luz).',
       child: FormTextField(
         controller: _amountController,
         hint: '0',
@@ -546,84 +550,6 @@ class _BillFormScreenState extends State<BillFormScreen> {
   }
 }
 
-/// Cabecera "Más opciones" con chevron que rota y contenido que se
-/// despliega con animación de alto.
-class _MoreOptions extends StatelessWidget {
-  const _MoreOptions({
-    required this.expanded,
-    required this.onToggle,
-    required this.children,
-  });
-
-  final bool expanded;
-  final VoidCallback onToggle;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(FzRadius.lg),
-          child: InkWell(
-            onTap: onToggle,
-            borderRadius: BorderRadius.circular(FzRadius.lg),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
-              child: Row(
-                children: [
-                  const Text(
-                    'Más opciones',
-                    style: TextStyle(
-                      fontFamily: FzType.sans,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: FzColors.primaryHi,
-                    ),
-                  ),
-                  const Spacer(),
-                  AnimatedRotation(
-                    turns: expanded ? 0.5 : 0,
-                    duration: FzMotion.normal,
-                    curve: FzMotion.easing,
-                    child: const Icon(
-                      Icons.keyboard_arrow_down_rounded,
-                      size: 20,
-                      color: FzColors.primaryHi,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-        ClipRect(
-          child: AnimatedSize(
-            duration: FzMotion.normal,
-            curve: FzMotion.easing,
-            alignment: Alignment.topCenter,
-            child: AnimatedOpacity(
-              opacity: expanded ? 1 : 0,
-              duration: FzMotion.fast,
-              child: expanded
-                  ? Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: children,
-                      ),
-                    )
-                  : const SizedBox(width: double.infinity),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// Selector de categoría (BillKind) como chips inline — 1 tap, sin
 /// bottom sheet. Más amigable que el dropdown anterior.
 class _KindChips extends StatelessWidget {
@@ -638,68 +564,13 @@ class _KindChips extends StatelessWidget {
       runSpacing: 8,
       children: [
         for (final k in BillKind.values)
-          _KindChip(
-            kind: k,
+          FormChoiceChip(
+            icon: BillKindIcon.iconFor(k),
+            label: kBillKindLabels[k] ?? '—',
             selected: k == value,
             onTap: () => onChanged(k),
           ),
       ],
-    );
-  }
-}
-
-class _KindChip extends StatelessWidget {
-  const _KindChip({
-    required this.kind,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final BillKind kind;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(FzRadius.pill),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(FzRadius.pill),
-        child: AnimatedContainer(
-          duration: FzMotion.fast,
-          curve: FzMotion.easing,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: selected ? FzColors.primary : FzColors.card,
-            borderRadius: BorderRadius.circular(FzRadius.pill),
-            border: Border.all(
-              color: selected ? FzColors.primary : FzColors.border,
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                BillKindIcon.iconFor(kind),
-                size: 15,
-                color: selected ? FzColors.primaryInk : FzColors.textDim,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                kBillKindLabels[kind] ?? '—',
-                style: TextStyle(
-                  fontFamily: FzType.sans,
-                  fontSize: 13,
-                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-                  color: selected ? FzColors.primaryInk : FzColors.text,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
 }

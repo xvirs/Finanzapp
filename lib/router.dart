@@ -21,7 +21,6 @@ import 'features/cards/presentation/card_form_screen.dart';
 import 'features/cards/presentation/cards_screen.dart';
 import 'features/cards/presentation/installment_form_screen.dart';
 import 'features/config_settings/presentation/bill_form_screen.dart';
-import 'features/config_settings/presentation/bill_type_chooser_screen.dart';
 import 'features/config_settings/presentation/bills_list_screen.dart';
 import 'features/config_settings/presentation/bloc/bills_list_bloc.dart';
 import 'features/config_settings/presentation/bloc/cards_list_bloc.dart';
@@ -169,30 +168,10 @@ class AppRouter {
                       GoRoute(
                         path: 'new',
                         name: 'bill-new',
-                        // Flujo de alta full-screen sobre el shell: al
-                        // guardar hacemos go('/') y no queda nada montado
-                        // en la rama de config.
+                        // Alta full-screen sobre el shell: al guardar hacemos
+                        // go('/') y no queda nada montado en la rama de config.
                         parentNavigatorKey: rootNavigatorKey,
-                        builder: (context, state) =>
-                            const BillTypeChooserScreen(),
-                        routes: [
-                          GoRoute(
-                            path: 'oneshot',
-                            name: 'bill-new-oneshot',
-                            parentNavigatorKey: rootNavigatorKey,
-                            builder: (context, state) => const BillFormScreen(
-                              initialMode: BillFormMode.oneShot,
-                            ),
-                          ),
-                          GoRoute(
-                            path: 'recurring',
-                            name: 'bill-new-recurring',
-                            parentNavigatorKey: rootNavigatorKey,
-                            builder: (context, state) => const BillFormScreen(
-                              initialMode: BillFormMode.recurring,
-                            ),
-                          ),
-                        ],
+                        builder: (context, state) => const BillFormScreen(),
                       ),
                       GoRoute(
                         path: ':id',
@@ -240,6 +219,7 @@ class AppRouter {
                       GoRoute(
                         path: 'new',
                         name: 'income-new',
+                        parentNavigatorKey: rootNavigatorKey,
                         builder: (context, state) => const IncomeFormScreen(),
                       ),
                       GoRoute(
