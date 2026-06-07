@@ -17,6 +17,7 @@ import '../../../domain/period.dart';
 import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
 import '../../../widgets/bill_kind_icon.dart';
+import '../../../widgets/card_brand_logo.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
 import '../../../widgets/month_year_picker.dart';
@@ -720,21 +721,9 @@ class _CardSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = switch (brand) {
-      CardBrand.visa => FzColors.visaBg,
-      CardBrand.mastercard => FzColors.mastercardBg,
-      CardBrand.amex => FzColors.mpBg,
-      CardBrand.other => FzColors.cardHi,
-      null => FzColors.cardHi,
-    };
-    return Container(
-      width: 22,
-      height: 14,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(3),
-        border: brand == null ? Border.all(color: FzColors.border) : null,
-      ),
+    return SizedBox(
+      width: 28,
+      child: Center(child: CardBrandLogo(brand: brand, size: 20)),
     );
   }
 }

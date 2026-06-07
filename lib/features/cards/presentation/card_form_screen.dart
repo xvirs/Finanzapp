@@ -14,6 +14,7 @@ import '../../../design/tokens.dart';
 import '../../../design/widgets.dart';
 import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
+import '../../../widgets/card_brand_logo.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
 import '../../../widgets/fz_snackbar.dart';
@@ -34,7 +35,6 @@ class CardFormScreen extends StatefulWidget {
 class _CardFormScreenState extends State<CardFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _issuerController = TextEditingController();
   final _closingDayController = TextEditingController();
   final _dueDayController = TextEditingController();
   final _urlController = TextEditingController();
@@ -62,7 +62,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
     _nameController
       ..removeListener(_onNameChanged)
       ..dispose();
-    _issuerController.dispose();
     _closingDayController.dispose();
     _dueDayController.dispose();
     _urlController.dispose();
@@ -88,7 +87,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
       }
       _editingCard = card;
       _nameController.text = card.name;
-      _issuerController.text = card.issuer ?? '';
       _closingDayController.text = card.closingDay?.toString() ?? '';
       _dueDayController.text = card.dueDay?.toString() ?? '';
       _urlController.text = card.url ?? '';
@@ -124,9 +122,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
       await repo.saveCard(
         existingId: widget.cardId,
         name: _nameController.text.trim(),
-        issuer: _issuerController.text.trim().isEmpty
-            ? null
-            : _issuerController.text.trim(),
         brand: _brand,
         closingDay: int.tryParse(_closingDayController.text.trim()),
         dueDay: int.tryParse(_dueDayController.text.trim()),
@@ -244,15 +239,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
                   validator: (v) => (v == null || v.trim().isEmpty)
                       ? 'Ingresá un nombre'
                       : null,
-                ),
-              ),
-              const SizedBox(height: 14),
-              FormFieldWrap(
-                label: 'Banco / emisor',
-                child: FormTextField(
-                  controller: _issuerController,
-                  hint: 'Ej. Banco Galicia',
-                  textInputAction: TextInputAction.next,
                 ),
               ),
               const SizedBox(height: 14),
@@ -381,14 +367,6 @@ class _PreviewCard extends StatelessWidget {
             CardBrand.amex => FzColors.mpBg,
             CardBrand.other => FzColors.cardHi,
           };
-    final brandLabel = brand == null
-        ? '?'
-        : switch (brand!) {
-            CardBrand.visa => 'V',
-            CardBrand.mastercard => 'M',
-            CardBrand.amex => 'A',
-            CardBrand.other => '·',
-          };
     final subtitle = [
       if (closingDay != null) 'cierre $closingDay',
       if (dueDay != null) 'vence $dueDay',
@@ -406,14 +384,10 @@ class _PreviewCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(FzRadius.md),
             ),
             alignment: Alignment.center,
-            child: Text(
-              brandLabel,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: FzType.sans,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
+            child: CardBrandLogo(
+              brand: brand,
+              size: 22,
+              color: Colors.white,
             ),
           ),
           const SizedBox(width: 12),
@@ -533,22 +507,9 @@ class _BrandSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = brand == null
-        ? FzColors.cardHi
-        : switch (brand!) {
-            CardBrand.visa => FzColors.visaBg,
-            CardBrand.mastercard => FzColors.mastercardBg,
-            CardBrand.amex => FzColors.mpBg,
-            CardBrand.other => FzColors.cardHi,
-          };
-    return Container(
-      width: 22,
-      height: 14,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(3),
-        border: brand == null ? Border.all(color: FzColors.border) : null,
-      ),
+    return SizedBox(
+      width: 28,
+      child: Center(child: CardBrandLogo(brand: brand, size: 20)),
     );
   }
 }
