@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../models/enums.dart';
@@ -15,6 +16,29 @@ String formatCurrency(num? value) {
 String formatCurrencyOrVariable(num? value) {
   if (value == null) return 'Variable';
   return '\$${_amountFormatter.format(value)}';
+}
+
+/// Formatea un monto entero para mostrarlo dentro de un input de texto:
+/// `1629560` → `"1.629.560"` (sin símbolo `$`, que va como prefix del campo).
+String formatAmountInput(num value) => _amountFormatter.format(value);
+
+/// Agrupa los miles con punto a medida que el usuario escribe un monto
+/// entero (es_AR). Descarta todo lo que no sea dígito, así que el campo
+/// siempre queda con el formato `1.234.567`.
+class ThousandsInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    final digits = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (digits.isEmpty) return const TextEditingValue();
+    final formatted = _amountFormatter.format(int.parse(digits));
+    return TextEditingValue(
+      text: formatted,
+      selection: TextSelection.collapsed(offset: formatted.length),
+    );
+  }
 }
 
 String formatMonthYear(DateTime date) => DateFormat.yMMMM('es_AR').format(date);

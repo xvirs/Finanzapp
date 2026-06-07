@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../design/tokens.dart';
 
@@ -170,6 +171,7 @@ class FormTextField extends StatelessWidget {
       controller: controller,
       maxLines: maxLines,
       keyboardType: keyboardType,
+      inputFormatters: inputFormatters?.cast<TextInputFormatter>(),
       validator: validator,
       textInputAction: textInputAction,
       onChanged: onChanged,

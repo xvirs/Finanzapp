@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/analytics_service.dart';
 import '../../../core/format.dart';
+import '../../../core/realtime_service.dart';
 import '../../../core/url.dart';
 import '../../../data/bills_repository.dart';
 import '../../../data/cards_repository.dart';
@@ -20,13 +21,23 @@ import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
 import '../../../widgets/month_year_picker.dart';
 
+/// Modo del formulario de gasto.
+///
+/// - [oneShot]: gasto puntual (una compra única, ej: un sillón al contado).
+///   Por detrás es un `Bill` con `endPeriod == startPeriod`.
+/// - [recurring]: gasto mes a mes (un servicio o cuenta fija, ej: Netflix).
+enum BillFormMode { oneShot, recurring }
+
 /// Pantallas 10/11 — Nuevo/Editar gasto.
-/// Port del JSX `ANewFixedAccount` + `AEditFixedAccount`
-/// (handoff/screens-a-config.jsx).
+///
+/// El alta arranca en [BillTypeChooserScreen], que bifurca según el tipo
+/// y abre este formulario con [initialMode]. Al editar, [billId] != null y
+/// el modo se deriva del bill cargado (puntual si `endPeriod == startPeriod`).
 class BillFormScreen extends StatefulWidget {
-  const BillFormScreen({this.billId, super.key});
+  const BillFormScreen({this.billId, this.initialMode, super.key});
 
   final String? billId;
+  final BillFormMode? initialMode;
 
   bool get isEditing => billId != null;
 
@@ -43,22 +54,28 @@ class _BillFormScreenState extends State<BillFormScreen> {
   final _urlController = TextEditingController();
   final _notesController = TextEditingController();
 
+  late BillFormMode _mode = widget.initialMode ?? BillFormMode.recurring;
   BillKind _kind = BillKind.other;
   String? _autoDebitCardId;
   bool _active = true;
   String _startPeriod = PeriodKey.current().toIso();
   String? _endPeriod;
+  bool _advancedExpanded = false;
 
   List<CreditCard> _activeCards = const [];
   bool _loading = true;
   bool _saving = false;
   String? _loadError;
 
-  bool get _isOneShot => _endPeriod != null && _endPeriod == _startPeriod;
+  bool get _isOneShot => _mode == BillFormMode.oneShot;
 
   @override
   void initState() {
     super.initState();
+    // En alta puntual, el gasto vive un solo mes: end == start.
+    if (_mode == BillFormMode.oneShot) {
+      _endPeriod = _startPeriod;
+    }
     _load();
   }
 
@@ -101,7 +118,9 @@ class _BillFormScreenState extends State<BillFormScreen> {
       _activeCards = cards;
       if (bill != null) {
         _nameController.text = bill.name;
-        _amountController.text = bill.defaultAmount?.toStringAsFixed(0) ?? '';
+        _amountController.text = bill.defaultAmount == null
+            ? ''
+            : formatAmountInput(bill.defaultAmount!);
         _dayController.text = bill.dayOfMonth?.toString() ?? '';
         _providerCodeController.text = bill.providerCode ?? '';
         _urlController.text = bill.url ?? '';
@@ -110,6 +129,10 @@ class _BillFormScreenState extends State<BillFormScreen> {
         _active = bill.active;
         _startPeriod = bill.startPeriod;
         _endPeriod = bill.endPeriod;
+        // Derivar el modo del bill: puntual si vive un solo mes.
+        _mode = (bill.endPeriod != null && bill.endPeriod == bill.startPeriod)
+            ? BillFormMode.oneShot
+            : BillFormMode.recurring;
         if (bill.autoDebitCardId != null &&
             cards.any((c) => c.id == bill.autoDebitCardId)) {
           _autoDebitCardId = bill.autoDebitCardId;
@@ -131,6 +154,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
 
     final repo = context.read<BillsRepository>();
     final analytics = context.read<AnalyticsService>();
+    final realtime = context.read<RealtimeService>();
     final isNew = widget.billId == null;
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
@@ -142,10 +166,15 @@ class _BillFormScreenState extends State<BillFormScreen> {
         normalizedUrl = normalizeUrl(rawUrl).url;
       }
 
-      final amountRaw = _amountController.text.trim().replaceAll(',', '.');
+      // El campo agrupa miles con punto ("1.629.560"); los quitamos para
+      // parsear el monto entero.
+      final amountRaw = _amountController.text.replaceAll('.', '').trim();
       final defaultAmount = amountRaw.isEmpty
           ? null
           : double.tryParse(amountRaw);
+
+      // En puntual el gasto vive un único mes: end == start.
+      final endPeriod = _isOneShot ? _startPeriod : _endPeriod;
 
       await repo.saveBill(
         existingId: widget.billId,
@@ -163,15 +192,25 @@ class _BillFormScreenState extends State<BillFormScreen> {
         autoDebitCardId: _autoDebitCardId,
         url: normalizedUrl,
         startPeriod: _startPeriod,
-        endPeriod: _endPeriod,
+        endPeriod: endPeriod,
       );
 
       if (isNew) {
         unawaited(analytics.billCreated(kind: _kind.name));
       }
 
+      // Avisar a los blocs que escuchan realtime (Mes, lista) para que
+      // refresquen sí o sí, sin depender de Supabase Realtime.
+      realtime.notifyLocalChange(RealtimeTable.bills);
+
       if (!mounted) return;
-      router.pop(true);
+      // Al crear, volvemos al home (Mes) limpiando el flujo de alta. Al
+      // editar, volvemos a la lista de donde vino.
+      if (isNew) {
+        router.go('/');
+      } else {
+        router.pop(true);
+      }
     } catch (error) {
       if (!mounted) return;
       messenger.showSnackBar(
@@ -191,11 +230,13 @@ class _BillFormScreenState extends State<BillFormScreen> {
 
     setState(() => _saving = true);
     final repo = context.read<BillsRepository>();
+    final realtime = context.read<RealtimeService>();
     final messenger = ScaffoldMessenger.of(context);
     final router = GoRouter.of(context);
 
     try {
       await repo.softDeleteOrDelete(widget.billId!);
+      realtime.notifyLocalChange(RealtimeTable.bills);
       if (!mounted) return;
       router.pop(true);
     } catch (error) {
@@ -207,6 +248,15 @@ class _BillFormScreenState extends State<BillFormScreen> {
     }
   }
 
+  /// Estándar de la pantalla: cualquier interacción que no sea con un
+  /// campo de texto cierra el teclado.
+  void _dismissKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
+
+  String get _title {
+    if (widget.isEditing) return 'Editar gasto';
+    return _isOneShot ? 'Gasto puntual' : 'Gasto mes a mes';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,9 +266,7 @@ class _BillFormScreenState extends State<BillFormScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FzAppBar(
-              title: widget.isEditing ? 'Editar gasto' : 'Nuevo gasto',
-            ),
+            FzAppBar(title: _title),
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
@@ -235,314 +283,421 @@ class _BillFormScreenState extends State<BillFormScreen> {
   Widget _buildForm() {
     return AbsorbPointer(
       absorbing: _saving,
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-          children: [
-            FormFieldWrap(
-              label: 'Nombre',
-              required: true,
-              child: FormTextField(
-                controller: _nameController,
-                hint: 'Ej. EPEC, Netflix, OSDE',
-                textInputAction: TextInputAction.next,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Ingresá un nombre'
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Tipo',
-              required: true,
-              child: _KindSelector(
-                value: _kind,
-                onChanged: (v) => setState(() => _kind = v),
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Monto estimado',
-              hint: 'Vacío = monto variable',
-              child: FormTextField(
-                controller: _amountController,
-                hint: '0',
-                prefix: '\$ ',
-                mono: true,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                validator: (v) {
-                  final raw = (v ?? '').trim().replaceAll(',', '.');
-                  if (raw.isEmpty) return null;
-                  final n = double.tryParse(raw);
-                  if (n == null || n <= 0) return 'Inválido';
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Día del mes',
-              hint: '1 a 31',
-              child: FormTextField(
-                controller: _dayController,
-                hint: '—',
-                mono: true,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (v) {
-                  final raw = (v ?? '').trim();
-                  if (raw.isEmpty) return null;
-                  final n = int.tryParse(raw);
-                  if (n == null || n < 1 || n > 31) return '1 a 31';
-                  return null;
-                },
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Débito automático en',
-              hint:
-                  'Si está seleccionada, esta cuenta no aparece como ítem en Mes (ya viene en el resumen de la tarjeta).',
-              child: _AutoDebitSelector(
-                cards: _activeCards,
-                selectedCardId: _autoDebitCardId,
-                onChanged: (id) => setState(() => _autoDebitCardId = id),
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Código de referencia',
-              hint: 'Se copia al clipboard al tocar "Ir a pagar" en el Mes.',
-              child: FormTextField(
-                controller: _providerCodeController,
-                hint: '0292849306',
-                mono: true,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Link para pagar',
-              child: FormTextField(
-                controller: _urlController,
-                hint: 'https://… o app://…',
-                mono: true,
-                keyboardType: TextInputType.url,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Desde',
-              hint: 'Primer mes en que aplica esta cuenta.',
-              required: true,
-              child: MonthYearPicker(
-                value: PeriodKey.fromIso(_startPeriod),
-                onChanged: (p) {
-                  if (p == null) return;
-                  setState(() {
-                    _startPeriod = p.toIso();
-                    if (_isOneShot) {
-                      _endPeriod = _startPeriod;
-                    } else if (_endPeriod != null &&
-                        PeriodKey.fromIso(_endPeriod!).compareTo(p) < 0) {
-                      _endPeriod = null;
-                    }
-                  });
-                },
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Solo este mes',
-              hint: _isOneShot
-                  ? 'Aparece únicamente en el mes "Desde".'
-                  : 'Activá si es un gasto puntual (ej: una compra al contado).',
-              child: FormFieldShell(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                onTap: () => setState(() {
-                  if (_isOneShot) {
-                    _endPeriod = null;
-                  } else {
-                    _endPeriod = _startPeriod;
-                  }
-                }),
-                child: Row(
-                  children: [
-                    const Expanded(
-                      child: Text(
-                        'Gasto puntual',
-                        style: TextStyle(
-                          fontFamily: FzType.sans,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: FzColors.text,
-                        ),
-                      ),
-                    ),
-                    Switch(
-                      value: _isOneShot,
-                      onChanged: (v) => setState(() {
-                        _endPeriod = v ? _startPeriod : null;
-                      }),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (!_isOneShot) ...[
-              const SizedBox(height: 14),
-              FormFieldWrap(
-                label: 'Hasta',
-                hint:
-                    'Opcional. Si lo dejás vacío, la cuenta sigue activa indefinidamente.',
-                child: MonthYearPicker(
-                  value: _endPeriod == null
-                      ? null
-                      : PeriodKey.fromIso(_endPeriod!),
-                  minPeriod: PeriodKey.fromIso(_startPeriod),
-                  placeholder: 'Sin fin',
-                  allowClear: true,
-                  onChanged: (p) =>
-                      setState(() => _endPeriod = p?.toIso()),
-                ),
-              ),
-            ],
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Notas',
-              child: FormTextField(
-                controller: _notesController,
-                hint: 'Opcional',
-                maxLines: 4,
-              ),
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 14),
-              FormActiveToggle(
-                value: _active,
-                onChanged: (v) => setState(() => _active = v),
-                subtitleOn: 'La cuenta aparece en Mes',
-                subtitleOff: 'La cuenta queda oculta',
-              ),
-            ],
-            const SizedBox(height: 20),
-            FormSaveButton(
-              label: widget.isEditing ? 'Guardar' : 'Crear cuenta',
-              loading: _saving,
-              onPressed: _submit,
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 10),
-              FormDeleteButton(
-                label: 'Eliminar cuenta',
-                onPressed: _saving ? null : _delete,
-              ),
-            ],
-          ],
+      child: GestureDetector(
+        // Tap en cualquier zona vacía → cierra el teclado.
+        behavior: HitTestBehavior.translucent,
+        onTap: _dismissKeyboard,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+            children: _isOneShot ? _oneShotFields() : _recurringFields(),
+          ),
         ),
       ),
     );
   }
+
+  // ───────────────────────────── PUNTUAL ─────────────────────────────
+
+  List<Widget> _oneShotFields() {
+    return [
+      _nameField(hint: 'Ej. Sillón, Heladera, Notebook'),
+      const SizedBox(height: 14),
+      _amountField(
+        label: 'Monto',
+        required: true,
+        hint: '¿Cuánto pagaste por esta compra?',
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Mes',
+        required: true,
+        hint: 'Mes en el que registrás esta compra.',
+        child: MonthYearPicker(
+          value: PeriodKey.fromIso(_startPeriod),
+          onChanged: (p) {
+            if (p == null) return;
+            setState(() {
+              _startPeriod = p.toIso();
+              _endPeriod = _startPeriod;
+            });
+          },
+        ),
+      ),
+      const SizedBox(height: 14),
+      _categoryField(),
+      const SizedBox(height: 22),
+      _saveButton(),
+      if (widget.isEditing) ...[
+        const SizedBox(height: 10),
+        FormDeleteButton(
+          label: 'Eliminar gasto',
+          onPressed: _saving ? null : _delete,
+        ),
+      ],
+    ];
+  }
+
+  // ──────────────────────────── RECURRENTE ───────────────────────────
+
+  List<Widget> _recurringFields() {
+    return [
+      _nameField(hint: 'Ej. EPEC, Netflix, OSDE'),
+      const SizedBox(height: 14),
+      _categoryField(),
+      const SizedBox(height: 14),
+      _amountField(
+        label: 'Monto estimado',
+        hint: 'Dejalo vacío si el monto varía (ej: la luz).',
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Día del mes',
+        hint: 'Opcional. Día en que vence (1 a 31).',
+        child: FormTextField(
+          controller: _dayController,
+          hint: '—',
+          mono: true,
+          keyboardType: TextInputType.number,
+          inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+          validator: (v) {
+            final raw = (v ?? '').trim();
+            if (raw.isEmpty) return null;
+            final n = int.tryParse(raw);
+            if (n == null || n < 1 || n > 31) return '1 a 31';
+            return null;
+          },
+        ),
+      ),
+      const SizedBox(height: 6),
+      _MoreOptions(
+        expanded: _advancedExpanded,
+        onToggle: () {
+          _dismissKeyboard();
+          setState(() => _advancedExpanded = !_advancedExpanded);
+        },
+        children: _advancedFields(),
+      ),
+      if (widget.isEditing) ...[
+        const SizedBox(height: 14),
+        FormActiveToggle(
+          value: _active,
+          onChanged: (v) {
+            _dismissKeyboard();
+            setState(() => _active = v);
+          },
+          subtitleOn: 'La cuenta aparece en Mes',
+          subtitleOff: 'La cuenta queda oculta',
+        ),
+      ],
+      const SizedBox(height: 22),
+      _saveButton(),
+      if (widget.isEditing) ...[
+        const SizedBox(height: 10),
+        FormDeleteButton(
+          label: 'Eliminar gasto',
+          onPressed: _saving ? null : _delete,
+        ),
+      ],
+    ];
+  }
+
+  List<Widget> _advancedFields() {
+    return [
+      FormFieldWrap(
+        label: 'Débito automático en',
+        hint:
+            'Si está seleccionada, esta cuenta no aparece como ítem en Mes (ya viene en el resumen de la tarjeta).',
+        child: _AutoDebitSelector(
+          cards: _activeCards,
+          selectedCardId: _autoDebitCardId,
+          onChanged: (id) => setState(() => _autoDebitCardId = id),
+        ),
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Desde',
+        hint: 'Primer mes en que aplica esta cuenta.',
+        required: true,
+        child: MonthYearPicker(
+          value: PeriodKey.fromIso(_startPeriod),
+          onChanged: (p) {
+            if (p == null) return;
+            setState(() {
+              _startPeriod = p.toIso();
+              if (_endPeriod != null &&
+                  PeriodKey.fromIso(_endPeriod!).compareTo(p) < 0) {
+                _endPeriod = null;
+              }
+            });
+          },
+        ),
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Hasta',
+        hint:
+            'Opcional. Si lo dejás vacío, la cuenta sigue activa indefinidamente.',
+        child: MonthYearPicker(
+          value: _endPeriod == null ? null : PeriodKey.fromIso(_endPeriod!),
+          minPeriod: PeriodKey.fromIso(_startPeriod),
+          placeholder: 'Sin fin',
+          allowClear: true,
+          onChanged: (p) => setState(() => _endPeriod = p?.toIso()),
+        ),
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Código de referencia',
+        hint: 'Se copia al clipboard al tocar "Ir a pagar" en el Mes.',
+        child: FormTextField(
+          controller: _providerCodeController,
+          hint: '0292849306',
+          mono: true,
+        ),
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Link para pagar',
+        child: FormTextField(
+          controller: _urlController,
+          hint: 'https://… o app://…',
+          mono: true,
+          keyboardType: TextInputType.url,
+        ),
+      ),
+      const SizedBox(height: 14),
+      FormFieldWrap(
+        label: 'Notas',
+        child: FormTextField(
+          controller: _notesController,
+          hint: 'Opcional',
+          maxLines: 4,
+        ),
+      ),
+    ];
+  }
+
+  // ─────────────────────────── Campos comunes ────────────────────────
+
+  Widget _nameField({required String hint}) {
+    return FormFieldWrap(
+      label: 'Nombre',
+      required: true,
+      child: FormTextField(
+        controller: _nameController,
+        hint: hint,
+        textInputAction: TextInputAction.next,
+        validator: (v) =>
+            (v == null || v.trim().isEmpty) ? 'Ingresá un nombre' : null,
+      ),
+    );
+  }
+
+  Widget _amountField({
+    required String label,
+    bool required = false,
+    String? hint,
+  }) {
+    return FormFieldWrap(
+      label: label,
+      required: required,
+      hint: hint,
+      child: FormTextField(
+        controller: _amountController,
+        hint: '0',
+        prefix: '\$ ',
+        mono: true,
+        keyboardType: TextInputType.number,
+        inputFormatters: [ThousandsInputFormatter()],
+        validator: (v) {
+          final raw = (v ?? '').replaceAll('.', '').trim();
+          if (raw.isEmpty) {
+            return required ? 'Ingresá el monto' : null;
+          }
+          final n = int.tryParse(raw);
+          if (n == null || n <= 0) return 'Inválido';
+          return null;
+        },
+      ),
+    );
+  }
+
+  Widget _categoryField() {
+    return FormFieldWrap(
+      label: 'Categoría',
+      child: _KindChips(
+        value: _kind,
+        onChanged: (v) {
+          _dismissKeyboard();
+          setState(() => _kind = v);
+        },
+      ),
+    );
+  }
+
+  Widget _saveButton() {
+    return FormSaveButton(
+      label: widget.isEditing ? 'Guardar cambios' : 'Guardar gasto',
+      loading: _saving,
+      onPressed: _submit,
+    );
+  }
 }
 
-/// Selector del tipo (BillKind) — abre un bottom sheet con todas las
-/// opciones cada una con su BillKindIcon.
-class _KindSelector extends StatelessWidget {
-  const _KindSelector({required this.value, required this.onChanged});
+/// Cabecera "Más opciones" con chevron que rota y contenido que se
+/// despliega con animación de alto.
+class _MoreOptions extends StatelessWidget {
+  const _MoreOptions({
+    required this.expanded,
+    required this.onToggle,
+    required this.children,
+  });
+
+  final bool expanded;
+  final VoidCallback onToggle;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(FzRadius.lg),
+          child: InkWell(
+            onTap: onToggle,
+            borderRadius: BorderRadius.circular(FzRadius.lg),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 2),
+              child: Row(
+                children: [
+                  const Text(
+                    'Más opciones',
+                    style: TextStyle(
+                      fontFamily: FzType.sans,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: FzColors.primaryHi,
+                    ),
+                  ),
+                  const Spacer(),
+                  AnimatedRotation(
+                    turns: expanded ? 0.5 : 0,
+                    duration: FzMotion.normal,
+                    curve: FzMotion.easing,
+                    child: const Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      size: 20,
+                      color: FzColors.primaryHi,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        ClipRect(
+          child: AnimatedSize(
+            duration: FzMotion.normal,
+            curve: FzMotion.easing,
+            alignment: Alignment.topCenter,
+            child: AnimatedOpacity(
+              opacity: expanded ? 1 : 0,
+              duration: FzMotion.fast,
+              child: expanded
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: children,
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Selector de categoría (BillKind) como chips inline — 1 tap, sin
+/// bottom sheet. Más amigable que el dropdown anterior.
+class _KindChips extends StatelessWidget {
+  const _KindChips({required this.value, required this.onChanged});
   final BillKind value;
   final ValueChanged<BillKind> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return FormFieldShell(
-      onTap: () async {
-        final picked = await showModalBottomSheet<BillKind>(
-          context: context,
-          backgroundColor: FzColors.card,
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final k in BillKind.values)
+          _KindChip(
+            kind: k,
+            selected: k == value,
+            onTap: () => onChanged(k),
           ),
-          builder: (_) => _KindSheet(selected: value),
-        );
-        if (picked != null) onChanged(picked);
-      },
-      child: Row(
-        children: [
-          Icon(BillKindIcon.iconFor(value), size: 16, color: FzColors.text),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              kBillKindLabels[value] ?? '—',
-              style: const TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 14,
-                color: FzColors.text,
-              ),
-            ),
-          ),
-          const Icon(
-            Icons.keyboard_arrow_down_rounded,
-            size: 16,
-            color: FzColors.textDim,
-          ),
-        ],
-      ),
+      ],
     );
   }
 }
 
-class _KindSheet extends StatelessWidget {
-  const _KindSheet({required this.selected});
-  final BillKind selected;
+class _KindChip extends StatelessWidget {
+  const _KindChip({
+    required this.kind,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final BillKind kind;
+  final bool selected;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      top: false,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: const EdgeInsets.only(top: 8, bottom: 12),
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: FzColors.borderHi,
-                borderRadius: BorderRadius.circular(2),
-              ),
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(FzRadius.pill),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(FzRadius.pill),
+        child: AnimatedContainer(
+          duration: FzMotion.fast,
+          curve: FzMotion.easing,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: selected ? FzColors.primary : FzColors.card,
+            borderRadius: BorderRadius.circular(FzRadius.pill),
+            border: Border.all(
+              color: selected ? FzColors.primary : FzColors.border,
             ),
-            for (final k in BillKind.values)
-              ListTile(
-                leading: Icon(
-                  BillKindIcon.iconFor(k),
-                  size: 20,
-                  color: FzColors.text,
-                ),
-                title: Text(
-                  kBillKindLabels[k] ?? '—',
-                  style: TextStyle(
-                    fontFamily: FzType.sans,
-                    fontSize: 14,
-                    fontWeight: k == selected
-                        ? FontWeight.w600
-                        : FontWeight.w400,
-                    color: FzColors.text,
-                  ),
-                ),
-                trailing: k == selected
-                    ? const Icon(
-                        Icons.check_rounded,
-                        color: FzColors.primary,
-                        size: 20,
-                      )
-                    : null,
-                onTap: () => Navigator.of(context).pop(k),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                BillKindIcon.iconFor(kind),
+                size: 15,
+                color: selected ? FzColors.primaryInk : FzColors.textDim,
               ),
-            const SizedBox(height: 8),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                kBillKindLabels[kind] ?? '—',
+                style: TextStyle(
+                  fontFamily: FzType.sans,
+                  fontSize: 13,
+                  fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                  color: selected ? FzColors.primaryInk : FzColors.text,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -571,6 +726,7 @@ class _AutoDebitSelector extends StatelessWidget {
           );
     return FormFieldShell(
       onTap: () async {
+        FocusManager.instance.primaryFocus?.unfocus();
         final picked = await showModalBottomSheet<_AutoDebitPick?>(
           context: context,
           backgroundColor: FzColors.card,

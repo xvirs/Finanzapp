@@ -21,6 +21,7 @@ import 'features/cards/presentation/card_form_screen.dart';
 import 'features/cards/presentation/cards_screen.dart';
 import 'features/cards/presentation/installment_form_screen.dart';
 import 'features/config_settings/presentation/bill_form_screen.dart';
+import 'features/config_settings/presentation/bill_type_chooser_screen.dart';
 import 'features/config_settings/presentation/bills_list_screen.dart';
 import 'features/config_settings/presentation/bloc/bills_list_bloc.dart';
 import 'features/config_settings/presentation/bloc/cards_list_bloc.dart';
@@ -38,7 +39,15 @@ class AppRouter {
 
   final AuthBloc _authBloc;
 
+  /// Navigator raíz — usado para flujos full-screen que deben vivir por
+  /// encima del shell (y no dentro de la rama de un tab), como el alta de
+  /// gasto. Así, al terminar, podemos `go('/')` sin dejar el stack del tab
+  /// colgado.
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
+
   late final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: _AuthRefreshNotifier(_authBloc),
     redirect: _redirect,
@@ -160,7 +169,30 @@ class AppRouter {
                       GoRoute(
                         path: 'new',
                         name: 'bill-new',
-                        builder: (context, state) => const BillFormScreen(),
+                        // Flujo de alta full-screen sobre el shell: al
+                        // guardar hacemos go('/') y no queda nada montado
+                        // en la rama de config.
+                        parentNavigatorKey: rootNavigatorKey,
+                        builder: (context, state) =>
+                            const BillTypeChooserScreen(),
+                        routes: [
+                          GoRoute(
+                            path: 'oneshot',
+                            name: 'bill-new-oneshot',
+                            parentNavigatorKey: rootNavigatorKey,
+                            builder: (context, state) => const BillFormScreen(
+                              initialMode: BillFormMode.oneShot,
+                            ),
+                          ),
+                          GoRoute(
+                            path: 'recurring',
+                            name: 'bill-new-recurring',
+                            parentNavigatorKey: rootNavigatorKey,
+                            builder: (context, state) => const BillFormScreen(
+                              initialMode: BillFormMode.recurring,
+                            ),
+                          ),
+                        ],
                       ),
                       GoRoute(
                         path: ':id',
