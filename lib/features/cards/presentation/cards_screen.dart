@@ -52,8 +52,12 @@ class _CardsScreenState extends State<CardsScreen> {
         builder: (context, state) {
           return AdaptiveScaffold(
             compact: (_) {
-              final isLoading = state.status == CardsStatus.loading ||
-                  state.status == CardsStatus.initial;
+              // El header solo muestra shimmer en la PRIMERA carga. En
+              // recargas se mantiene con los datos previos (sus números
+              // animan al valor nuevo); el shimmer queda solo en los ítems.
+              final hasData = state.items.isNotEmpty ||
+                  state.status == CardsStatus.success ||
+                  state.status == CardsStatus.failure;
               return SafeArea(
                 bottom: false,
                 child: Column(
@@ -61,9 +65,9 @@ class _CardsScreenState extends State<CardsScreen> {
                   children: [
                     Material(
                       color: FzColors.bg,
-                      child: isLoading
-                          ? const CardsHeaderShimmer()
-                          : _CardsHeader(state: state),
+                      child: hasData
+                          ? _CardsHeader(state: state)
+                          : const CardsHeaderShimmer(),
                     ),
                     Expanded(child: _Body(state: state)),
                   ],

@@ -9,6 +9,7 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import '../../../core/responsive.dart';
 import '../../../design/tokens.dart';
 import '../../../design/widgets.dart';
+import '../../../widgets/app_version_text.dart';
 import 'bloc/auth_bloc.dart';
 
 /// Pantalla 1 — Login.
@@ -193,9 +194,9 @@ class _CompactLogin extends StatelessWidget {
                 onSubmitMagicLink: onSubmitMagicLink,
               ),
               const SizedBox(height: 28),
-              Text(
-                'v2.0 · finanzapp.app',
+              AppVersionText(
                 textAlign: TextAlign.center,
+                builder: (v) => 'v$v · finanzapp.app',
                 style: GoogleFonts.jetBrainsMono(
                   fontSize: 11.5,
                   letterSpacing: 0.46,

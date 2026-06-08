@@ -100,8 +100,12 @@ class _MonthScreenState extends State<MonthScreen> {
         builder: (context, state) {
           return AdaptiveScaffold(
             compact: (_) {
-              final isLoading = state.status == MonthStatus.loading ||
-                  state.status == MonthStatus.initial;
+              // El header solo muestra shimmer en la PRIMERA carga (sin
+              // datos aún). En recargas (pull-to-refresh / cambio de mes)
+              // se mantiene montado con los datos previos, así sus números
+              // animan al valor nuevo en vez de parpadear a shimmer. El
+              // shimmer queda solo para los ítems (en el _Body).
+              final hasData = state.summary != null;
               return SafeArea(
                 bottom: false,
                 child: Column(
@@ -109,9 +113,9 @@ class _MonthScreenState extends State<MonthScreen> {
                   children: [
                     Material(
                       color: FzColors.bg,
-                      child: isLoading
-                          ? const MonthHeaderShimmer()
-                          : MonthHeaderSection(state: state),
+                      child: hasData
+                          ? MonthHeaderSection(state: state)
+                          : const MonthHeaderShimmer(),
                     ),
                     Expanded(
                       child: _Body(

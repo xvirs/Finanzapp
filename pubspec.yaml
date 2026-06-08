@@ -1,7 +1,7 @@
 name: finanzapp
 description: "Control de gastos recurrentes obligatorios — versión nativa de FinanzasXavier"
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.1.0+4
 
 environment:
   sdk: ^3.9.2
@@ -76,6 +76,7 @@ dependencies:
   # SVG (logo Google y otros iconos vectoriales del design)
   flutter_svg: ^2.0.10+1
   font_awesome_flutter: ^11.0.0
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:
