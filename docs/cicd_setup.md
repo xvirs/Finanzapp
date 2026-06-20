@@ -10,6 +10,35 @@ Tres workflows configurados en `.github/workflows/`:
 
 ---
 
+## Publicar una actualización (flujo de un comando)
+
+Una vez cargados los secrets (secciones de abajo), publicar una nueva versión es **un solo comando**:
+
+```bash
+./tool/release.sh patch    # bugfix:   1.1.0 -> 1.1.1
+./tool/release.sh minor    # features: 1.1.0 -> 1.2.0
+./tool/release.sh major    # grande:   1.1.0 -> 2.0.0
+./tool/release.sh 1.5.0    # versión exacta
+```
+
+El script bumpea la versión **y el build number** en `pubspec.yaml` (el build number
+siempre sube +1, así nunca te rechazan la subida por build repetido), commitea,
+crea el tag `vX.Y.Z` y lo pushea. El push del tag dispara los dos releases.
+
+**Qué pasa después del tag:**
+
+- **Android** → `release-android.yml` buildea el AAB firmado y lo publica
+  **directo en producción** (track `production`). No requiere acción manual.
+- **iOS** → `release-ios.yml` sube el IPA a App Store Connect (queda en TestFlight).
+  Apple **obliga a revisión humana** para el App Store público: entrá a
+  [App Store Connect](https://appstoreconnect.apple.com), seleccioná el build nuevo
+  y enviá la versión a revisión (~1 día). No hay forma de saltarse esto en iOS.
+
+> El dispatch manual de `release-android.yml` (Actions → Run workflow) sigue
+> permitiendo elegir `internal`/`alpha`/`beta` para probar sin tocar producción.
+
+---
+
 ## Workflow 1 — `ci.yml` (sin secrets, podés activarlo YA)
 
 Hace en cada push/PR:
@@ -78,7 +107,7 @@ En el repo: **Settings → Secrets and variables → Actions → New repository 
 ### Pre-requisitos
 
 - Apple Developer activo con tu cuenta.
-- App registrada en App Store Connect con Bundle ID `com.xavier.finanzapp`.
+- App registrada en App Store Connect con Bundle ID `app.finanzapp.client`.
 - Cert de distribution + provisioning profile generados en Xcode (la primera vez es manual desde Xcode con tu Apple ID logueado).
 
 ### Secrets a cargar
