@@ -130,7 +130,27 @@
       "Bash(git commit -m 'fix\\(android\\): remove exact alarm permissions for Play policy *)",
       "Bash(git commit -m 'docs: README con capturas + ícono 512 para store *)",
       "Bash(git tag *)",
-      "Bash(git checkout *)"
+      "Bash(git checkout *)",
+      "Bash(git ls-remote *)",
+      "Bash(find /Users/xpath /Users/xavier/Proyectos/Finanzapp -type f -name \"*.dart\" | xargs grep -l \"BillFormScreenState\\\\|bill_form\" 2>/dev/null)",
+      "Read(//Users/**)",
+      "Bash(dart format *)",
+      "Bash(git rm *)",
+      "Bash(git merge --no-ff feature/refactor-de-registro-de-gastos -m 'Merge feature/refactor-de-registro-de-gastos into develop *)",
+      "Bash(grep -E \"\\\\.dart$\")",
+      "Bash(git fetch *)",
+      "Bash(git rev-list *)",
+      "Bash(git merge --no-ff fix/ajustes-varios -m 'Merge fix/ajustes-varios into develop *)",
+      "Bash(git commit -m 'chore\\(release\\): finalize 1.1.0 *)",
+      "Bash(git commit -m 'docs: runbook de deploy Android 1.1.0 *)",
+      "Bash(cd /Users/xavier/Proyectos/Finanzapp && rm -rf build/ios/archive && security unlock-keychain -p finanzapp2026 finanzapp-build.keychain 2>&1; xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release -archivePath build/ios/archive/Runner.xcarchive -destination \"generic/platform=iOS\" OTHER_CODE_SIGN_FLAGS=\"--keychain finanzapp-build.keychain\" archive 2>&1 | tail -3)",
+      "Bash(git -C /Users/xavier/Proyectos/Finanzapp check-ignore -v android/key.properties)",
+      "Bash(git -C /Users/xavier/Proyectos/Finanzapp ls-files)",
+      "Bash(git -C /Users/xavier/Proyectos/Finanzapp log --all --full-history -- \"*.jks\")",
+      "Bash(echo \"exit:$?\")",
+      "Bash(curl -s -m 10 -w '\\\\nHTTP:%{http_code}\\\\n' -X POST https://iyuhohfbfhjuiyyrmasj.supabase.co/rest/v1/bills -H 'apikey: sb_publishable_ZoufhqjvaXHgTHtdFs9_Kw_BS91NgIi' -H 'Authorization: Bearer sb_publishable_ZoufhqjvaXHgTHtdFs9_Kw_BS91NgIi' -H 'Content-Type: application/json' -d '{\"name\":\"__sec_test__\",\"user_id\":\"00000000-0000-0000-0000-000000000000\",\"day_of_month\":1,\"active\":false}')",
+      "Bash(set -e)",
+      "Bash(git commit -q -m ' *)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"
