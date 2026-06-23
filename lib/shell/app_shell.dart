@@ -25,6 +25,11 @@ class AppShell extends StatelessWidget {
     return AdaptiveScaffold(
       compact: (_) => Scaffold(
         backgroundColor: FzColors.bg,
+        // El body se extiende por detrás de la bottom nav flotante para que
+        // las listas se vean pasar bajo la píldora (look moderno). Flutter
+        // suma el alto de la nav a MediaQuery.padding.bottom del body, así
+        // las listas usan ese inset como clearance del último ítem.
+        extendBody: true,
         body: navigationShell,
         bottomNavigationBar: SafeArea(
           top: false,
@@ -40,10 +45,7 @@ class AppShell extends StatelessWidget {
           bottom: false,
           child: Row(
             children: [
-              FzNavRail(
-                index: navigationShell.currentIndex,
-                onChange: _onTap,
-              ),
+              FzNavRail(index: navigationShell.currentIndex, onChange: _onTap),
               Expanded(child: navigationShell),
             ],
           ),

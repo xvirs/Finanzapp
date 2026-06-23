@@ -89,7 +89,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 onRefresh: _loadCounts,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
+                  // Clearance para la bottom nav flotante (ver app_shell).
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.paddingOf(context).bottom + 12,
+                  ),
                   children: [
                     const _Header(),
                     if (authState.email != null)
@@ -744,10 +747,7 @@ class _DeleteAccountButtonState extends State<_DeleteAccountButton> {
           child: TextButton.icon(
             style: TextButton.styleFrom(
               foregroundColor: FzColors.lateColor,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),

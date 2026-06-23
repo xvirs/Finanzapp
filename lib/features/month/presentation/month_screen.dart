@@ -74,11 +74,7 @@ class _MonthScreenState extends State<MonthScreen> {
                 current.mutatingItemKey == null),
         listener: (context, state) {
           if (state.errorMessage != null) {
-            showFzSnack(
-              context,
-              state.errorMessage!,
-              kind: FzSnackKind.error,
-            );
+            showFzSnack(context, state.errorMessage!, kind: FzSnackKind.error);
           }
           // Cambio de período → cerrar tarjetas expandidas + limpiar
           // selección master/detail. Comparamos contra el último visto
@@ -202,7 +198,11 @@ class _Body extends StatelessWidget {
                 )
               : ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 12),
+                  // Clearance para que el último ítem suba por encima de la
+                  // bottom nav flotante (extendBody suma su alto al inset).
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.paddingOf(context).bottom + 12,
+                  ),
                   children: [
                     for (final group in state.groups)
                       MonthGroupSection(
@@ -271,4 +271,3 @@ class _ErrorView extends StatelessWidget {
     );
   }
 }
-

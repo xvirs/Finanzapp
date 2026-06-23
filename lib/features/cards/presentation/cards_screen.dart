@@ -55,7 +55,8 @@ class _CardsScreenState extends State<CardsScreen> {
               // El header solo muestra shimmer en la PRIMERA carga. En
               // recargas se mantiene con los datos previos (sus números
               // animan al valor nuevo); el shimmer queda solo en los ítems.
-              final hasData = state.items.isNotEmpty ||
+              final hasData =
+                  state.items.isNotEmpty ||
                   state.status == CardsStatus.success ||
                   state.status == CardsStatus.failure;
               return SafeArea(
@@ -76,7 +77,8 @@ class _CardsScreenState extends State<CardsScreen> {
             },
             expanded: (_) => SafeArea(
               bottom: false,
-              child: state.status == CardsStatus.loading ||
+              child:
+                  state.status == CardsStatus.loading ||
                       state.status == CardsStatus.initial
                   ? const CardsExpandedShimmer()
                   : CardsExpandedLayout(
@@ -142,7 +144,11 @@ class _Body extends StatelessWidget {
                 )
               : ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(top: 14, bottom: 12),
+                  // Clearance para la bottom nav flotante (ver app_shell).
+                  padding: EdgeInsets.only(
+                    top: 14,
+                    bottom: MediaQuery.paddingOf(context).bottom + 12,
+                  ),
                   itemCount: state.items.length,
                   itemBuilder: (ctx, i) {
                     final item = state.items[i];
@@ -151,13 +157,12 @@ class _Body extends StatelessWidget {
                       data: item,
                       period: state.period,
                       mutating: state.mutatingCardId == item.card.id,
-                      onMarkPaid: (amount) =>
-                          ctx.read<CardsBloc>().add(
-                            CardsMarkPaidRequested(
-                              cardId: item.card.id,
-                              amount: amount,
-                            ),
-                          ),
+                      onMarkPaid: (amount) => ctx.read<CardsBloc>().add(
+                        CardsMarkPaidRequested(
+                          cardId: item.card.id,
+                          amount: amount,
+                        ),
+                      ),
                       onMarkPending: () => ctx.read<CardsBloc>().add(
                         CardsMarkPendingRequested(cardId: item.card.id),
                       ),
@@ -379,4 +384,3 @@ class _ErrorView extends StatelessWidget {
     );
   }
 }
-
