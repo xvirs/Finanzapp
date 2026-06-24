@@ -315,11 +315,12 @@ class FzBottomNav extends StatelessWidget {
                     label: kFzNavItems[i].$1,
                     icon: kFzNavItems[i].$2,
                     selected: i == index,
+                    // Siempre notificamos, incluso al tocar la pestaña ya
+                    // activa: eso permite volver a la página principal de la
+                    // sección (initialLocation) cuando hay un sub-flujo abierto.
                     onTap: () {
-                      if (i != index) {
-                        HapticFeedback.selectionClick();
-                        onChange(i);
-                      }
+                      HapticFeedback.selectionClick();
+                      onChange(i);
                     },
                   ),
               ],

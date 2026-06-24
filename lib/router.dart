@@ -32,6 +32,7 @@ import 'features/config_settings/presentation/incomes_list_screen.dart';
 import 'features/month/presentation/bloc/month_bloc.dart';
 import 'features/month/presentation/month_screen.dart';
 import 'shell/app_shell.dart';
+import 'shell/shell_branch_container.dart';
 
 class AppRouter {
   AppRouter(this._authBloc);
@@ -56,9 +57,16 @@ class AppRouter {
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
+        // Contenedor swipeable: las 3 ramas en un PageView para navegar
+        // deslizando horizontalmente, sincronizado con la bottom nav.
+        navigatorContainerBuilder: (context, navigationShell, children) =>
+            ShellBranchContainer(
+              navigationShell: navigationShell,
+              children: children,
+            ),
         branches: [
           StatefulShellBranch(
             routes: [
