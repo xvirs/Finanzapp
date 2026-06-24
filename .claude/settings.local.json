@@ -186,7 +186,8 @@
       "Bash(gh run *)",
       "Bash(git commit -q -m 'ci\\(ios\\): runner macos-15 \\(Xcode 16 / Swift 6 para deps\\) *)",
       "Bash(gh workflow *)",
-      "Bash(git commit -q -m 'ci\\(ios\\): instalar flutterfire_cli \\(build phase de Crashlytics\\) *)"
+      "Bash(git commit -q -m 'ci\\(ios\\): instalar flutterfire_cli \\(build phase de Crashlytics\\) *)",
+      "Bash(git commit -q -m 'ci\\(ios\\): runner macos-26 \\(Xcode 26 — requisito de Apple para upload\\) *)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"
