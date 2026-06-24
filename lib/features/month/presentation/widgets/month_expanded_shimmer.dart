@@ -293,18 +293,18 @@ class _PanelSkeleton extends StatelessWidget {
                 ),
                 const SizedBox(width: 10),
                 const Expanded(
-                  child: ShimmerBox(width: double.infinity, height: 16, radius: 3),
+                  child: ShimmerBox(
+                    width: double.infinity,
+                    height: 16,
+                    radius: 3,
+                  ),
                 ),
                 const SizedBox(width: 8),
                 const ShimmerBox(width: 80, height: 15, radius: 3),
               ],
             ),
             if (i < rows - 1)
-              const Divider(
-                height: 12,
-                thickness: 0.5,
-                color: FzColors.border,
-              ),
+              const Divider(height: 12, thickness: 0.5, color: FzColors.border),
           ],
         ],
       ),

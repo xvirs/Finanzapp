@@ -384,11 +384,7 @@ class _PreviewCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(FzRadius.md),
             ),
             alignment: Alignment.center,
-            child: CardBrandLogo(
-              brand: brand,
-              size: 22,
-              color: Colors.white,
-            ),
+            child: CardBrandLogo(brand: brand, size: 22, color: Colors.white),
           ),
           const SizedBox(width: 12),
           Expanded(

@@ -110,16 +110,28 @@ class _PickerSheetState extends State<_PickerSheet> {
 
   bool _isMonthAllowed(int monthZero) {
     final candidate = PeriodKey(year: _year, month: monthZero);
-    if (widget.min != null && candidate.compareTo(widget.min!) < 0) return false;
-    if (widget.max != null && candidate.compareTo(widget.max!) > 0) return false;
+    if (widget.min != null && candidate.compareTo(widget.min!) < 0)
+      return false;
+    if (widget.max != null && candidate.compareTo(widget.max!) > 0)
+      return false;
     return true;
   }
 
   @override
   Widget build(BuildContext context) {
     final monthLabels = const [
-      'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-      'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
     ];
 
     return SafeArea(
@@ -184,8 +196,8 @@ class _PickerSheetState extends State<_PickerSheet> {
               childAspectRatio: 2.2,
               children: List.generate(12, (i) {
                 final allowed = _isMonthAllowed(i);
-                final isSelected = widget.initial.year == _year &&
-                    widget.initial.month == i;
+                final isSelected =
+                    widget.initial.year == _year && widget.initial.month == i;
                 return _MonthChip(
                   label: monthLabels[i],
                   enabled: allowed,
@@ -203,9 +215,8 @@ class _PickerSheetState extends State<_PickerSheet> {
             if (widget.allowClear) ...[
               const SizedBox(height: 12),
               TextButton(
-                onPressed: () => Navigator.of(context).pop(
-                  const _PickResult(cleared: true),
-                ),
+                onPressed: () =>
+                    Navigator.of(context).pop(const _PickResult(cleared: true)),
                 child: const Text('Limpiar'),
               ),
             ],
@@ -234,13 +245,13 @@ class _MonthChip extends StatelessWidget {
     final bg = selected
         ? FzColors.primary
         : enabled
-            ? FzColors.cardHi
-            : FzColors.card;
+        ? FzColors.cardHi
+        : FzColors.card;
     final fg = selected
         ? FzColors.primaryInk
         : enabled
-            ? FzColors.text
-            : FzColors.textMute;
+        ? FzColors.text
+        : FzColors.textMute;
     return Material(
       color: bg,
       borderRadius: BorderRadius.circular(FzRadius.md),

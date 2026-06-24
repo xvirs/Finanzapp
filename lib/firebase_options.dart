@@ -65,5 +65,4 @@ class DefaultFirebaseOptions {
     storageBucket: 'finanzapp-76dab.firebasestorage.app',
     iosBundleId: 'app.finanzapp.client',
   );
-
 }

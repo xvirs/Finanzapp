@@ -42,8 +42,8 @@ class CardsExpandedLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final selected = _selected();
-    final mutating = selected != null &&
-        state.mutatingCardId == selected.card.id;
+    final mutating =
+        selected != null && state.mutatingCardId == selected.card.id;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -56,11 +56,7 @@ class CardsExpandedLayout extends StatelessWidget {
           ),
         ),
         Expanded(
-          child: _Detail(
-            state: state,
-            item: selected,
-            mutating: mutating,
-          ),
+          child: _Detail(state: state, item: selected, mutating: mutating),
         ),
       ],
     );
@@ -182,11 +178,7 @@ class _MasterTotals extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: _MasterTotalCard(
-              label: 'PAGADO',
-              amount: paid,
-              paid: true,
-            ),
+            child: _MasterTotalCard(label: 'PAGADO', amount: paid, paid: true),
           ),
         ],
       ),
@@ -468,8 +460,8 @@ class _HeroState extends State<_Hero> {
   void didUpdateWidget(covariant _Hero oldWidget) {
     super.didUpdateWidget(oldWidget);
     final cardChanged = oldWidget.item.card.id != widget.item.card.id;
-    final realChanged = oldWidget.item.payment?.amountReal !=
-        widget.item.payment?.amountReal;
+    final realChanged =
+        oldWidget.item.payment?.amountReal != widget.item.payment?.amountReal;
     final totalChanged = oldWidget.item.total != widget.item.total;
     if (cardChanged || realChanged || totalChanged) {
       _amountController.text = _initialAmountText();
@@ -495,11 +487,7 @@ class _HeroState extends State<_Hero> {
     final raw = _amountController.text.trim().replaceAll(',', '.');
     final value = double.tryParse(raw);
     if (value == null || value <= 0) {
-      showFzSnack(
-        context,
-        'Ingresá un monto válido.',
-        kind: FzSnackKind.error,
-      );
+      showFzSnack(context, 'Ingresá un monto válido.', kind: FzSnackKind.error);
       return;
     }
     context.read<CardsBloc>().add(
@@ -642,8 +630,7 @@ class _HeroState extends State<_Hero> {
           _AutoDebitsPanel(bills: item.autoDebitBills),
         ],
         // Empty state: ni cuotas ni débitos en este mes.
-        if (item.activeInstallments.isEmpty &&
-            item.autoDebitBills.isEmpty) ...[
+        if (item.activeInstallments.isEmpty && item.autoDebitBills.isEmpty) ...[
           const SizedBox(height: 12),
           const _NoChargesNote(),
         ],
@@ -974,11 +961,7 @@ class _AutoDebitsPanel extends StatelessWidget {
           for (var i = 0; i < bills.length; i++) ...[
             _AutoDebitRow(bill: bills[i]),
             if (i < bills.length - 1)
-              const Divider(
-                height: 12,
-                thickness: 0.5,
-                color: FzColors.border,
-              ),
+              const Divider(height: 12, thickness: 0.5, color: FzColors.border),
           ],
         ],
       ),
@@ -1185,15 +1168,16 @@ class _DetailEmpty extends StatelessWidget {
         .length;
     final pendingCount = state.items.length - paidCount;
 
-    final upcoming = state.items
-        .where((it) => it.payment?.status != PaymentStatus.paid)
-        .toList()
-      ..sort((a, b) {
-        final da = a.card.dueDay ?? 99;
-        final db = b.card.dueDay ?? 99;
-        if (da != db) return da - db;
-        return a.card.name.compareTo(b.card.name);
-      });
+    final upcoming =
+        state.items
+            .where((it) => it.payment?.status != PaymentStatus.paid)
+            .toList()
+          ..sort((a, b) {
+            final da = a.card.dueDay ?? 99;
+            final db = b.card.dueDay ?? 99;
+            if (da != db) return da - db;
+            return a.card.name.compareTo(b.card.name);
+          });
     final upcomingTop = upcoming.take(3).toList();
 
     return SingleChildScrollView(
@@ -1266,8 +1250,7 @@ class _DetailEmpty extends StatelessWidget {
     );
   }
 
-  String _formatMonth(PeriodKey p) =>
-      p.formatLong().replaceFirst(' de ', ' ');
+  String _formatMonth(PeriodKey p) => p.formatLong().replaceFirst(' de ', ' ');
 }
 
 class _EmptyStatCard extends StatelessWidget {
@@ -1454,11 +1437,7 @@ class _UpcomingPanel extends StatelessWidget {
         children: [
           const Row(
             children: [
-              Icon(
-                Icons.event_outlined,
-                size: 14,
-                color: FzColors.textDim,
-              ),
+              Icon(Icons.event_outlined, size: 14, color: FzColors.textDim),
               SizedBox(width: 8),
               Text(
                 'PRÓXIMAS A PAGAR',
@@ -1476,11 +1455,7 @@ class _UpcomingPanel extends StatelessWidget {
           for (var i = 0; i < items.length; i++) ...[
             _UpcomingRow(item: items[i]),
             if (i < items.length - 1)
-              const Divider(
-                height: 12,
-                thickness: 0.5,
-                color: FzColors.border,
-              ),
+              const Divider(height: 12, thickness: 0.5, color: FzColors.border),
           ],
         ],
       ),
@@ -1563,11 +1538,7 @@ class _SelectHint extends StatelessWidget {
       ),
       child: Row(
         children: const [
-          Icon(
-            Icons.arrow_back_rounded,
-            size: 16,
-            color: FzColors.textMute,
-          ),
+          Icon(Icons.arrow_back_rounded, size: 16, color: FzColors.textMute),
           SizedBox(width: 10),
           Expanded(
             child: Text(

@@ -91,11 +91,7 @@ class _CardListItemState extends State<CardListItem> {
     final raw = _amountController.text.trim().replaceAll(',', '.');
     final value = double.tryParse(raw);
     if (value == null || value <= 0) {
-      showFzSnack(
-        context,
-        'Ingresá un monto válido.',
-        kind: FzSnackKind.error,
-      );
+      showFzSnack(context, 'Ingresá un monto válido.', kind: FzSnackKind.error);
       return;
     }
     widget.onMarkPaid(value);

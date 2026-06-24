@@ -11,7 +11,12 @@ import '../models/enums.dart';
 /// buen contraste sobre el fondo oscuro, y en un gris tenue para "Otra".
 /// Se puede forzar el color con [color].
 class CardBrandLogo extends StatelessWidget {
-  const CardBrandLogo({required this.brand, this.size = 18, this.color, super.key});
+  const CardBrandLogo({
+    required this.brand,
+    this.size = 18,
+    this.color,
+    super.key,
+  });
 
   final CardBrand? brand;
   final double size;

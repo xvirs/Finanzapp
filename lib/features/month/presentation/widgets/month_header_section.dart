@@ -199,8 +199,9 @@ class _IncomeBalanceRow extends StatelessWidget {
             child: _MiniStat(
               label: 'SALDO',
               amount: balance,
-              valueColor:
-                  balancePositive ? FzColors.primaryHi : FzColors.lateInk,
+              valueColor: balancePositive
+                  ? FzColors.primaryHi
+                  : FzColors.lateInk,
             ),
           ),
         ],
