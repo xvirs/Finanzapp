@@ -171,7 +171,15 @@
       "Bash(adb kill-server *)",
       "Bash(adb start-server *)",
       "Bash(adb -s RFCY80RK59Y exec-out screencap -p)",
-      "Bash(echo \"exit $?\")"
+      "Bash(echo \"exit $?\")",
+      "Bash(command -v gh)",
+      "Bash(command -v brew)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Bash(awk '{print $1}')",
+      "Bash(flutter test *)",
+      "Bash(git commit -q -m 'chore: actualizar allowlist de permisos locales *)",
+      "Bash(git commit -q -m 'style: aplicar dart format \\(regla nueva del formatter\\) *)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"
