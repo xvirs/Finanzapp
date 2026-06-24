@@ -182,7 +182,10 @@
       "Bash(git commit -q -m 'style: aplicar dart format \\(regla nueva del formatter\\) *)",
       "Bash(sed -i '' -E \"s/^version:.*/version: 1.1.1+5/\" pubspec.yaml)",
       "Bash(git commit -q -m 'chore\\(release\\): 1.1.1 \\(build 5\\) *)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(gh run *)",
+      "Bash(git commit -q -m 'ci\\(ios\\): runner macos-15 \\(Xcode 16 / Swift 6 para deps\\) *)",
+      "Bash(gh workflow *)"
     ],
     "additionalDirectories": [
       "/private/tmp/aab-check"
