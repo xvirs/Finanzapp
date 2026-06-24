@@ -181,8 +181,9 @@ class _SummaryRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final activeIncomes = state.incomes.where((i) => i.active).toList();
     final activeCount = activeIncomes.length;
-    final fixedCount =
-        activeIncomes.where((i) => i.defaultAmount != null).length;
+    final fixedCount = activeIncomes
+        .where((i) => i.defaultAmount != null)
+        .length;
     final variableCount = activeCount - fixedCount;
 
     return Padding(
@@ -563,11 +564,7 @@ class _EmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [
-            Icon(
-              Icons.savings_outlined,
-              size: 48,
-              color: FzColors.primary,
-            ),
+            Icon(Icons.savings_outlined, size: 48, color: FzColors.primary),
             SizedBox(height: 12),
             Text(
               'No tenés ingresos cargados',

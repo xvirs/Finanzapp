@@ -12,6 +12,7 @@ import '../../../data/bills_repository.dart';
 import '../../../data/cards_repository.dart';
 import '../../../data/incomes_repository.dart';
 import '../../../design/tokens.dart';
+import '../../../widgets/app_version_text.dart';
 import '../../../widgets/shimmer_box.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import 'widgets/config_expanded_layout.dart';
@@ -88,7 +89,10 @@ class _ConfigScreenState extends State<ConfigScreen> {
                 onRefresh: _loadCounts,
                 child: ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: EdgeInsets.zero,
+                  // Clearance para la bottom nav flotante (ver app_shell).
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.paddingOf(context).bottom + 12,
+                  ),
                   children: [
                     const _Header(),
                     if (authState.email != null)
@@ -743,10 +747,7 @@ class _DeleteAccountButtonState extends State<_DeleteAccountButton> {
           child: TextButton.icon(
             style: TextButton.styleFrom(
               foregroundColor: FzColors.lateColor,
-              padding: const EdgeInsets.symmetric(
-                horizontal: 12,
-                vertical: 10,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
@@ -856,10 +857,10 @@ class _Footer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        'FINANZAPP · v1.0.0',
-        style: TextStyle(
+    return Center(
+      child: AppVersionText(
+        builder: (v) => 'FINANZAPP · v$v',
+        style: const TextStyle(
           fontFamily: FzType.mono,
           fontSize: 10,
           color: FzColors.textMute,

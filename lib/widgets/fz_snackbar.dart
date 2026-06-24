@@ -27,7 +27,10 @@ void showFzSnack(
 
   final (icon, accent) = switch (kind) {
     FzSnackKind.info => (Icons.info_outline_rounded, FzColors.textDim),
-    FzSnackKind.success => (Icons.check_circle_outline_rounded, FzColors.primary),
+    FzSnackKind.success => (
+      Icons.check_circle_outline_rounded,
+      FzColors.primary,
+    ),
     FzSnackKind.error => (Icons.error_outline_rounded, FzColors.lateColor),
   };
 

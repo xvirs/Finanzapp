@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/adaptive_scaffold.dart';
 import '../../../core/analytics_service.dart';
 import '../../../design/tokens.dart';
 import '../../../domain/period.dart';
+import '../../../widgets/empty_state.dart';
 import '../../../widgets/fz_snackbar.dart';
 import 'bloc/month_bloc.dart';
 import 'widgets/month_expanded_layout.dart';
@@ -72,11 +74,7 @@ class _MonthScreenState extends State<MonthScreen> {
                 current.mutatingItemKey == null),
         listener: (context, state) {
           if (state.errorMessage != null) {
-            showFzSnack(
-              context,
-              state.errorMessage!,
-              kind: FzSnackKind.error,
-            );
+            showFzSnack(context, state.errorMessage!, kind: FzSnackKind.error);
           }
           // Cambio de período → cerrar tarjetas expandidas + limpiar
           // selección master/detail. Comparamos contra el último visto
@@ -98,8 +96,12 @@ class _MonthScreenState extends State<MonthScreen> {
         builder: (context, state) {
           return AdaptiveScaffold(
             compact: (_) {
-              final isLoading = state.status == MonthStatus.loading ||
-                  state.status == MonthStatus.initial;
+              // El header solo muestra shimmer en la PRIMERA carga (sin
+              // datos aún). En recargas (pull-to-refresh / cambio de mes)
+              // se mantiene montado con los datos previos, así sus números
+              // animan al valor nuevo en vez de parpadear a shimmer. El
+              // shimmer queda solo para los ítems (en el _Body).
+              final hasData = state.summary != null;
               return SafeArea(
                 bottom: false,
                 child: Column(
@@ -107,9 +109,9 @@ class _MonthScreenState extends State<MonthScreen> {
                   children: [
                     Material(
                       color: FzColors.bg,
-                      child: isLoading
-                          ? const MonthHeaderShimmer()
-                          : MonthHeaderSection(state: state),
+                      child: hasData
+                          ? MonthHeaderSection(state: state)
+                          : const MonthHeaderShimmer(),
                     ),
                     Expanded(
                       child: _Body(
@@ -186,13 +188,21 @@ class _Body extends StatelessWidget {
             context.read<MonthBloc>().add(const MonthRefreshRequested());
           },
           child: !hasGroups
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [_EmptyView()],
+              ? FzEmptyState(
+                  icon: Icons.description_outlined,
+                  title: 'Sin movimientos este mes',
+                  description:
+                      'Cargá tu primer gasto y empezá a organizar el mes.',
+                  ctaLabel: 'Agregar gasto',
+                  onCta: () => context.push('/config/bills/new'),
                 )
               : ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 12),
+                  // Clearance para que el último ítem suba por encima de la
+                  // bottom nav flotante (extendBody suma su alto al inset).
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.paddingOf(context).bottom + 12,
+                  ),
                   children: [
                     for (final group in state.groups)
                       MonthGroupSection(
@@ -254,50 +264,6 @@ class _ErrorView extends StatelessWidget {
             FilledButton.tonal(
               onPressed: onRetry,
               child: const Text('Reintentar'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.event_available_outlined,
-              size: 48,
-              color: FzColors.primary,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Sin pagos este mes',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: FzColors.text,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'No hay cuentas ni cuotas activas para este período.',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 12,
-                color: FzColors.textDim,
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

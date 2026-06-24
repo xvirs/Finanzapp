@@ -8,10 +8,7 @@ import '../../../models/payment.dart';
 /// Cuota activa en el período: la compra más el índice de cuota actual
 /// (1-indexed). Útil para renderizar progress bars `cuotaIndex / total`.
 class ActiveInstallment extends Equatable {
-  const ActiveInstallment({
-    required this.purchase,
-    required this.cuotaIndex,
-  });
+  const ActiveInstallment({required this.purchase, required this.cuotaIndex});
 
   final InstallmentPurchase purchase;
   final int cuotaIndex;

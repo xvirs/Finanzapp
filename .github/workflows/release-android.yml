@@ -83,9 +83,11 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.xavier.finanzapp
+          packageName: app.finanzapp.client
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: ${{ github.event.inputs.track || 'internal' }}
+          # Tag push (v*.*.*) → production. Dispatch manual → el track
+          # elegido en la UI (default 'internal' para probar).
+          track: ${{ github.event.inputs.track || 'production' }}
           status: completed
 
       - name: Upload AAB as artifact (backup)

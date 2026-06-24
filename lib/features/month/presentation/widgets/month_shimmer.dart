@@ -4,25 +4,25 @@ import '../../../../design/tokens.dart';
 import '../../../../widgets/shimmer_box.dart';
 
 /// Skeleton/shimmer del header del Mes (compact). Replica la estructura
-/// de [MonthHeaderSection]: caplabel · nav · grid de totales · progress
-/// · tabs. Se usa en lugar del header real cuando `state.status` está
-/// en `loading` / `initial`.
+/// real de [MonthHeaderSection]: título "Inicio" · nav · grid de totales ·
+/// mini-stats (ingresos/saldo) · progress · tabs. Se usa en lugar del
+/// header real solo en la primera carga (sin datos).
 class MonthHeaderShimmer extends StatelessWidget {
   const MonthHeaderShimmer({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: const [
-          // Caplabel "MES ACTUAL"
+          // Título "Inicio" (h1)
           Align(
             alignment: Alignment.centerLeft,
-            child: ShimmerBox(width: 90, height: 11, radius: 2),
+            child: ShimmerBox(width: 84, height: 24, radius: 6),
           ),
-          SizedBox(height: 10),
+          SizedBox(height: 14),
           // Month nav
           Row(
             children: [
@@ -42,6 +42,15 @@ class MonthHeaderShimmer extends StatelessWidget {
               Expanded(child: _SummaryCardShimmer()),
               SizedBox(width: 10),
               Expanded(child: _SummaryCardShimmer(withFooter: true)),
+            ],
+          ),
+          SizedBox(height: 10),
+          // Mini-stats: INGRESOS + SALDO
+          Row(
+            children: [
+              Expanded(child: _MiniStatShimmer()),
+              SizedBox(width: 10),
+              Expanded(child: _MiniStatShimmer()),
             ],
           ),
           SizedBox(height: 14),
@@ -66,6 +75,30 @@ class MonthHeaderShimmer extends StatelessWidget {
               ShimmerBox(width: 78, height: 22, radius: 999),
             ],
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Skeleton de un mini-stat (INGRESOS / SALDO): mismo shell que el real.
+class _MiniStatShimmer extends StatelessWidget {
+  const _MiniStatShimmer();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.lg),
+        border: Border.all(color: FzColors.border),
+      ),
+      child: const Row(
+        children: [
+          ShimmerBox(width: 56, height: 10, radius: 2),
+          Spacer(),
+          ShimmerBox(width: 64, height: 13, radius: 3),
         ],
       ),
     );

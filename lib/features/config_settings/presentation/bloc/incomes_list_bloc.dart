@@ -49,9 +49,7 @@ class IncomesListBloc extends Bloc<IncomesListEvent, IncomesListBlocState> {
     emit(state.copyWith(status: IncomesListStatus.loading, clearError: true));
     try {
       final incomes = await _incomesRepository.fetchAll();
-      emit(
-        state.copyWith(status: IncomesListStatus.success, incomes: incomes),
-      );
+      emit(state.copyWith(status: IncomesListStatus.success, incomes: incomes));
     } catch (error) {
       emit(
         state.copyWith(

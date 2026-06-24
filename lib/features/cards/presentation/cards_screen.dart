@@ -8,6 +8,7 @@ import '../../../core/format.dart';
 import '../../../design/tokens.dart';
 import '../../../domain/period.dart';
 import '../../../widgets/animated_amount.dart';
+import '../../../widgets/empty_state.dart';
 import 'bloc/cards_bloc.dart';
 import 'widgets/card_list_item.dart';
 import 'widgets/cards_expanded_layout.dart';
@@ -51,8 +52,13 @@ class _CardsScreenState extends State<CardsScreen> {
         builder: (context, state) {
           return AdaptiveScaffold(
             compact: (_) {
-              final isLoading = state.status == CardsStatus.loading ||
-                  state.status == CardsStatus.initial;
+              // El header solo muestra shimmer en la PRIMERA carga. En
+              // recargas se mantiene con los datos previos (sus números
+              // animan al valor nuevo); el shimmer queda solo en los ítems.
+              final hasData =
+                  state.items.isNotEmpty ||
+                  state.status == CardsStatus.success ||
+                  state.status == CardsStatus.failure;
               return SafeArea(
                 bottom: false,
                 child: Column(
@@ -60,9 +66,9 @@ class _CardsScreenState extends State<CardsScreen> {
                   children: [
                     Material(
                       color: FzColors.bg,
-                      child: isLoading
-                          ? const CardsHeaderShimmer()
-                          : _CardsHeader(state: state),
+                      child: hasData
+                          ? _CardsHeader(state: state)
+                          : const CardsHeaderShimmer(),
                     ),
                     Expanded(child: _Body(state: state)),
                   ],
@@ -71,7 +77,8 @@ class _CardsScreenState extends State<CardsScreen> {
             },
             expanded: (_) => SafeArea(
               bottom: false,
-              child: state.status == CardsStatus.loading ||
+              child:
+                  state.status == CardsStatus.loading ||
                       state.status == CardsStatus.initial
                   ? const CardsExpandedShimmer()
                   : CardsExpandedLayout(
@@ -121,13 +128,27 @@ class _Body extends StatelessWidget {
             context.read<CardsBloc>().add(const CardsRefreshRequested());
           },
           child: state.items.isEmpty
-              ? ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: const [_EmptyView()],
+              ? FzEmptyState(
+                  icon: Icons.credit_card_outlined,
+                  title: 'No tenés tarjetas',
+                  description:
+                      'Agregá tu primera tarjeta para llevar el control de tus cuotas y resúmenes.',
+                  ctaLabel: 'Agregar tarjeta',
+                  onCta: () async {
+                    final bloc = context.read<CardsBloc>();
+                    final result = await context.push<bool>('/cards/new');
+                    if (result == true) {
+                      bloc.add(const CardsRefreshRequested());
+                    }
+                  },
                 )
               : ListView.builder(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(top: 14, bottom: 12),
+                  // Clearance para la bottom nav flotante (ver app_shell).
+                  padding: EdgeInsets.only(
+                    top: 14,
+                    bottom: MediaQuery.paddingOf(context).bottom + 12,
+                  ),
                   itemCount: state.items.length,
                   itemBuilder: (ctx, i) {
                     final item = state.items[i];
@@ -136,13 +157,12 @@ class _Body extends StatelessWidget {
                       data: item,
                       period: state.period,
                       mutating: state.mutatingCardId == item.card.id,
-                      onMarkPaid: (amount) =>
-                          ctx.read<CardsBloc>().add(
-                            CardsMarkPaidRequested(
-                              cardId: item.card.id,
-                              amount: amount,
-                            ),
-                          ),
+                      onMarkPaid: (amount) => ctx.read<CardsBloc>().add(
+                        CardsMarkPaidRequested(
+                          cardId: item.card.id,
+                          amount: amount,
+                        ),
+                      ),
                       onMarkPending: () => ctx.read<CardsBloc>().add(
                         CardsMarkPendingRequested(cardId: item.card.id),
                       ),
@@ -202,30 +222,34 @@ class _CardsHeader extends StatelessWidget {
               letterSpacing: 0.24,
             ),
           ),
-          const SizedBox(height: 14),
-          IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'ESTIMADO',
-                    amount: estimated,
-                    paid: false,
+          // Sin tarjetas, el resumen estimado/pagado son ceros que
+          // confunden: lo ocultamos (la guía vive en el estado vacío).
+          if (state.items.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'ESTIMADO',
+                      amount: estimated,
+                      paid: false,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: _SummaryCard(
-                    label: 'PAGADO',
-                    amount: paid,
-                    paid: true,
-                    footer: 'falta ${formatCurrency(pending)}',
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _SummaryCard(
+                      label: 'PAGADO',
+                      amount: paid,
+                      paid: true,
+                      footer: 'falta ${formatCurrency(pending)}',
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );
@@ -353,50 +377,6 @@ class _ErrorView extends StatelessWidget {
             FilledButton.tonal(
               onPressed: onRetry,
               child: const Text('Reintentar'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyView extends StatelessWidget {
-  const _EmptyView();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(
-              Icons.credit_card_off_outlined,
-              size: 48,
-              color: FzColors.primary,
-            ),
-            SizedBox(height: 12),
-            Text(
-              'No tenés tarjetas activas',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: FzColors.text,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 4),
-            Text(
-              'Creá una desde Config → Tarjetas → +.',
-              style: TextStyle(
-                fontFamily: FzType.sans,
-                fontSize: 12,
-                color: FzColors.textDim,
-              ),
-              textAlign: TextAlign.center,
             ),
           ],
         ),

@@ -99,10 +99,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
         final result = installmentForPeriod(purchase, period);
         if (result == null) continue;
         activeInstallments.add(
-          ActiveInstallment(
-            purchase: purchase,
-            cuotaIndex: result.cuotaIndex,
-          ),
+          ActiveInstallment(purchase: purchase, cuotaIndex: result.cuotaIndex),
         );
       }
       activeInstallments.sort(
@@ -243,9 +240,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
 
   /// Refresh tras mutación: recarga + limpia mutating en una sola
   /// emisión, para evitar flicker entre el spinner y el estado nuevo.
-  Future<void> _silentRefreshAfterMutation(
-    Emitter<CardsBlocState> emit,
-  ) async {
+  Future<void> _silentRefreshAfterMutation(Emitter<CardsBlocState> emit) async {
     try {
       final data = await _loadCardsData();
       emit(

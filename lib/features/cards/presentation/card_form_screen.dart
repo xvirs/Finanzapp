@@ -7,12 +7,14 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/analytics_service.dart';
 import '../../../core/format.dart';
+import '../../../core/realtime_service.dart';
 import '../../../core/url.dart';
 import '../../../data/cards_repository.dart';
 import '../../../design/tokens.dart';
 import '../../../design/widgets.dart';
 import '../../../models/credit_card.dart';
 import '../../../models/enums.dart';
+import '../../../widgets/card_brand_logo.dart';
 import '../../../widgets/confirm_delete_dialog.dart';
 import '../../../widgets/form_widgets.dart';
 import '../../../widgets/fz_snackbar.dart';
@@ -33,7 +35,6 @@ class CardFormScreen extends StatefulWidget {
 class _CardFormScreenState extends State<CardFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
-  final _issuerController = TextEditingController();
   final _closingDayController = TextEditingController();
   final _dueDayController = TextEditingController();
   final _urlController = TextEditingController();
@@ -61,7 +62,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
     _nameController
       ..removeListener(_onNameChanged)
       ..dispose();
-    _issuerController.dispose();
     _closingDayController.dispose();
     _dueDayController.dispose();
     _urlController.dispose();
@@ -69,6 +69,9 @@ class _CardFormScreenState extends State<CardFormScreen> {
   }
 
   void _onNameChanged() => setState(() {});
+
+  /// Cualquier interacción que no sea con un campo de texto cierra el teclado.
+  void _dismissKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
 
   Future<void> _load() async {
     setState(() => _loading = true);
@@ -84,7 +87,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
       }
       _editingCard = card;
       _nameController.text = card.name;
-      _issuerController.text = card.issuer ?? '';
       _closingDayController.text = card.closingDay?.toString() ?? '';
       _dueDayController.text = card.dueDay?.toString() ?? '';
       _urlController.text = card.url ?? '';
@@ -106,6 +108,7 @@ class _CardFormScreenState extends State<CardFormScreen> {
 
     final repo = context.read<CardsRepository>();
     final analytics = context.read<AnalyticsService>();
+    final realtime = context.read<RealtimeService>();
     final isNew = widget.cardId == null;
     final router = GoRouter.of(context);
 
@@ -119,9 +122,6 @@ class _CardFormScreenState extends State<CardFormScreen> {
       await repo.saveCard(
         existingId: widget.cardId,
         name: _nameController.text.trim(),
-        issuer: _issuerController.text.trim().isEmpty
-            ? null
-            : _issuerController.text.trim(),
         brand: _brand,
         closingDay: int.tryParse(_closingDayController.text.trim()),
         dueDay: int.tryParse(_dueDayController.text.trim()),
@@ -132,6 +132,10 @@ class _CardFormScreenState extends State<CardFormScreen> {
       if (isNew) {
         unawaited(analytics.cardCreated(brand: _brand?.name ?? 'unknown'));
       }
+
+      // Refresh determinista del resto de vistas (Mes muestra las tarjetas),
+      // sin depender de que Supabase Realtime esté habilitado.
+      realtime.notifyLocalChange(RealtimeTable.creditCards);
 
       if (!mounted) return;
       router.pop(true);
@@ -157,10 +161,12 @@ class _CardFormScreenState extends State<CardFormScreen> {
 
     setState(() => _saving = true);
     final repo = context.read<CardsRepository>();
+    final realtime = context.read<RealtimeService>();
     final router = GoRouter.of(context);
 
     try {
       await repo.deleteCard(widget.cardId!);
+      realtime.notifyLocalChange(RealtimeTable.creditCards);
       if (!mounted) return;
       router.pop(true);
     } catch (error) {
@@ -202,118 +208,124 @@ class _CardFormScreenState extends State<CardFormScreen> {
   Widget _buildForm() {
     return AbsorbPointer(
       absorbing: _saving,
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-          children: [
-            if (widget.isEditing) ...[
-              _PreviewCard(
-                name: _nameController.text.isEmpty
-                    ? (_editingCard?.name ?? 'Tarjeta')
-                    : _nameController.text,
-                brand: _brand,
-                closingDay: int.tryParse(_closingDayController.text.trim()),
-                dueDay: int.tryParse(_dueDayController.text.trim()),
-                active: _active,
+      child: GestureDetector(
+        // Tap en cualquier zona vacía → cierra el teclado.
+        behavior: HitTestBehavior.translucent,
+        onTap: _dismissKeyboard,
+        child: Form(
+          key: _formKey,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
+            children: [
+              if (widget.isEditing) ...[
+                _PreviewCard(
+                  name: _nameController.text.isEmpty
+                      ? (_editingCard?.name ?? 'Tarjeta')
+                      : _nameController.text,
+                  brand: _brand,
+                  closingDay: int.tryParse(_closingDayController.text.trim()),
+                  dueDay: int.tryParse(_dueDayController.text.trim()),
+                  active: _active,
+                ),
+                const SizedBox(height: 14),
+              ],
+              FormFieldWrap(
+                label: 'Nombre',
+                required: true,
+                child: FormTextField(
+                  controller: _nameController,
+                  hint: 'Ej. Galicia VISA',
+                  textInputAction: TextInputAction.next,
+                  validator: (v) => (v == null || v.trim().isEmpty)
+                      ? 'Ingresá un nombre'
+                      : null,
+                ),
               ),
               const SizedBox(height: 14),
-            ],
-            FormFieldWrap(
-              label: 'Nombre',
-              required: true,
-              child: FormTextField(
-                controller: _nameController,
-                hint: 'Ej. Galicia VISA',
-                textInputAction: TextInputAction.next,
-                validator: (v) => (v == null || v.trim().isEmpty)
-                    ? 'Ingresá un nombre'
-                    : null,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Banco / emisor',
-              child: FormTextField(
-                controller: _issuerController,
-                hint: 'Ej. Banco Galicia',
-                textInputAction: TextInputAction.next,
-              ),
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Marca',
-              child: _BrandSelector(
-                value: _brand,
-                onChanged: (v) => setState(() => _brand = v),
-              ),
-            ),
-            const SizedBox(height: 14),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: FormFieldWrap(
-                    label: 'Día cierre',
-                    child: FormTextField(
-                      controller: _closingDayController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      mono: true,
-                      hint: '10',
-                      validator: _validateDay,
-                      onChanged: (_) => setState(() {}),
-                    ),
-                  ),
+              FormFieldWrap(
+                label: 'Marca',
+                child: _BrandSelector(
+                  value: _brand,
+                  onChanged: (v) {
+                    _dismissKeyboard();
+                    setState(() => _brand = v);
+                  },
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: FormFieldWrap(
-                    label: 'Día vencimiento',
-                    child: FormTextField(
-                      controller: _dueDayController,
-                      keyboardType: TextInputType.number,
-                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                      mono: true,
-                      hint: '15',
-                      validator: _validateDay,
-                      onChanged: (_) => setState(() {}),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: FormFieldWrap(
+                      label: 'Día cierre',
+                      child: FormTextField(
+                        controller: _closingDayController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        mono: true,
+                        hint: '10',
+                        validator: _validateDay,
+                        onChanged: (_) => setState(() {}),
+                      ),
                     ),
                   ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: FormFieldWrap(
+                      label: 'Día vencimiento',
+                      child: FormTextField(
+                        controller: _dueDayController,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
+                        mono: true,
+                        hint: '15',
+                        validator: _validateDay,
+                        onChanged: (_) => setState(() {}),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              FormFieldWrap(
+                label: 'Link para pagar',
+                child: FormTextField(
+                  controller: _urlController,
+                  hint: 'https://… o app://…',
+                  mono: true,
+                  keyboardType: TextInputType.url,
+                ),
+              ),
+              if (widget.isEditing) ...[
+                const SizedBox(height: 14),
+                FormActiveToggle(
+                  value: _active,
+                  onChanged: (v) {
+                    _dismissKeyboard();
+                    setState(() => _active = v);
+                  },
                 ),
               ],
-            ),
-            const SizedBox(height: 14),
-            FormFieldWrap(
-              label: 'Link para pagar',
-              child: FormTextField(
-                controller: _urlController,
-                hint: 'https://… o app://…',
-                mono: true,
-                keyboardType: TextInputType.url,
+              const SizedBox(height: 20),
+              FormSaveButton(
+                label: widget.isEditing ? 'Guardar cambios' : 'Crear tarjeta',
+                loading: _saving,
+                onPressed: _submit,
               ),
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 14),
-              FormActiveToggle(
-                value: _active,
-                onChanged: (v) => setState(() => _active = v),
-              ),
+              if (widget.isEditing) ...[
+                const SizedBox(height: 10),
+                FormDeleteButton(
+                  label: 'Eliminar tarjeta',
+                  onPressed: _saving ? null : _delete,
+                ),
+              ],
             ],
-            const SizedBox(height: 20),
-            FormSaveButton(
-              label: widget.isEditing ? 'Guardar cambios' : 'Crear tarjeta',
-              loading: _saving,
-              onPressed: _submit,
-            ),
-            if (widget.isEditing) ...[
-              const SizedBox(height: 10),
-              FormDeleteButton(
-                label: 'Eliminar tarjeta',
-                onPressed: _saving ? null : _delete,
-              ),
-            ],
-          ],
+          ),
         ),
       ),
     );
@@ -355,14 +367,6 @@ class _PreviewCard extends StatelessWidget {
             CardBrand.amex => FzColors.mpBg,
             CardBrand.other => FzColors.cardHi,
           };
-    final brandLabel = brand == null
-        ? '?'
-        : switch (brand!) {
-            CardBrand.visa => 'V',
-            CardBrand.mastercard => 'M',
-            CardBrand.amex => 'A',
-            CardBrand.other => '·',
-          };
     final subtitle = [
       if (closingDay != null) 'cierre $closingDay',
       if (dueDay != null) 'vence $dueDay',
@@ -380,15 +384,7 @@ class _PreviewCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(FzRadius.md),
             ),
             alignment: Alignment.center,
-            child: Text(
-              brandLabel,
-              style: const TextStyle(
-                color: Colors.white,
-                fontFamily: FzType.sans,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            child: CardBrandLogo(brand: brand, size: 22, color: Colors.white),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -458,6 +454,7 @@ class _BrandSelector extends StatelessWidget {
   Widget build(BuildContext context) {
     return FormFieldShell(
       onTap: () async {
+        FocusManager.instance.primaryFocus?.unfocus();
         final picked = await showModalBottomSheet<CardBrand?>(
           context: context,
           backgroundColor: FzColors.card,
@@ -506,22 +503,9 @@ class _BrandSwatch extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = brand == null
-        ? FzColors.cardHi
-        : switch (brand!) {
-            CardBrand.visa => FzColors.visaBg,
-            CardBrand.mastercard => FzColors.mastercardBg,
-            CardBrand.amex => FzColors.mpBg,
-            CardBrand.other => FzColors.cardHi,
-          };
-    return Container(
-      width: 22,
-      height: 14,
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(3),
-        border: brand == null ? Border.all(color: FzColors.border) : null,
-      ),
+    return SizedBox(
+      width: 28,
+      child: Center(child: CardBrandLogo(brand: brand, size: 20)),
     );
   }
 }

@@ -189,6 +189,12 @@ class FzShadow {
       offset: const Offset(0, 8),
     ),
   ];
+
+  /// Elevación de superficies flotantes (bottom nav píldora). Sombra neutra
+  /// y difusa para despegar la barra del fondo sin teñirla de verde.
+  static const List<BoxShadow> nav = [
+    BoxShadow(color: Color(0x66000000), blurRadius: 24, offset: Offset(0, 8)),
+  ];
 }
 
 /// Duraciones de animación.

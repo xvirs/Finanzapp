@@ -22,45 +22,28 @@ class MonthHeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Sin items en el mes (primer uso o período vacío) no mostramos el
+    // resumen estimado/pagado, la barra de progreso ni los filtros: son
+    // datos vacíos que confunden. Dejamos solo el navegador de mes; la
+    // guía para cargar el primer gasto vive en el estado vacío del body.
+    final hasItems = state.groups.isNotEmpty;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _Caplabel(state),
-          const SizedBox(height: 10),
+          const Text('Inicio', style: FzText.h1),
+          const SizedBox(height: 14),
           _MonthNav(state: state),
-          const SizedBox(height: 16),
-          _SummaryGrid(state: state),
-          const SizedBox(height: 14),
-          _ProgressRow(state: state),
-          const SizedBox(height: 14),
-          _FilterTabs(state: state),
+          if (hasItems) ...[
+            const SizedBox(height: 16),
+            _SummaryGrid(state: state),
+            const SizedBox(height: 14),
+            _ProgressRow(state: state),
+            const SizedBox(height: 14),
+            _FilterTabs(state: state),
+          ],
         ],
-      ),
-    );
-  }
-}
-
-class _Caplabel extends StatelessWidget {
-  const _Caplabel(this.state);
-  final MonthBlocState state;
-
-  @override
-  Widget build(BuildContext context) {
-    final label = state.isFuturePeriod
-        ? 'MES FUTURO'
-        : state.isPastPeriod
-        ? 'MES PASADO'
-        : 'MES ACTUAL';
-    return Text(
-      label,
-      style: const TextStyle(
-        fontFamily: FzType.mono,
-        fontSize: 11,
-        fontWeight: FontWeight.w500,
-        letterSpacing: 0.66,
-        color: FzColors.textMute,
       ),
     );
   }
@@ -77,20 +60,16 @@ class _MonthNav extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        IconButton(
-          icon: Icon(
-            Icons.chevron_left_rounded,
-            size: 20,
-            color: canGoPrevious ? FzColors.textDim : FzColors.textMute,
-          ),
-          padding: const EdgeInsets.all(4),
-          constraints: const BoxConstraints(),
-          onPressed: canGoPrevious
-              ? () => context.read<MonthBloc>().add(
+        // Flecha visible solo si se puede navegar; si no, un hueco del
+        // mismo ancho para que el mes quede centrado.
+        canGoPrevious
+            ? _NavArrow(
+                icon: Icons.chevron_left_rounded,
+                onPressed: () => context.read<MonthBloc>().add(
                   MonthRequested(state.period.previous()),
-                )
-              : null,
-        ),
+                ),
+              )
+            : const SizedBox(width: 28, height: 28),
         Text(
           _formatMonth(state.period),
           style: const TextStyle(
@@ -101,20 +80,14 @@ class _MonthNav extends StatelessWidget {
             color: FzColors.text,
           ),
         ),
-        IconButton(
-          icon: Icon(
-            Icons.chevron_right_rounded,
-            size: 20,
-            color: canGoNext ? FzColors.textDim : FzColors.textMute,
-          ),
-          padding: const EdgeInsets.all(4),
-          constraints: const BoxConstraints(),
-          onPressed: canGoNext
-              ? () => context.read<MonthBloc>().add(
+        canGoNext
+            ? _NavArrow(
+                icon: Icons.chevron_right_rounded,
+                onPressed: () => context.read<MonthBloc>().add(
                   MonthRequested(state.period.next()),
-                )
-              : null,
-        ),
+                ),
+              )
+            : const SizedBox(width: 28, height: 28),
       ],
     );
   }
@@ -123,6 +96,23 @@ class _MonthNav extends StatelessWidget {
   String _formatMonth(PeriodKey p) {
     final long = p.formatLong(); // "Abril de 2026"
     return long.replaceFirst(' de ', ' ');
+  }
+}
+
+class _NavArrow extends StatelessWidget {
+  const _NavArrow({required this.icon, required this.onPressed});
+
+  final IconData icon;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: Icon(icon, size: 20, color: FzColors.textDim),
+      padding: const EdgeInsets.all(4),
+      constraints: const BoxConstraints(),
+      onPressed: onPressed,
+    );
   }
 }
 
@@ -209,8 +199,9 @@ class _IncomeBalanceRow extends StatelessWidget {
             child: _MiniStat(
               label: 'SALDO',
               amount: balance,
-              valueColor:
-                  balancePositive ? FzColors.primaryHi : FzColors.lateInk,
+              valueColor: balancePositive
+                  ? FzColors.primaryHi
+                  : FzColors.lateInk,
             ),
           ),
         ],

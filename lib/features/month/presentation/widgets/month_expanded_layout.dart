@@ -321,10 +321,7 @@ class _NavArrow extends StatelessWidget {
       child: IconButton(
         padding: EdgeInsets.zero,
         iconSize: 20,
-        icon: Icon(
-          icon,
-          color: enabled ? FzColors.textDim : FzColors.textMute,
-        ),
+        icon: Icon(icon, color: enabled ? FzColors.textDim : FzColors.textMute),
         onPressed: enabled ? onTap : null,
       ),
     );
@@ -815,8 +812,7 @@ class _DetailPane extends StatelessWidget {
   /// ordenadas de mayor a menor.
   List<({String key, String title, String emoji, double amount})>
   _distributionRows() {
-    final rows =
-        <({String key, String title, String emoji, double amount})>[];
+    final rows = <({String key, String title, String emoji, double amount})>[];
     for (final g in state.groups) {
       if (g.estimatedTotal <= 0) continue;
       rows.add((
@@ -1086,11 +1082,7 @@ class _UpcomingPanel extends StatelessWidget {
           for (var i = 0; i < items.length; i++) ...[
             _UpcomingRow(item: items[i], period: period),
             if (i < items.length - 1)
-              const Divider(
-                height: 12,
-                thickness: 0.5,
-                color: FzColors.border,
-              ),
+              const Divider(height: 12, thickness: 0.5, color: FzColors.border),
           ],
         ],
       ),
@@ -1156,7 +1148,9 @@ class _UpcomingRow extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          item.estimatedAmount == null ? '—' : formatCurrency(item.estimatedAmount),
+          item.estimatedAmount == null
+              ? '—'
+              : formatCurrency(item.estimatedAmount),
           maxLines: 1,
           softWrap: false,
           style: TextStyle(
@@ -1175,10 +1169,7 @@ class _UpcomingRow extends StatelessWidget {
 /// Panel "Distribución por categoría": para cada grupo activo, una fila
 /// con emoji + nombre + barra horizontal proporcional + monto/%.
 class _DistributionPanel extends StatelessWidget {
-  const _DistributionPanel({
-    required this.rows,
-    required this.estimatedTotal,
-  });
+  const _DistributionPanel({required this.rows, required this.estimatedTotal});
 
   final List<({String key, String title, String emoji, double amount})> rows;
   final double estimatedTotal;
@@ -1187,7 +1178,10 @@ class _DistributionPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     // El máximo dentro del panel se usa como referencia para escalar
     // las barras (la categoría más grande ocupa el 100% del ancho).
-    final maxAmount = rows.fold<double>(0, (m, r) => r.amount > m ? r.amount : m);
+    final maxAmount = rows.fold<double>(
+      0,
+      (m, r) => r.amount > m ? r.amount : m,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -1252,7 +1246,9 @@ class _DistributionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final ratio = maxAmount == 0 ? 0.0 : (row.amount / maxAmount).clamp(0.0, 1.0);
+    final ratio = maxAmount == 0
+        ? 0.0
+        : (row.amount / maxAmount).clamp(0.0, 1.0);
     final pct = total == 0 ? 0 : ((row.amount / total) * 100).round();
 
     return Column(
@@ -1344,8 +1340,8 @@ class _ItemHeroState extends State<_ItemHero> {
     // Si cambia el item (selección distinta) o el monto pagado se actualizó
     // por otro flujo (otro device, ediciones), repoblamos el field.
     final itemChanged = oldWidget.item.key != widget.item.key;
-    final amountChanged = oldWidget.item.payment?.amountReal !=
-        widget.item.payment?.amountReal;
+    final amountChanged =
+        oldWidget.item.payment?.amountReal != widget.item.payment?.amountReal;
     if (itemChanged || amountChanged) {
       _amountController.text = _initialAmountText();
     }
@@ -1389,9 +1385,7 @@ class _ItemHeroState extends State<_ItemHero> {
 
   void _submitPending() {
     if (widget.isMutating) return;
-    context.read<MonthBloc>().add(
-      MonthMarkPendingRequested(item: widget.item),
-    );
+    context.read<MonthBloc>().add(MonthMarkPendingRequested(item: widget.item));
   }
 
   Future<void> _openPayUrl() async {
@@ -1841,11 +1835,7 @@ class _DetailEmpty extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: const [
-            Icon(
-              Icons.touch_app_outlined,
-              size: 36,
-              color: FzColors.textMute,
-            ),
+            Icon(Icons.touch_app_outlined, size: 36, color: FzColors.textMute),
             SizedBox(height: 10),
             Text(
               'Seleccioná una cuenta',

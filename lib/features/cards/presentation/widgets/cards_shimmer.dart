@@ -19,14 +19,14 @@ class CardsHeaderShimmer extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: const [
           ShimmerBox(width: 130, height: 26, radius: 5),
-          SizedBox(height: 6),
+          SizedBox(height: 2),
           ShimmerBox(width: 110, height: 12, radius: 2),
           SizedBox(height: 14),
           Row(
             children: [
               Expanded(child: _SummaryCardShimmer()),
               SizedBox(width: 10),
-              Expanded(child: _SummaryCardShimmer()),
+              Expanded(child: _SummaryCardShimmer(withFooter: true)),
             ],
           ),
         ],
@@ -36,7 +36,9 @@ class CardsHeaderShimmer extends StatelessWidget {
 }
 
 class _SummaryCardShimmer extends StatelessWidget {
-  const _SummaryCardShimmer();
+  const _SummaryCardShimmer({this.withFooter = false});
+
+  final bool withFooter;
 
   @override
   Widget build(BuildContext context) {
@@ -47,12 +49,16 @@ class _SummaryCardShimmer extends StatelessWidget {
         borderRadius: BorderRadius.circular(FzRadius.xl),
         border: Border.all(color: FzColors.border),
       ),
-      child: const Column(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ShimmerBox(width: 72, height: 10, radius: 2),
-          SizedBox(height: 8),
-          ShimmerBox(width: 140, height: 22, radius: 4),
+          const ShimmerBox(width: 72, height: 10, radius: 2),
+          const SizedBox(height: 8),
+          const ShimmerBox(width: 140, height: 22, radius: 4),
+          if (withFooter) ...[
+            const SizedBox(height: 6),
+            const ShimmerBox(width: 90, height: 11, radius: 2),
+          ],
         ],
       ),
     );

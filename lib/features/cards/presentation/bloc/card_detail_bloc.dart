@@ -200,5 +200,4 @@ class CardDetailBloc extends Bloc<CardDetailEvent, CardDetailBlocState> {
       emit(state.copyWith(errorMessage: error.toString()));
     }
   }
-
 }

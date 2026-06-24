@@ -35,10 +35,8 @@ class AnalyticsService {
   // Eventos de la app. Lista cerrada — agregar acá los nuevos.
   // ============================================================
 
-  Future<void> screenView(String name) => _log('screen_view', {
-    'screen_name': name,
-    'screen_class': name,
-  });
+  Future<void> screenView(String name) =>
+      _log('screen_view', {'screen_name': name, 'screen_class': name});
 
   Future<void> billCreated({required String kind}) =>
       _log('bill_created', {'kind': kind});

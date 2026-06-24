@@ -120,11 +120,7 @@ class _PayCta extends StatelessWidget {
     final uri = Uri.tryParse(url);
     if (uri == null) {
       if (context.mounted) {
-        showFzSnack(
-          context,
-          'El link no es válido.',
-          kind: FzSnackKind.error,
-        );
+        showFzSnack(context, 'El link no es válido.', kind: FzSnackKind.error);
       }
       return;
     }

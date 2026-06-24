@@ -32,13 +32,22 @@ import 'features/config_settings/presentation/incomes_list_screen.dart';
 import 'features/month/presentation/bloc/month_bloc.dart';
 import 'features/month/presentation/month_screen.dart';
 import 'shell/app_shell.dart';
+import 'shell/shell_branch_container.dart';
 
 class AppRouter {
   AppRouter(this._authBloc);
 
   final AuthBloc _authBloc;
 
+  /// Navigator raíz — usado para flujos full-screen que deben vivir por
+  /// encima del shell (y no dentro de la rama de un tab), como el alta de
+  /// gasto. Así, al terminar, podemos `go('/')` sin dejar el stack del tab
+  /// colgado.
+  static final GlobalKey<NavigatorState> rootNavigatorKey =
+      GlobalKey<NavigatorState>();
+
   late final GoRouter router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/',
     refreshListenable: _AuthRefreshNotifier(_authBloc),
     redirect: _redirect,
@@ -48,9 +57,16 @@ class AppRouter {
         name: 'login',
         builder: (context, state) => const LoginScreen(),
       ),
-      StatefulShellRoute.indexedStack(
+      StatefulShellRoute(
         builder: (context, state, navigationShell) =>
             AppShell(navigationShell: navigationShell),
+        // Contenedor swipeable: las 3 ramas en un PageView para navegar
+        // deslizando horizontalmente, sincronizado con la bottom nav.
+        navigatorContainerBuilder: (context, navigationShell, children) =>
+            ShellBranchContainer(
+              navigationShell: navigationShell,
+              children: children,
+            ),
         branches: [
           StatefulShellBranch(
             routes: [
@@ -160,6 +176,9 @@ class AppRouter {
                       GoRoute(
                         path: 'new',
                         name: 'bill-new',
+                        // Alta full-screen sobre el shell: al guardar hacemos
+                        // go('/') y no queda nada montado en la rama de config.
+                        parentNavigatorKey: rootNavigatorKey,
                         builder: (context, state) => const BillFormScreen(),
                       ),
                       GoRoute(
@@ -208,6 +227,7 @@ class AppRouter {
                       GoRoute(
                         path: 'new',
                         name: 'income-new',
+                        parentNavigatorKey: rootNavigatorKey,
                         builder: (context, state) => const IncomeFormScreen(),
                       ),
                       GoRoute(

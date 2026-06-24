@@ -5,6 +5,7 @@ import '../../../../design/tokens.dart';
 import '../../../../domain/period.dart';
 import '../../../../domain/urgency.dart';
 import '../../../../models/enums.dart';
+import '../../../../widgets/card_brand_logo.dart';
 import '../../../../widgets/fz_snackbar.dart';
 import '../../domain/card_list_item_data.dart';
 
@@ -90,11 +91,7 @@ class _CardListItemState extends State<CardListItem> {
     final raw = _amountController.text.trim().replaceAll(',', '.');
     final value = double.tryParse(raw);
     if (value == null || value <= 0) {
-      showFzSnack(
-        context,
-        'Ingresá un monto válido.',
-        kind: FzSnackKind.error,
-      );
+      showFzSnack(context, 'Ingresá un monto válido.', kind: FzSnackKind.error);
       return;
     }
     widget.onMarkPaid(value);
@@ -360,29 +357,7 @@ class _BrandChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (label, bg) = switch (brand) {
-      CardBrand.visa => ('VISA', FzColors.visaBg),
-      CardBrand.mastercard => ('Mastercard', FzColors.mastercardBg),
-      CardBrand.amex => ('AMEX', FzColors.mpBg),
-      CardBrand.other => ('Otra', FzColors.cardHi),
-    };
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(FzRadius.xs),
-      ),
-      child: Text(
-        label,
-        style: const TextStyle(
-          color: Colors.white,
-          fontFamily: FzType.sans,
-          fontSize: 9,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.36,
-        ),
-      ),
-    );
+    return CardBrandLogo(brand: brand, size: 22);
   }
 }
 

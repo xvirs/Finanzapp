@@ -3,6 +3,7 @@
 // Kit de widgets reutilizables del sistema de diseño A · Banco premium.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'tokens.dart';
 
 /// Card con borde por defecto, sin sombra.
@@ -261,7 +262,23 @@ class FzLogo extends StatelessWidget {
   }
 }
 
-/// Bottom nav de 3 tabs (Mes / Tarjetas / Config). Tab activo: pill verde.
+/// Items de navegación, fuente única para bottom nav y rail.
+const List<(String, IconData)> kFzNavItems = [
+  ('Inicio', Icons.home_rounded),
+  ('Tarjetas', Icons.credit_card_rounded),
+  ('Gestión', Icons.tune_rounded),
+];
+
+/// Bottom nav flotante en forma de píldora (estilo apps modernas).
+///
+/// La barra flota sobre el fondo con margen lateral y sombra ([FzShadow.nav]),
+/// con esquinas totalmente redondeadas ([FzRadius.pill]). El tab activo se
+/// expande mostrando ícono + label con fondo verde suave; los inactivos
+/// muestran solo el ícono. Las transiciones son implícitas
+/// ([AnimatedContainer]/[AnimatedSize]) para mantenerse fluidas y baratas.
+///
+/// Se renderiza en el slot `bottomNavigationBar` del Scaffold, así que reserva
+/// su propio alto y nunca tapa el contenido scrolleable de las pantallas.
 class FzBottomNav extends StatelessWidget {
   final int index;
   final ValueChanged<int> onChange;
@@ -269,63 +286,123 @@ class FzBottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
-      ('Inicio', Icons.home_outlined),
-      ('Tarjetas', Icons.credit_card_outlined),
-      ('Gestión', Icons.tune),
-    ];
-    return Container(
-      decoration: const BoxDecoration(
-        color: FzColors.bg,
-        border: Border(top: BorderSide(color: FzColors.border)),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(
+        FzSpace.x6,
+        FzSpace.x2,
+        FzSpace.x6,
+        FzSpace.x3,
       ),
-      padding: const EdgeInsets.fromLTRB(0, 8, 0, 12),
+      // Row (no Center) para centrar horizontalmente sin expandir el alto:
+      // Center se estiraría a todo el alto del slot bottomNavigationBar y
+      // empujaría el body a 0. El Row ajusta su alto al de la píldora.
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          for (var i = 0; i < items.length; i++)
-            Expanded(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => onChange(i),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: i == index
-                            ? FzColors.primarySoft
-                            : Colors.transparent,
-                        borderRadius: BorderRadius.circular(FzRadius.md),
-                      ),
-                      child: Icon(
-                        items[i].$2,
-                        size: 20,
-                        color: i == index
-                            ? FzColors.primary
-                            : FzColors.textMute,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      items[i].$1,
-                      style: TextStyle(
-                        fontFamily: FzType.sans,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w500,
-                        color: i == index
-                            ? FzColors.primary
-                            : FzColors.textMute,
-                      ),
-                    ),
-                  ],
-                ),
+          Container(
+            padding: const EdgeInsets.all(6),
+            decoration: BoxDecoration(
+              color: FzColors.cardHi,
+              borderRadius: BorderRadius.circular(FzRadius.pill),
+              border: Border.all(color: FzColors.borderHi),
+              boxShadow: FzShadow.nav,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var i = 0; i < kFzNavItems.length; i++)
+                  _PillNavItem(
+                    label: kFzNavItems[i].$1,
+                    icon: kFzNavItems[i].$2,
+                    selected: i == index,
+                    // Siempre notificamos, incluso al tocar la pestaña ya
+                    // activa: eso permite volver a la página principal de la
+                    // sección (initialLocation) cuando hay un sub-flujo abierto.
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      onChange(i);
+                    },
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Un tab de [FzBottomNav]. Activo: píldora verde con ícono + label.
+/// Inactivo: solo ícono. El label aparece/desaparece con [AnimatedSize].
+class _PillNavItem extends StatelessWidget {
+  const _PillNavItem({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final fg = selected ? FzColors.primary : FzColors.textMute;
+    return Semantics(
+      button: true,
+      selected: selected,
+      label: label,
+      child: AnimatedContainer(
+        duration: FzMotion.normal,
+        curve: FzMotion.easing,
+        margin: const EdgeInsets.symmetric(horizontal: 2),
+        decoration: BoxDecoration(
+          color: selected ? FzColors.primarySoft : Colors.transparent,
+          borderRadius: BorderRadius.circular(FzRadius.pill),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(FzRadius.pill),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: selected ? FzSpace.x4 : FzSpace.x3,
+                vertical: FzSpace.x3,
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 22, color: fg),
+                  AnimatedSize(
+                    duration: FzMotion.normal,
+                    curve: FzMotion.easing,
+                    child: selected
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: FzSpace.x2),
+                            child: Text(
+                              label,
+                              maxLines: 1,
+                              softWrap: false,
+                              overflow: TextOverflow.clip,
+                              style: const TextStyle(
+                                fontFamily: FzType.sans,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: -0.2,
+                                color: FzColors.primary,
+                              ),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
               ),
             ),
-        ],
+          ),
+        ),
       ),
     );
   }
@@ -351,11 +428,7 @@ class FzNavRail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final items = const [
-      ('Inicio', Icons.home_outlined),
-      ('Tarjetas', Icons.credit_card_outlined),
-      ('Gestión', Icons.tune),
-    ];
+    const items = kFzNavItems;
 
     return Container(
       width: extended ? 220 : 88,
