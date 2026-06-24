@@ -77,6 +77,15 @@ jobs:
           cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
 
       - run: flutter pub get
+
+      # El proyecto tiene un build phase (de `flutterfire configure`) que sube
+      # símbolos de Crashlytics llamando al CLI `flutterfire`. Sin él, el build
+      # de Xcode falla con "flutterfire: command not found".
+      - name: Install FlutterFire CLI
+        run: |
+          dart pub global activate flutterfire_cli
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
+
       - run: cd ios && pod install && cd ..
 
       - name: Build IPA
