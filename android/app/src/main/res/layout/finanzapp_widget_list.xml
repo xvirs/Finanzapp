@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:background="@drawable/finanzapp_widget_bg"
-    android:padding="16dp">
+    android:padding="14dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -31,13 +31,9 @@
             android:fontFamily="monospace" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/r0"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+    <LinearLayout android:id="@+id/r0" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:layout_marginTop="10dp">
         <TextView android:id="@+id/r0_text" android:layout_width="0dp"
             android:layout_height="wrap_content" android:layout_weight="1"
             android:maxLines="1" android:ellipsize="end" android:text=""
@@ -48,13 +44,9 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/r1"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+    <LinearLayout android:id="@+id/r1" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:layout_marginTop="9dp">
         <TextView android:id="@+id/r1_text" android:layout_width="0dp"
             android:layout_height="wrap_content" android:layout_weight="1"
             android:maxLines="1" android:ellipsize="end" android:text=""
@@ -65,13 +57,9 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/r2"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+    <LinearLayout android:id="@+id/r2" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:layout_marginTop="9dp">
         <TextView android:id="@+id/r2_text" android:layout_width="0dp"
             android:layout_height="wrap_content" android:layout_weight="1"
             android:maxLines="1" android:ellipsize="end" android:text=""
@@ -82,13 +70,9 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <LinearLayout
-        android:id="@+id/r3"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:orientation="horizontal"
-        android:gravity="center_vertical">
+    <LinearLayout android:id="@+id/r3" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:layout_marginTop="9dp">
         <TextView android:id="@+id/r3_text" android:layout_width="0dp"
             android:layout_height="wrap_content" android:layout_weight="1"
             android:maxLines="1" android:ellipsize="end" android:text=""
@@ -99,27 +83,16 @@
             android:textStyle="bold" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/w_list_empty"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Todo al día este mes"
-        android:textColor="#8A9590"
-        android:textSize="13sp"
-        android:visibility="gone" />
+    <TextView android:id="@+id/w_list_empty" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="10dp"
+        android:text="Todo al día este mes" android:textColor="#8A9590"
+        android:textSize="13sp" android:visibility="gone" />
 
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="8dp"
-        android:background="#1F2A26" />
+    <LinearLayout android:layout_width="match_parent" android:layout_height="1dp"
+        android:layout_marginTop="12dp" android:background="#1F2A26" />
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="9dp"
-        android:orientation="horizontal">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginTop="10dp">
         <TextView android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:text="Total pendiente"
             android:textColor="#8A9590" android:textSize="11sp" />
