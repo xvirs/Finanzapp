@@ -14,16 +14,21 @@ import '../models/enums.dart';
 import 'format.dart';
 import 'realtime_service.dart';
 
-/// Nombre del App Group iOS y del grupo de prefs compartido. Debe coincidir
-/// con el configurado en el target de WidgetKit (entitlements).
+/// App Group iOS / grupo de prefs compartido. Debe coincidir con el
+/// entitlement de los targets iOS y con el appGroupId del widget nativo.
 const _iosAppGroupId = 'group.app.finanzapp.client';
 
-/// Providers nativos que se refrescan al actualizar los datos.
-const _androidProvider = 'FinanzappWidgetProvider';
+/// Providers nativos Android (uno por tamaño) + nombre del widget iOS.
+const _androidProviders = [
+  'FinanzappSmallWidgetProvider',
+  'FinanzappMediumWidgetProvider',
+  'FinanzappListWidgetProvider',
+];
 const _iosWidgetName = 'FinanzappWidget';
 
-/// Meses en español para el label del período (evita depender de init de
-/// locale de intl en un contexto de servicio).
+/// Cantidad de próximos pagos que empujamos para el widget de lista.
+const _listSize = 4;
+
 const _months = [
   'enero',
   'febrero',
@@ -40,10 +45,7 @@ const _months = [
 ];
 
 /// Empuja al widget de pantalla de inicio (Android + iOS) un resumen del mes
-/// actual: cuánto falta pagar, progreso, y el próximo vencimiento.
-///
-/// "Nuke and pave" como [NotificationService]: recalcula todo el set en cada
-/// cambio de Realtime (debounced) y al arrancar. No trackea diferencias.
+/// actual: cuánto falta pagar, progreso, y los próximos vencimientos.
 class HomeWidgetService {
   HomeWidgetService({
     required BillsRepository billsRepository,
@@ -84,7 +86,6 @@ class HomeWidgetService {
     _debounce?.cancel();
     await _realtimeSubscription?.cancel();
     _realtimeSubscription = null;
-    await _clear();
   }
 
   /// Recalcula el resumen del mes y lo empuja a los widgets nativos.
@@ -99,17 +100,13 @@ class HomeWidgetService {
         _installmentsRepository.fetchAll(),
         _paymentsRepository.fetchForPeriod(periodIso),
       ]);
-      final bills = results[0] as List;
-      final cards = results[1] as List;
-      final purchases = results[2] as List;
-      final payments = results[3] as List;
 
       final items = buildMonthChecklist(
         period: period,
-        bills: bills.cast(),
-        cards: cards.cast(),
-        purchases: purchases.cast(),
-        payments: payments.cast(),
+        bills: (results[0] as List).cast(),
+        cards: (results[1] as List).cast(),
+        purchases: (results[2] as List).cast(),
+        payments: (results[3] as List).cast(),
       );
       final summary = summarizeChecklist(items, period: period);
 
@@ -123,9 +120,10 @@ class HomeWidgetService {
                 .clamp(0, 100)
                 .round();
 
-      final next = _nextDue(items, period);
+      final upcoming = _upcoming(items, period);
+      final next = upcoming.isNotEmpty ? upcoming.first : null;
 
-      await Future.wait([
+      final writes = <Future<void>>[
         HomeWidget.saveWidgetData('period', _periodLabel(period)),
         HomeWidget.saveWidgetData('falta', formatCurrency(falta.toDouble())),
         HomeWidget.saveWidgetData(
@@ -133,19 +131,33 @@ class HomeWidgetService {
           '${summary.paidCount}/${summary.totalCount} pagadas',
         ),
         HomeWidget.saveWidgetData('progress_percent', percent),
+        // Próximo (widget chico + mediano)
+        HomeWidget.saveWidgetData('has_next', next != null),
         HomeWidget.saveWidgetData('next_name', next?.name ?? ''),
         HomeWidget.saveWidgetData('next_amount', next?.amount ?? ''),
         HomeWidget.saveWidgetData('next_when', next?.whenLabel ?? ''),
         HomeWidget.saveWidgetData('next_overdue', next?.overdue ?? false),
-        HomeWidget.saveWidgetData('has_next', next != null),
-      ]);
-
-      await Future.wait([
-        HomeWidget.updateWidget(
-          androidName: _androidProvider,
-          iOSName: _iosWidgetName,
+        // Lista (widget grande)
+        HomeWidget.saveWidgetData(
+          'upcoming_count',
+          upcoming.length.clamp(0, _listSize),
         ),
-      ]);
+      ];
+      for (var i = 0; i < _listSize; i++) {
+        final it = i < upcoming.length ? upcoming[i] : null;
+        writes.addAll([
+          HomeWidget.saveWidgetData('item${i}_name', it?.name ?? ''),
+          HomeWidget.saveWidgetData('item${i}_amount', it?.amount ?? ''),
+          HomeWidget.saveWidgetData('item${i}_when', it?.whenLabel ?? ''),
+          HomeWidget.saveWidgetData('item${i}_overdue', it?.overdue ?? false),
+        ]);
+      }
+      await Future.wait(writes);
+
+      for (final provider in _androidProviders) {
+        await HomeWidget.updateWidget(androidName: provider);
+      }
+      await HomeWidget.updateWidget(iOSName: _iosWidgetName);
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('HomeWidgetService.update() falló: $e\n$st');
@@ -153,76 +165,62 @@ class HomeWidgetService {
     }
   }
 
-  Future<void> _clear() async {
-    await HomeWidget.saveWidgetData('has_next', false);
-    await HomeWidget.saveWidgetData('falta', '—');
-    await HomeWidget.updateWidget(
-      androidName: _androidProvider,
-      iOSName: _iosWidgetName,
-    );
-  }
-
-  /// Próximo vencimiento: el ítem no pagado con vencimiento más cercano.
-  /// Prefiere el próximo por venir; si todos están vencidos, el menos vencido.
-  _NextDue? _nextDue(List<MonthItem> items, PeriodKey period) {
+  /// Ítems no pagados ordenados por cercanía de vencimiento: primero los que
+  /// están por venir (días>=0) de más cercano a más lejano, luego los vencidos
+  /// del menos al más vencido.
+  List<_DueItem> _upcoming(List<MonthItem> items, PeriodKey period) {
     final now = DateTime.now();
     final lastDay = DateTime(period.year, period.month + 2, 0).day;
 
-    ({MonthItem item, int days})? best;
+    final list = <_DueItem>[];
     for (final item in items) {
       if (item.payment?.status == PaymentStatus.paid) continue;
       final day = item.dayOfMonth;
       final amount = item.estimatedAmount;
       if (day == null || amount == null || amount <= 0) continue;
-      final dueDay = day.clamp(1, lastDay);
-      final days = dueDay - now.day;
-      if (best == null) {
-        best = (item: item, days: days);
-        continue;
-      }
-      // Preferir el próximo por venir (days>=0) más cercano; entre vencidos,
-      // el menos vencido (days más alto, es decir más cerca de hoy).
-      final b = best;
-      final betterUpcoming = days >= 0 && (b.days < 0 || days < b.days);
-      final betterOverdue = days < 0 && b.days < 0 && days > b.days;
-      if (betterUpcoming || betterOverdue) {
-        best = (item: item, days: days);
-      }
+      final days = day.clamp(1, lastDay) - now.day;
+      list.add(
+        _DueItem(
+          name: item.bill?.name ?? item.card?.name ?? 'Pago',
+          amount: formatCurrency(amount),
+          whenLabel: _whenLabel(days),
+          overdue: days < 0,
+          days: days,
+        ),
+      );
     }
-    if (best == null) return null;
-
-    final item = best.item;
-    final days = best.days;
-    final name = item.bill?.name ?? item.card?.name ?? 'Pago';
-    final whenLabel = days > 1
-        ? 'en $days días'
-        : days == 1
-        ? 'mañana'
-        : days == 0
-        ? 'vence hoy'
-        : 'vencido';
-    return _NextDue(
-      name: name,
-      amount: formatCurrency(item.estimatedAmount!),
-      whenLabel: whenLabel,
-      overdue: days < 0,
-    );
+    list.sort((a, b) {
+      final au = a.days >= 0, bu = b.days >= 0;
+      if (au != bu) return au ? -1 : 1; // por-venir antes que vencidos
+      return au ? a.days.compareTo(b.days) : b.days.compareTo(a.days);
+    });
+    return list;
   }
+
+  String _whenLabel(int days) => days > 1
+      ? 'en $days días'
+      : days == 1
+      ? 'mañana'
+      : days == 0
+      ? 'vence hoy'
+      : 'vencido';
 
   String _periodLabel(PeriodKey period) =>
       '${_months[period.month]} ${period.year}';
 }
 
-class _NextDue {
-  const _NextDue({
+class _DueItem {
+  const _DueItem({
     required this.name,
     required this.amount,
     required this.whenLabel,
     required this.overdue,
+    required this.days,
   });
 
   final String name;
   final String amount;
   final String whenLabel;
   final bool overdue;
+  final int days;
 }
