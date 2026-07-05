@@ -28,19 +28,19 @@ class MonthHeaderSection extends StatelessWidget {
     // guía para cargar el primer gasto vive en el estado vacío del body.
     final hasItems = state.groups.isNotEmpty;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text('Inicio', style: FzText.h1),
-          const SizedBox(height: 14),
+          const SizedBox(height: 6),
           _MonthNav(state: state),
           if (hasItems) ...[
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
             _SummaryGrid(state: state),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             _ProgressRow(state: state),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             _FilterTabs(state: state),
           ],
         ],
