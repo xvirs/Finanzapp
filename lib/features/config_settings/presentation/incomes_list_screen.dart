@@ -138,7 +138,9 @@ class _Body extends StatelessWidget {
                 )
               : ListView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 24),
+                  padding: EdgeInsets.only(
+                    bottom: fzBottomNavClearance(context),
+                  ),
                   children: [
                     _SummaryRow(state: state),
                     const SizedBox(height: 12),

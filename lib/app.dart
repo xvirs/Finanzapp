@@ -155,6 +155,9 @@ class _FinanzappAppState extends State<FinanzappApp> {
         RepositoryProvider.value(value: _incomesRepository),
         RepositoryProvider.value(value: _installmentsRepository),
         RepositoryProvider.value(value: _paymentsRepository),
+        // NotificationService: para la pantalla de diagnóstico de
+        // notificaciones en Ajustes (estado de permiso + pruebas).
+        RepositoryProvider.value(value: _notificationService),
         // FirebaseSetup expuesto para que cualquier screen llame
         // `context.read<FirebaseSetup>().analytics?.logEvent(...)`.
         // Si Firebase no fue configurado todavía, los nullable getters

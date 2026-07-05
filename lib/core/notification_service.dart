@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 
@@ -78,6 +79,44 @@ class NotificationService {
     return iosOk ?? androidOk ?? true;
   }
 
+  /// Estado del permiso de notificaciones: true concedido, false denegado,
+  /// null si no se pudo determinar. Para la pantalla de diagnóstico.
+  Future<bool?> permissionStatus() async {
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    if (android != null) return android.areNotificationsEnabled();
+    final ios = _plugin
+        .resolvePlatformSpecificImplementation<
+          IOSFlutterLocalNotificationsPlugin
+        >();
+    final opts = await ios?.checkPermissions();
+    return opts?.isEnabled;
+  }
+
+  /// Cantidad de notificaciones programadas pendientes (diagnóstico).
+  Future<int> pendingCount() async =>
+      (await _plugin.pendingNotificationRequests()).length;
+
+  /// Crea el canal de Android explícitamente (idempotente). En Android el
+  /// canal es necesario para que las notificaciones se muestren con la
+  /// importancia correcta; lo creamos en el arranque y antes de las pruebas.
+  Future<void> ensureChannel() async {
+    final android = _plugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    await android?.createNotificationChannel(
+      const AndroidNotificationChannel(
+        _channelId,
+        _channelName,
+        description: _channelDescription,
+        importance: Importance.high,
+      ),
+    );
+  }
+
   /// Arranca: pide permisos, hace reconcile inicial y se subscribe a
   /// Realtime para reconciliar en cada cambio.
   Future<void> start() async {
@@ -85,6 +124,7 @@ class NotificationService {
     _started = true;
 
     await requestPermissions();
+    await ensureChannel();
     await reconcile();
 
     _realtimeSubscription = _realtimeService.changes.listen((_) {
@@ -196,10 +236,13 @@ class NotificationService {
       for (final r in reminders) {
         await _scheduleReminder(r);
       }
-    } catch (_) {
-      // Silencioso: si falla el fetch (sin internet, sesión rota), las
-      // notificaciones del ciclo anterior siguen vigentes y reintentamos
-      // en la próxima reconciliación.
+    } catch (e, st) {
+      // Si falla el fetch (sin internet, sesión rota), las notificaciones del
+      // ciclo anterior siguen vigentes y reintentamos en la próxima
+      // reconciliación. En debug logueamos para no quedar a ciegas.
+      if (kDebugMode) {
+        debugPrint('NotificationService.reconcile() falló: $e\n$st');
+      }
     }
   }
 

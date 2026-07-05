@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/format.dart';
 import '../../../design/tokens.dart';
+import '../../../design/widgets.dart';
 import '../../../models/bill.dart';
 import '../../../models/enums.dart';
 import '../../../widgets/animated_amount.dart';
@@ -95,7 +96,7 @@ class _Body extends StatelessWidget {
           },
           child: ListView(
             physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.only(bottom: 24),
+            padding: EdgeInsets.only(bottom: fzBottomNavClearance(context)),
             children: [
               _InstallmentsSection(state: state),
               _DebitsSection(state: state),

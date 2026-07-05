@@ -26,6 +26,7 @@ class MonthItemCard extends StatelessWidget {
     required this.period,
     required this.expanded,
     required this.onTap,
+    required this.onLongPress,
     required this.isMutating,
     super.key,
   });
@@ -34,6 +35,10 @@ class MonthItemCard extends StatelessWidget {
   final PeriodKey period;
   final bool expanded;
   final VoidCallback onTap;
+
+  /// Mantener presionado → editar el item. Flutter le da prioridad al
+  /// long-press: si se dispara, [onTap] no se ejecuta (no hay doble acción).
+  final VoidCallback onLongPress;
   final bool isMutating;
 
   @override
@@ -69,6 +74,7 @@ class MonthItemCard extends StatelessWidget {
         children: [
           InkWell(
             onTap: isMutating ? null : onTap,
+            onLongPress: isMutating ? null : onLongPress,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(

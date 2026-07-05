@@ -112,6 +112,14 @@ class _ConfigScreenState extends State<ConfigScreen> {
                       error: _countsError,
                     ),
                     const SizedBox(height: 18),
+                    const _SectionCaplabel('NOTIFICACIONES'),
+                    const SizedBox(height: 8),
+                    const _NavRow(
+                      icon: Icons.notifications_outlined,
+                      label: 'Recordatorios y permisos',
+                      route: '/config/notifications',
+                    ),
+                    const SizedBox(height: 18),
                     const _SectionCaplabel('SEGURIDAD'),
                     const SizedBox(height: 8),
                     const _BiometricCard(),
@@ -262,6 +270,59 @@ class _SectionCaplabel extends StatelessWidget {
           fontWeight: FontWeight.w500,
           letterSpacing: 1.1,
           color: FzColors.textMute,
+        ),
+      ),
+    );
+  }
+}
+
+/// Fila navegable (ícono + label + chevron) que empuja a [route].
+class _NavRow extends StatelessWidget {
+  const _NavRow({required this.icon, required this.label, required this.route});
+
+  final IconData icon;
+  final String label;
+  final String route;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+      child: Material(
+        color: FzColors.card,
+        borderRadius: BorderRadius.circular(FzRadius.xl),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.push(route),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(FzRadius.xl),
+              border: Border.all(color: FzColors.border),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, size: 20, color: FzColors.textDim),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontFamily: FzType.sans,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: FzColors.text,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.chevron_right,
+                  size: 20,
+                  color: FzColors.textMute,
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
