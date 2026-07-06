@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_list"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@drawable/finanzapp_widget_bg"
+    android:padding="14dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Próximos pagos"
+            android:textColor="#E8EDEA"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/w_list_period"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=""
+            android:textColor="#8A9590"
+            android:textSize="11sp"
+            android:fontFamily="monospace" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/r0" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:gravity="center_vertical" android:layout_marginTop="11dp">
+        <TextView android:id="@+id/r0_dot" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginEnd="9dp"
+            android:text="●" android:textColor="#1FB87A" android:textSize="8sp" />
+        <TextView android:id="@+id/r0_name" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:maxLines="1" android:ellipsize="end" android:text=""
+            android:textColor="#E8EDEA" android:textSize="13sp" />
+        <TextView android:id="@+id/r0_when" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="6dp"
+            android:text="" android:textColor="#8A9590" android:textSize="11sp"
+            android:fontFamily="monospace" />
+        <TextView android:id="@+id/r0_amount" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="8dp"
+            android:text="" android:textColor="#E8EDEA" android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/r1" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:gravity="center_vertical" android:layout_marginTop="10dp">
+        <TextView android:id="@+id/r1_dot" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginEnd="9dp"
+            android:text="●" android:textColor="#1FB87A" android:textSize="8sp" />
+        <TextView android:id="@+id/r1_name" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:maxLines="1" android:ellipsize="end" android:text=""
+            android:textColor="#E8EDEA" android:textSize="13sp" />
+        <TextView android:id="@+id/r1_when" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="6dp"
+            android:text="" android:textColor="#8A9590" android:textSize="11sp"
+            android:fontFamily="monospace" />
+        <TextView android:id="@+id/r1_amount" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="8dp"
+            android:text="" android:textColor="#E8EDEA" android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/r2" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:gravity="center_vertical" android:layout_marginTop="10dp">
+        <TextView android:id="@+id/r2_dot" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginEnd="9dp"
+            android:text="●" android:textColor="#1FB87A" android:textSize="8sp" />
+        <TextView android:id="@+id/r2_name" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:maxLines="1" android:ellipsize="end" android:text=""
+            android:textColor="#E8EDEA" android:textSize="13sp" />
+        <TextView android:id="@+id/r2_when" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="6dp"
+            android:text="" android:textColor="#8A9590" android:textSize="11sp"
+            android:fontFamily="monospace" />
+        <TextView android:id="@+id/r2_amount" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="8dp"
+            android:text="" android:textColor="#E8EDEA" android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout android:id="@+id/r3" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:orientation="horizontal"
+        android:gravity="center_vertical" android:layout_marginTop="10dp">
+        <TextView android:id="@+id/r3_dot" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginEnd="9dp"
+            android:text="●" android:textColor="#1FB87A" android:textSize="8sp" />
+        <TextView android:id="@+id/r3_name" android:layout_width="0dp"
+            android:layout_height="wrap_content" android:layout_weight="1"
+            android:maxLines="1" android:ellipsize="end" android:text=""
+            android:textColor="#E8EDEA" android:textSize="13sp" />
+        <TextView android:id="@+id/r3_when" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="6dp"
+            android:text="" android:textColor="#8A9590" android:textSize="11sp"
+            android:fontFamily="monospace" />
+        <TextView android:id="@+id/r3_amount" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:layout_marginStart="8dp"
+            android:text="" android:textColor="#E8EDEA" android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <TextView android:id="@+id/w_list_empty" android:layout_width="match_parent"
+        android:layout_height="wrap_content" android:layout_marginTop="12dp"
+        android:text="Todo al día este mes" android:textColor="#8A9590"
+        android:textSize="13sp" android:visibility="gone" />
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="1dp"
+        android:layout_marginTop="12dp" android:background="#1F2A26" />
+
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="horizontal" android:layout_marginTop="10dp">
+        <TextView android:layout_width="0dp" android:layout_height="wrap_content"
+            android:layout_weight="1" android:text="Total pendiente"
+            android:textColor="#8A9590" android:textSize="11sp" />
+        <TextView android:id="@+id/w_list_total" android:layout_width="wrap_content"
+            android:layout_height="wrap_content" android:text="—"
+            android:textColor="#2DD891" android:textSize="13sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</LinearLayout>

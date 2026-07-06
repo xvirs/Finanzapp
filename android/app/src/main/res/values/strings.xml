@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_small_desc">Tu próximo vencimiento del mes.</string>
+    <string name="widget_medium_desc">Cuánto te falta pagar este mes y tu progreso.</string>
+    <string name="widget_list_desc">Los próximos pagos del mes y el total pendiente.</string>
+</resources>

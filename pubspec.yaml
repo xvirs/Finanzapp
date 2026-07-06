@@ -78,6 +78,10 @@ dependencies:
   font_awesome_flutter: ^11.0.0
   package_info_plus: ^9.0.1
 
+  # Widget de pantalla de inicio (Android App Widget + iOS WidgetKit).
+  # Comparte datos app↔widget vía SharedPreferences / App Group.
+  home_widget: ^0.7.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
