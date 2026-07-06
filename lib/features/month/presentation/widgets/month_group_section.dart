@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/format.dart';
 import '../../../../design/tokens.dart';
@@ -50,10 +52,23 @@ class MonthGroupSection extends StatelessWidget {
             expanded: expandedKey == item.key,
             isMutating: mutatingItemKey == item.key,
             onTap: () => onToggle(item.key),
+            onLongPress: () => _editItem(context, item),
           ),
         ),
       ],
     );
+  }
+
+  /// Mantener presionado un item → editar la entidad subyacente.
+  /// Cada tipo navega a su pantalla de edición (rutas ya existentes).
+  void _editItem(BuildContext context, MonthItem item) {
+    HapticFeedback.mediumImpact();
+    switch (item.kind) {
+      case MonthItemKind.bill:
+        if (item.bill != null) context.push('/config/bills/${item.bill!.id}');
+      case MonthItemKind.cardTotal:
+        if (item.card != null) context.push('/config/cards/${item.card!.id}');
+    }
   }
 
   List<MonthItem> _filtered(List<MonthItem> items) {

@@ -33,6 +33,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
        _incomesRepository = incomesRepository,
        _installmentsRepository = installmentsRepository,
        _paymentsRepository = paymentsRepository,
+       _realtimeService = realtimeService,
        _analytics = analytics,
        super(MonthBlocState()) {
     on<MonthRequested>(_onRequested);
@@ -58,6 +59,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
   final IncomesRepository _incomesRepository;
   final InstallmentsRepository _installmentsRepository;
   final PaymentsRepository _paymentsRepository;
+  final RealtimeService _realtimeService;
   final AnalyticsService _analytics;
 
   StreamSubscription<RealtimeTable>? _realtimeSubscription;
@@ -278,6 +280,10 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
         cardId: item.card?.id,
         amount: event.amount,
       );
+      // Avisar a los que escuchan realtime (NotificationService, otros blocs)
+      // para que reconcilien — sin depender de Supabase Realtime. Así el
+      // recordatorio del item recién pagado se cancela al instante.
+      _realtimeService.notifyLocalChange(RealtimeTable.payments);
       // Solo trackeamos cuando es la primera marca de pagado del item
       // del mes (no edición de monto). Y solo bills — para cardTotal
       // tenemos el caso pero no lo modelamos como evento separado por
@@ -306,6 +312,7 @@ class MonthBloc extends Bloc<MonthEvent, MonthBlocState> {
     emit(state.copyWith(mutatingItemKey: item.key, clearError: true));
     try {
       await _paymentsRepository.deletePayment(paymentId);
+      _realtimeService.notifyLocalChange(RealtimeTable.payments);
       await _silentRefresh(emit);
     } catch (error) {
       emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));

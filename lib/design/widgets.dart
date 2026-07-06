@@ -269,6 +269,17 @@ const List<(String, IconData)> kFzNavItems = [
   ('Gestión', Icons.tune_rounded),
 ];
 
+/// Clearance inferior para scrollables/contenido dentro del shell, para que
+/// el último ítem suba por encima de la bottom nav flotante (píldora).
+///
+/// Con `extendBody: true` el body se extiende por detrás de la nav y Flutter
+/// suma su alto a `MediaQuery.padding.bottom`; le agregamos un respiro extra.
+/// En pantallas full-screen (sin píldora) devuelve solo el safe-area + respiro,
+/// así que es seguro usarlo en cualquier scrollable. Fuente única de verdad:
+/// si cambia la altura de la nav, se ajusta acá y no pantalla por pantalla.
+double fzBottomNavClearance(BuildContext context) =>
+    MediaQuery.paddingOf(context).bottom + 12;
+
 /// Bottom nav flotante en forma de píldora (estilo apps modernas).
 ///
 /// La barra flota sobre el fondo con margen lateral y sombra ([FzShadow.nav]),

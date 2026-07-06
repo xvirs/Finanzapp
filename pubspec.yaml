@@ -1,7 +1,7 @@
 name: finanzapp
 description: "Control de gastos recurrentes obligatorios — versión nativa de FinanzasXavier"
 publish_to: 'none'
-version: 1.1.1+5
+version: 1.1.2+6
 
 environment:
   sdk: ^3.9.2
@@ -77,6 +77,10 @@ dependencies:
   flutter_svg: ^2.0.10+1
   font_awesome_flutter: ^11.0.0
   package_info_plus: ^9.0.1
+
+  # Widget de pantalla de inicio (Android App Widget + iOS WidgetKit).
+  # Comparte datos app↔widget vía SharedPreferences / App Group.
+  home_widget: ^0.7.0
 
 dev_dependencies:
   flutter_test:

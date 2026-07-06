@@ -1,359 +1,207 @@
-# Setup portable — Sistema de flujo + CI/CD (Flutter, git-flow)
+# 🚀 Setup CI/CD + Flujo de release (Flutter · git-flow) — Guía battle-tested
 
-> **Cómo usar este archivo:** copialo al repo destino (ej. Habiturs) y, en Claude Code,
-> decile: *"Leé `SETUP-flow-cicd.portable.md` y configurá todo esto en este proyecto"*.
-> Claude va a detectar lo específico del proyecto y rellenar los placeholders.
-> También podés seguirlo a mano: cada archivo está completo abajo.
-
-Este setup replica el sistema de Finanzapp: comandos de flujo (`/flow`, `/start`,
-`/finish`, `/release`) + workflows de GitHub Actions para publicar a las stores, todo
-sobre git-flow (`develop` = trabajo, `main` = producción con tags).
+> Guía portable para replicar en otro proyecto Flutter el sistema de:
+> comandos `/flow` `/start` `/finish` `/release` + workflows de GitHub Actions
+> que publican a **Play Store** y **App Store Connect**.
+>
+> **Cómo usarla:** copiá este archivo al repo destino y, en Claude Code, decí:
+> *"Leé `SETUP-flow-cicd.portable.md` y configurá todo esto"*. O seguila a mano.
+>
+> Incluye los **gotchas reales** que hicieron fallar el primer deploy, ya resueltos.
 
 ---
 
-## Paso 0 — Detectar valores del proyecto (Claude: hacé esto primero)
+## ⚠️ LÉEME PRIMERO — Gotchas que te van a ahorrar horas
 
-Antes de escribir archivos, obtené estos valores y usalos para reemplazar los
-`<PLACEHOLDERS>` en todo el documento:
+Estos son los muros con los que choqué en el primer deploy. Ya vienen resueltos en
+los templates de abajo, pero entendé por qué:
+
+1. **iOS: el runner DEBE ser `macos-26` (o el que traiga el Xcode más nuevo).**
+   Apple exige compilar con el **SDK de iOS más reciente** (Xcode 26+). Runners viejos
+   (`macos-14`/`macos-15` con Xcode 15/16) fallan el upload con error **409 "SDK version issue"**.
+
+2. **iOS: si usaste `flutterfire configure` (Firebase), hay un build phase que llama al CLI `flutterfire`.**
+   En tu Mac está global, pero en el CI no → el build de Xcode falla con
+   `flutterfire: command not found`. Solución: instalar el CLI en el workflow
+   (`dart pub global activate flutterfire_cli` + agregar `~/.pub-cache/bin` al PATH) antes del build.
+
+3. **iOS: dependencias modernas pueden requerir Swift 6.** Otro motivo más para `macos-26`
+   (los errores tipo `Cannot find type 'sending'` son Swift 6; runner viejo = Swift 5 = falla).
+
+4. **Android: NO publiques a `production` sin verificar.** Si la app está en **prueba cerrada**,
+   el push a `track: production` falla con **"Precondition check failed"**. Para **cuentas personales**
+   de Play (creadas post nov-2023) Google exige **12 testers / 14 días** + solicitar acceso a
+   producción ANTES de habilitarla. Mientras tanto, publicá al track real (`alpha` = prueba cerrada).
+   👉 Verificá el track real con la API (script al final) en vez de asumir.
+
+5. **`.claude/settings.local.json` debe estar gitignored.** Si está trackeado, se modifica solo
+   con cada permiso nuevo y **bloquea los `git checkout` a mitad del release**
+   (`error: Your local changes would be overwritten by checkout`). Gitignoralo y destrackealo:
+   ```bash
+   echo ".claude/settings.local.json" >> .gitignore
+   git rm --cached .claude/settings.local.json
+   ```
+
+6. **Cuidado con 2 claves Apple distintas que se confunden:**
+   - **Sign in with Apple key** (`.p8`, para login OAuth/Supabase) — NO sirve para subir builds.
+   - **App Store Connect API key** (`.p8`, en App Store Connect → Users and Access → Integrations) — ESTA
+     es la que usa el CI para subir. Si "Activa (0)", generá una nueva (ver más abajo).
+
+7. **iOS siempre tiene un paso manual final:** el CI sube a App Store Connect/TestFlight, pero
+   **enviar a revisión** es manual en appstoreconnect.apple.com (Apple no lo automatiza). Tarda ~24-48h.
+
+8. **El `packageName` del workflow Android debe ser el `applicationId` real**, no el nombre del repo.
+   Si no coinciden → "Package not found".
+
+---
+
+## Paso 0 — Detectar valores del proyecto
 
 | Placeholder | Cómo obtenerlo |
 |---|---|
-| `<OWNER>/<REPO>` | `git remote get-url origin` (ej. `xvirs/Habiturs`) |
-| `<APP_ID>` | `grep applicationId android/app/build.gradle.kts` y `grep PRODUCT_BUNDLE_IDENTIFIER ios/Runner.xcodeproj/project.pbxproj` — **deben coincidir**; si no, avisá |
-| `<FLUTTER_VERSION>` | `cat .tool-versions` / `flutter --version` / preguntá al usuario. Usá la misma que usás localmente |
-| `<JAVA_VERSION>` | `17` salvo que el proyecto requiera otra |
+| `<OWNER>/<REPO>` | `git remote get-url origin` |
+| `<APP_ID>` | `grep applicationId android/app/build.gradle.kts` (debe == `PRODUCT_BUNDLE_IDENTIFIER` de iOS) |
+| `<FLUTTER_VERSION>` | la que usás local (`flutter --version`) |
 
-Verificá también que exista el flujo de ramas: si no hay rama `develop`, creala con
-`git checkout -b develop` desde `main` y pusheala, o preguntá al usuario.
-
-> ⚠️ **Bug clásico a evitar:** el `packageName` del workflow de Android DEBE ser el
-> `applicationId` real (`<APP_ID>`), no el nombre del repo ni un placeholder. Si no
-> coinciden, el upload a Play Store falla con "Package not found".
+Asegurá que exista la rama `develop` (`git checkout -b develop` desde `main` si no).
 
 ---
 
 ## Paso 1 — Comandos de flujo (`.claude/commands/`)
 
-Agnósticos al stack. Creá estos 4 archivos tal cual (no llevan placeholders salvo
-`release.md`, que usa `<OWNER>/<REPO>`).
+Agnósticos al stack. 4 archivos. (Reemplazá `<OWNER>/<REPO>` en `release.md`.)
 
-### `.claude/commands/flow.md`
+<details><summary><b>.claude/commands/flow.md</b> (menú central)</summary>
 
 ```markdown
 ---
-description: Menú central del flujo de desarrollo — preguntá qué querés hacer (empezar trabajo, terminar, publicar release) y enrutá al comando correcto.
+description: Menú central del flujo — preguntá qué hacer y enrutá al comando correcto.
 allowed-tools: Bash, Read, Edit, AskUserQuestion
 ---
-
-Sos el orquestador del flujo de desarrollo (Flutter, git-flow: `develop` trabajo, `main` producción).
-
-Primero, dale contexto al usuario de dónde está parado: corré `git rev-parse --abbrev-ref HEAD`
-(rama actual) y `git status --short` (cambios pendientes), y mostralo en una línea.
-
-Después usá **AskUserQuestion** para preguntar "¿Qué querés hacer?" con estas opciones:
-
-1. **Empezar un trabajo nuevo** — crear una rama para un fix/feature/refactor.
-   → Seguí las instrucciones de `.claude/commands/start.md` (leelo y ejecutalo).
-2. **Terminar el trabajo actual** — mergear la rama actual a `develop`.
-   → Seguí las instrucciones de `.claude/commands/finish.md` (leelo y ejecutalo).
-3. **Publicar un release** — bump de versión, `develop→main`, tag y deploy a las stores.
-   → Seguí las instrucciones de `.claude/commands/release.md` (leelo y ejecutalo).
-
-Según la opción elegida, leé el archivo de comando correspondiente con la tool Read y ejecutá
-ese playbook completo. No reimplementes la lógica acá — el archivo es la fuente de verdad.
-
-Si el usuario ya dijo en `$ARGUMENTS` qué quiere (ej. "empezar", "terminar", "release"),
-salteá la pregunta y andá directo al playbook correspondiente.
+Sos el orquestador del flujo (git-flow: develop trabajo, main producción).
+Mostrá rama actual (`git rev-parse --abbrev-ref HEAD`) y `git status --short`.
+Usá AskUserQuestion "¿Qué querés hacer?":
+1. Empezar trabajo → leé y ejecutá `.claude/commands/start.md`
+2. Terminar trabajo → leé y ejecutá `.claude/commands/finish.md`
+3. Publicar release → leé y ejecutá `.claude/commands/release.md`
+Si $ARGUMENTS ya dice qué (empezar/terminar/release), salteá la pregunta.
 ```
+</details>
 
-### `.claude/commands/start.md`
+<details><summary><b>.claude/commands/start.md</b> (crear rama)</summary>
 
 ```markdown
 ---
-description: Empezar un trabajo nuevo — pregunta el tipo (fix/feature/refactor…) y una descripción, y crea la rama bien nombrada desde develop.
+description: Empezar trabajo — pregunta tipo (fix/feature/refactor…) + descripción y crea la rama desde develop.
 argument-hint: "[tipo] [descripción corta]"
 allowed-tools: Bash, Read, AskUserQuestion
 ---
-
-Sos el asistente de inicio de trabajo (git-flow: las ramas nacen de `develop`).
-
-## Paso 1 — Tipo de trabajo
-
-Si `$ARGUMENTS` ya trae un tipo válido y una descripción, usalos y salteá la pregunta.
-Si no, usá **AskUserQuestion** "¿Qué tipo de trabajo es?" con estas opciones (la opción
-"Other" que aparece sola cubre los casos menos comunes: docs, perf, test, style):
-
-- **Feature** — funcionalidad nueva. Prefijo de rama `feature/`, commits `feat:`.
-- **Fix** — corrección de bug. Prefijo `fix/`, commits `fix:`.
-- **Refactor** — reorganizar código sin cambiar comportamiento. Prefijo `refactor/`, commits `refactor:`.
-- **Chore** — mantenimiento, deps, config. Prefijo `chore/`, commits `chore:`.
-
-Mapeo tipo → prefijo de rama / tipo de commit:
-`feature→feature/ + feat` · `fix→fix/ + fix` · `refactor→refactor/ + refactor` ·
-`chore→chore/ + chore` · `docs→docs/ + docs` · `perf→perf/ + perf`.
-
-## Paso 2 — Descripción
-
-Si no vino en `$ARGUMENTS`, pedile al usuario una descripción corta de qué va a hacer
-(una frase). De ahí derivá un **slug kebab-case** (minúsculas, sin acentos, palabras con `-`,
-máx ~5 palabras). Ej: "rediseño del alta de gasto" → `rediseno-alta-de-gasto`.
-
-Nombre de rama final: `<prefijo>/<slug>` (ej. `feature/rediseno-alta-de-gasto`).
-
-## Paso 3 — Crear la rama (con confirmación)
-
-Mostrale al usuario: tipo, nombre de rama, y el prefijo de commit que va a usar.
-Pedí confirmación corta. Tras el OK:
-
-1. `git status --porcelain` — si hay cambios sin commitear, avisá y preguntá antes de cambiar de rama.
-2. `git checkout develop`
-3. `git fetch origin && git pull --ff-only origin develop` (partir de develop al día).
-4. `git checkout -b <prefijo>/<slug>`
-5. Confirmá con `git rev-parse --abbrev-ref HEAD`.
-
-## Paso 4 — Reportar
-
-Decile al usuario:
-- Que ya está en la rama nueva, lista para trabajar.
-- Que use el prefijo de commit correspondiente (`feat:`, `fix:`, etc.) — eso es lo que después
-  hace que `/release` deduzca bien si el próximo release es patch/minor/major.
-- Que cuando termine, corra `/finish` (o `/flow` → "Terminar") para mergear a `develop`.
-
-Sé conciso.
+1. Tipo (AskUserQuestion, opciones Feature/Fix/Refactor/Chore; "Other" cubre docs/perf/test):
+   feature→feature/+feat · fix→fix/+fix · refactor→refactor/+refactor · chore→chore/+chore · docs→docs/+docs · perf→perf/+perf
+2. Descripción → slug kebab-case (≤5 palabras, sin acentos). Rama = `<prefijo>/<slug>`.
+3. Con confirmación: `git checkout develop && git fetch origin && git pull --ff-only origin develop && git checkout -b <prefijo>/<slug>`.
+4. Recordá usar el prefijo de commit (feat:/fix:…) — de ahí /release deduce el bump.
 ```
+</details>
 
-### `.claude/commands/finish.md`
+<details><summary><b>.claude/commands/finish.md</b> (merge a develop)</summary>
 
 ```markdown
 ---
-description: Terminar el trabajo actual — commitea lo pendiente, mergea la rama a develop, la pushea y opcionalmente la borra y/o lanza el release.
+description: Terminar trabajo — commitea pendiente, mergea la rama a develop, limpia y opcionalmente lanza release.
 allowed-tools: Bash, Read, Edit, AskUserQuestion
 ---
-
-Sos el asistente de cierre de trabajo (git-flow: las ramas vuelven a `develop`).
-
-## Paso 1 — Validar contexto
-
-- `git rev-parse --abbrev-ref HEAD` — rama actual. Debe ser una rama de trabajo
-  (`feature/…`, `fix/…`, `refactor/…`, etc.). Si estás en `develop` o `main`, **frená**:
-  no hay nada que cerrar; sugerí `/start` o `/release`.
-- `git status --short` — mirá qué hay sin commitear.
-
-## Paso 2 — Commitear lo pendiente
-
-Si hay cambios sin commitear:
-- Resumí qué cambió (`git status --short` y, si ayuda, `git diff --stat`).
-- Proponé un mensaje conventional acorde al prefijo de la rama
-  (ej. rama `feature/x` → `feat: …`; `fix/x` → `fix: …`), con una descripción clara.
-- Mostrá el mensaje y pedí confirmación. Tras OK: `git add -A && git commit -m "<mensaje>"`.
-- Si no hay cambios pendientes, seguí.
-
-## Paso 3 — Mergear a develop (con confirmación)
-
-Mostrá el plan (rama → develop) y pedí confirmación. Tras OK, en orden, parando si algo falla:
-
-1. `git checkout develop`
-2. `git fetch origin && git pull --ff-only origin develop`
-3. `git merge --no-ff <rama-de-trabajo> -m "Merge <rama-de-trabajo> into develop"`
-4. `git push origin develop`
-
-## Paso 4 — Limpieza (preguntá)
-
-Preguntá si querés borrar la rama de trabajo ya mergeada:
-- Local: `git branch -d <rama>`
-- Remota (si existía): `git push origin --delete <rama>`
-
-## Paso 5 — ¿Publicar ahora?
-
-Preguntá si querés lanzar un release ya mismo con estos cambios.
-- Si sí → leé `.claude/commands/release.md` y ejecutá ese playbook.
-- Si no → recordale que cuando junte varios cambios puede correr `/release` (o `/flow` → "Publicar").
-
-Sé conciso: mostrá comandos y resultados, no narres de más.
+1. Validar: estar en rama de trabajo (no develop/main). Si no, frená.
+2. Commitear pendiente con mensaje conventional según prefijo de la rama (con confirmación).
+3. Con confirmación: `git checkout develop && git fetch origin && git pull --ff-only origin develop && git merge --no-ff <rama> -m "Merge <rama> into develop" && git push origin develop`.
+4. Preguntar si borrar la rama (local `git branch -d`, remota `git push origin --delete`).
+5. Preguntar si publicar ahora → leé `.claude/commands/release.md`.
 ```
+</details>
 
-### `.claude/commands/release.md`
-
-> Reemplazá `<OWNER>/<REPO>` por el repo real (ej. `xvirs/Habiturs`).
+<details><summary><b>.claude/commands/release.md</b> (release completo)</summary>
 
 ```markdown
 ---
-description: Publica una nueva versión — analiza commits, bumpea versión, mueve ramas develop→main, crea el tag y dispara el deploy a las stores.
+description: Publica versión — analiza commits, bumpea, develop→main, tag, dispara deploy.
 argument-hint: "[patch|minor|major|X.Y.Z] [--dry-run]"
 allowed-tools: Bash, Read, Edit
 ---
+Argumentos: $ARGUMENTS (bump explícito, o --dry-run para solo plan).
+Flujo de ramas: develop trabajo, main producción con tag vX.Y.Z. El push del tag dispara los workflows.
 
-Sos el release manager (Flutter, publicada en App Store y/o Play Store).
-Tu trabajo: ejecutar un release completo de forma segura, deduciendo todo lo que puedas y
-pidiendo confirmación antes de cualquier acción irreversible.
-
-Argumentos recibidos: `$ARGUMENTS`
-- Si incluye `patch`, `minor`, `major` o un `X.Y.Z` explícito → usalo como bump (override).
-- Si incluye `--dry-run` → hacé SOLO el análisis y mostrá el plan, sin ejecutar nada.
-- Si está vacío → deducí el bump de los commits (ver paso 3).
-
-## Flujo de ramas (respetalo)
-
-`develop` = trabajo. `main` = producción, lleva el tag `vX.Y.Z`.
-El release se prepara en develop, se mergea a main, se taggea en main, y se sincroniza develop.
-El push del tag `v*.*.*` dispara los workflows de release (Android → Play, iOS → App Store Connect).
-
-## Paso 1 — Estado y precondiciones
-
-- `git status --porcelain` — el working tree debe estar limpio. Si hay cambios, frená y mostralos.
-- `git rev-parse --abbrev-ref HEAD` — deberías estar en `develop`. Si no, frená y preguntá.
-- `git fetch origin --tags`.
-- Verificá que `develop` local y `origin/develop` no divergan; si divergen, avisá.
-
-## Paso 2 — Versión actual y último release
-
-- Leé la versión actual de `pubspec.yaml` (línea `version: X.Y.Z+N`).
-- Último tag: `git describe --tags --abbrev=0 --match 'v*'`.
-- Commits desde el último tag: `git log <ultimo-tag>..HEAD --pretty=format:'%s'`.
-
-## Paso 3 — Deducir el bump (si no vino por argumento)
-
-Clasificá los commits desde el último tag por su prefijo conventional:
-- `BREAKING CHANGE` en el body, o `!` después del tipo (ej. `feat!:`) → **major**.
-- Algún `feat:` → **minor**.
-- Solo `fix:`, `perf:`, `refactor:`, `chore:`, `docs:`, etc. → **patch**.
-Tomá el nivel más alto. Ignorá `chore(release):` y merges al clasificar.
-
-Nueva versión = aplicar el bump al `X.Y.Z` actual. **El build number (+N) SIEMPRE incrementa +1**
-(si no, las stores rechazan la subida por build repetido). Nuevo tag = `vX.Y.Z`.
-
-## Paso 4 — Mostrar el plan y CONFIRMAR
-
-Presentá: versión actual → nueva, tipo de bump y por qué, changelog agrupado
-(Features / Fixes / Otros), y las acciones git exactas. Recordá que el tag dispara deploy
-a **producción** en Android y subida a App Store Connect en iOS.
-
-Si es `--dry-run`: terminá acá.
-Si no: pedí confirmación explícita ("¿Ejecuto el release vX.Y.Z? [y/N]"). No sigas sin un sí claro.
-
-## Paso 5 — Ejecutar (solo tras confirmación)
-
-1. Verificá que el tag no exista: `git rev-parse vX.Y.Z` debe fallar. Si existe, frená.
-2. Bump en develop: editá `version:` de `pubspec.yaml` a `X.Y.Z+N`;
-   `git add pubspec.yaml`; `git commit -m "chore(release): X.Y.Z (build N)"`.
-3. Merge a main y tag:
-   `git checkout main`; `git merge --no-ff develop -m "Merge develop into main for release vX.Y.Z"`;
-   `git tag -a vX.Y.Z -m "Release vX.Y.Z"`.
-4. Push de producción (DISPARA los workflows): `git push origin main`; `git push origin vX.Y.Z`.
-5. Sincronizar develop: `git checkout develop`; `git merge main`; `git push origin develop`.
-6. Confirmá que terminaste en `develop`.
-
-## Paso 6 — Reportar
-
-- Link a workflows: https://github.com/<OWNER>/<REPO>/actions
-- **Android**: se publica solo en producción al terminar el workflow (después review de Google).
-- **iOS**: el build llega a App Store Connect (TestFlight). Apple **obliga a revisión humana** —
-  recordale al usuario entrar a https://appstoreconnect.apple.com, seleccionar el build nuevo
-  y enviar la versión a revisión (~1 día). No se puede automatizar ese envío.
-- Si un workflow falla por secrets faltantes, remití a `docs/cicd_setup.md`.
-
-Sé conciso en la ejecución.
+PASO 1 — Precondiciones: `git status --porcelain` limpio; estar en develop; `git fetch origin --tags`; chequear que develop no diverja de origin.
+PASO 2 — Versión actual (pubspec `version: X.Y.Z+N`); último tag (`git describe --tags --abbrev=0 --match 'v*'`); commits desde el tag.
+PASO 3 — Deducir bump: BREAKING/`!`→major; `feat`→minor; resto→patch. Ignorar `chore(release):` y merges. El build number (+N) SIEMPRE +1.
+PASO 4 — Mostrar plan + changelog agrupado + acciones git. Si --dry-run, terminar. Si no, pedir confirmación explícita (dispara deploy).
+PASO 5 — Ejecutar: bump pubspec → commit `chore(release): X.Y.Z (build N)` en develop → `git checkout main && git merge --no-ff develop` → `git tag -a vX.Y.Z` → `git push origin main && git push origin vX.Y.Z` → `git checkout develop && git merge main && git push origin develop`.
+PASO 6 — Reportar: link a https://github.com/<OWNER>/<REPO>/actions. Android → track alpha (prod requiere acceso de Google). iOS → llega a App Store Connect; enviar a revisión es MANUAL en appstoreconnect.apple.com.
 ```
+</details>
 
 ---
 
-## Paso 2 — Workflows de GitHub Actions (`.github/workflows/`)
+## Paso 2 — Workflows (`.github/workflows/`) — YA CON LOS FIXES
 
-### `.github/workflows/ci.yml`
-
-Reemplazá `<FLUTTER_VERSION>` y `<JAVA_VERSION>`.
-
+### `ci.yml` (sin secrets)
 ```yaml
 name: CI
-
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
-
+  push: { branches: [main, develop] }
+  pull_request: { branches: [main, develop] }
 env:
   FLUTTER_VERSION: "<FLUTTER_VERSION>"
-  JAVA_VERSION: "<JAVA_VERSION>"
-
+  JAVA_VERSION: "17"
 jobs:
   analyze:
-    name: Analyze + format check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+        with: { flutter-version: "${{ env.FLUTTER_VERSION }}", channel: stable, cache: true }
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed .
       - run: flutter analyze --fatal-infos
-
   test:
-    name: Tests
     runs-on: ubuntu-latest
     needs: analyze
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
+        with: { flutter-version: "${{ env.FLUTTER_VERSION }}", channel: stable, cache: true }
       - run: flutter pub get
       - run: flutter test
 ```
+> 💡 CI corre `dart format --set-exit-if-changed`: si tu versión de Dart trae reglas nuevas,
+> archivos viejos pueden fallar. Corré `dart format .` y commiteá antes de releasear.
 
-### `.github/workflows/release-android.yml`
-
-Reemplazá `<APP_ID>` por el `applicationId` real (¡crítico!) y `<FLUTTER_VERSION>` / `<JAVA_VERSION>`.
-
+### `release-android.yml`
+Secrets: `PLAY_KEYSTORE_BASE64`, `PLAY_KEYSTORE_PASSWORD`, `PLAY_KEY_PASSWORD`, `PLAY_KEY_ALIAS`, `PLAY_SERVICE_ACCOUNT_JSON`.
 ```yaml
 name: Release Android (Play Store)
-
-# Secrets requeridos (Settings → Secrets and variables → Actions):
-#   PLAY_KEYSTORE_BASE64, PLAY_KEYSTORE_PASSWORD, PLAY_KEY_PASSWORD,
-#   PLAY_KEY_ALIAS, PLAY_SERVICE_ACCOUNT_JSON
-
 on:
   workflow_dispatch:
     inputs:
       track:
         description: 'Play Store track'
-        required: true
         default: 'internal'
         type: choice
         options: [internal, alpha, beta, production]
-  push:
-    tags: ['v*.*.*']
-
-env:
-  FLUTTER_VERSION: "<FLUTTER_VERSION>"
-  JAVA_VERSION: "<JAVA_VERSION>"
-
+  push: { tags: ['v*.*.*'] }
+env: { FLUTTER_VERSION: "<FLUTTER_VERSION>", JAVA_VERSION: "17" }
 jobs:
   build-and-upload:
-    name: Build AAB + upload to Play Store
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
+        with: { distribution: temurin, java-version: "${{ env.JAVA_VERSION }}" }
       - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
+        with: { flutter-version: "${{ env.FLUTTER_VERSION }}", channel: stable, cache: true }
       - name: Decode keystore
         run: |
           echo "${{ secrets.PLAY_KEYSTORE_BASE64 }}" | base64 -d > $RUNNER_TEMP/release.jks
           echo "KEYSTORE_PATH=$RUNNER_TEMP/release.jks" >> $GITHUB_ENV
-
       - name: Create key.properties
         run: |
           cat > android/key.properties <<EOF
@@ -362,63 +210,37 @@ jobs:
           keyAlias=${{ secrets.PLAY_KEY_ALIAS }}
           storeFile=${{ env.KEYSTORE_PATH }}
           EOF
-
       - run: flutter pub get
       - run: flutter build appbundle --release
-      - name: Verify signed AAB
-        run: jarsigner -verify build/app/outputs/bundle/release/app-release.aab
-
+      - run: jarsigner -verify build/app/outputs/bundle/release/app-release.aab
       - name: Upload to Play Store
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: <APP_ID>
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          # Tag push → production. Dispatch manual → el track elegido (default internal).
-          track: ${{ github.event.inputs.track || 'production' }}
+          # ⚠️ 'alpha' = prueba cerrada. Cambiá a 'production' SOLO cuando Google
+          # te haya habilitado producción (ver gotcha #4).
+          track: ${{ github.event.inputs.track || 'alpha' }}
           status: completed
-
-      - name: Upload AAB as artifact (backup)
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-release-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 30
 ```
 
-### `.github/workflows/release-ios.yml`
-
-Reemplazá `<FLUTTER_VERSION>`. Requiere `ios/ExportOptions.plist` (method `app-store`, tu Team ID).
-Omití este archivo si Habiturs es **solo Android**.
-
+### `release-ios.yml`
+Secrets: `APPLE_ID_CERTIFICATE_BASE64`(.p12), `APPLE_ID_CERTIFICATE_PASSWORD`, `APPLE_ID_PROVISIONING_PROFILE_BASE64`, `APP_STORE_CONNECT_API_KEY_ID`, `APP_STORE_CONNECT_API_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_BASE64`(.p8), `KEYCHAIN_PASSWORD`.
+Requiere `ios/ExportOptions.plist` (method `app-store`, tu Team ID). Omitir si es solo Android.
 ```yaml
 name: Release iOS (App Store / TestFlight)
-
-# Secrets requeridos:
-#   APPLE_ID_CERTIFICATE_BASE64, APPLE_ID_CERTIFICATE_PASSWORD,
-#   APPLE_ID_PROVISIONING_PROFILE_BASE64, APP_STORE_CONNECT_API_KEY_ID,
-#   APP_STORE_CONNECT_API_ISSUER_ID, APP_STORE_CONNECT_API_KEY_BASE64, KEYCHAIN_PASSWORD
-
 on:
   workflow_dispatch:
-  push:
-    tags: ['v*.*.*']
-
-env:
-  FLUTTER_VERSION: "<FLUTTER_VERSION>"
-
+  push: { tags: ['v*.*.*'] }
+env: { FLUTTER_VERSION: "<FLUTTER_VERSION>" }
 jobs:
   build-and-upload:
-    name: Build IPA + upload to TestFlight
-    runs-on: macos-14
+    runs-on: macos-26   # ⚠️ Xcode 26+ obligatorio por Apple (gotcha #1)
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
-        with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
-          channel: stable
-          cache: true
-
+        with: { flutter-version: "${{ env.FLUTTER_VERSION }}", channel: stable, cache: true }
       - name: Setup signing keychain
         env:
           CERTIFICATE_BASE64: ${{ secrets.APPLE_ID_CERTIFICATE_BASE64 }}
@@ -426,26 +248,26 @@ jobs:
           PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_ID_PROVISIONING_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          CERT_PATH=$RUNNER_TEMP/cert.p12
-          PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          echo "$CERTIFICATE_BASE64" | base64 -d > $CERT_PATH
-          echo "$PROVISIONING_PROFILE_BASE64" | base64 -d > $PROFILE_PATH
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security import $CERT_PATH -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+          CERT=$RUNNER_TEMP/cert.p12; PROF=$RUNNER_TEMP/p.mobileprovision; KC=$RUNNER_TEMP/app.keychain-db
+          echo "$CERTIFICATE_BASE64" | base64 -d > $CERT
+          echo "$PROVISIONING_PROFILE_BASE64" | base64 -d > $PROF
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KC
+          security set-keychain-settings -lut 21600 $KC
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KC
+          security import $CERT -P "$CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KC
+          security set-key-partition-list -S apple-tool:,apple: -k "$KEYCHAIN_PASSWORD" $KC
+          security list-keychain -d user -s $KC
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
-
+          cp $PROF ~/Library/MobileDevice/Provisioning\ Profiles/
       - run: flutter pub get
+      # ⚠️ gotcha #2: build phase de Crashlytics necesita el CLI flutterfire
+      - name: Install FlutterFire CLI
+        run: |
+          dart pub global activate flutterfire_cli
+          echo "$HOME/.pub-cache/bin" >> $GITHUB_PATH
       - run: cd ios && pod install && cd ..
-      - name: Build IPA
-        run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
-
-      - name: Upload to App Store Connect via altool
+      - run: flutter build ipa --release --export-options-plist=ios/ExportOptions.plist
+      - name: Upload to App Store Connect
         env:
           API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
@@ -455,89 +277,94 @@ jobs:
           echo "$API_KEY_BASE64" | base64 -d > ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8
           xcrun altool --upload-app --type ios --file build/ios/ipa/*.ipa \
             --apiKey "$API_KEY_ID" --apiIssuer "$API_ISSUER_ID"
-
-      - name: Cleanup keychain (best effort)
-        if: always()
-        run: security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
+      - if: always()
+        run: security delete-keychain $RUNNER_TEMP/app.keychain-db || true
 ```
 
 ---
 
-## Paso 3 — Script de terminal (opcional): `tool/release.sh`
+## Paso 3 — Cargar secrets (rápido, con `gh`, sin exponerlos)
 
-Alternativa a `/release` para correr en consola. Reemplazá `<OWNER>/<REPO>`.
-`chmod +x tool/release.sh` después de crearlo.
+Lo más eficiente: instalar `gh` (`brew install gh`), `gh auth login` (web browser), y cargar
+desde tus archivos locales (los valores van de tu disco a GitHub, nunca al chat):
 
 ```bash
-#!/usr/bin/env bash
-# tool/release.sh — release de un comando. Uso: ./tool/release.sh patch|minor|major|X.Y.Z
-set -euo pipefail
-PUBSPEC="pubspec.yaml"
-[[ -f "$PUBSPEC" ]] || { echo "❌ Corré desde la raíz del repo." >&2; exit 1; }
-[[ -z "$(git status --porcelain)" ]] || { echo "❌ Working tree sucio." >&2; git status --short >&2; exit 1; }
-[[ $# -eq 1 ]] || { echo "Uso: ./tool/release.sh <patch|minor|major|X.Y.Z>" >&2; exit 1; }
-
-current="$(grep -E '^version:' "$PUBSPEC" | head -1 | sed 's/version: //' | tr -d '[:space:]')"
-name_part="${current%%+*}"; build_part="${current##*+}"
-IFS='.' read -r major minor patch <<< "$name_part"
-case "$1" in
-  patch) patch=$((patch+1));;
-  minor) minor=$((minor+1)); patch=0;;
-  major) major=$((major+1)); minor=0; patch=0;;
-  *.*.*) IFS='.' read -r major minor patch <<< "$1";;
-  *) echo "❌ Argumento inválido: '$1'" >&2; exit 1;;
-esac
-new_name="${major}.${minor}.${patch}"; new_build=$((build_part+1))
-new_version="${new_name}+${new_build}"; tag="v${new_name}"
-branch="$(git rev-parse --abbrev-ref HEAD)"
-echo "  ${current} → ${new_version}   (tag ${tag}, rama ${branch})"
-echo "Esto edita pubspec, commitea, taggea y pushea (DISPARA deploy a producción)."
-read -r -p "¿Continuar? [y/N] " c; [[ "$c" == "y" || "$c" == "Y" ]] || { echo "Cancelado."; exit 0; }
-git rev-parse "$tag" >/dev/null 2>&1 && { echo "❌ El tag $tag ya existe." >&2; exit 1; }
-sed -i '' -E "s/^version:.*/version: ${new_version}/" "$PUBSPEC"   # macOS sed; en Linux usá: sed -i -E
-git add "$PUBSPEC"; git commit -m "chore(release): ${new_name} (build ${new_build})"
-git tag "$tag"; git push origin "$branch"; git push origin "$tag"
-echo "✅ Release ${tag} disparado: https://github.com/<OWNER>/<REPO>/actions"
-echo "   iOS: entrá a App Store Connect y enviá la versión a revisión."
+REPO="<OWNER>/<REPO>"
+# Android
+base64 -i ruta/al/release.jks | gh secret set PLAY_KEYSTORE_BASE64 --repo $REPO
+printf 'STORE_PASS'  | gh secret set PLAY_KEYSTORE_PASSWORD --repo $REPO
+printf 'KEY_PASS'    | gh secret set PLAY_KEY_PASSWORD --repo $REPO
+printf 'ALIAS'       | gh secret set PLAY_KEY_ALIAS --repo $REPO
+gh secret set PLAY_SERVICE_ACCOUNT_JSON --repo $REPO < ruta/al/service-account.json
+# iOS
+base64 -i distribution.p12            | gh secret set APPLE_ID_CERTIFICATE_BASE64 --repo $REPO
+printf 'P12_PASS'                     | gh secret set APPLE_ID_CERTIFICATE_PASSWORD --repo $REPO
+base64 -i App_Store.mobileprovision   | gh secret set APPLE_ID_PROVISIONING_PROFILE_BASE64 --repo $REPO
+printf 'KEY_ID'                       | gh secret set APP_STORE_CONNECT_API_KEY_ID --repo $REPO
+printf 'ISSUER_ID'                    | gh secret set APP_STORE_CONNECT_API_ISSUER_ID --repo $REPO
+base64 -i AuthKey_KEYID.p8            | gh secret set APP_STORE_CONNECT_API_KEY_BASE64 --repo $REPO
+openssl rand -base64 32 | tr -d '\n'  | gh secret set KEYCHAIN_PASSWORD --repo $REPO
+gh secret list --repo $REPO   # verificar
 ```
 
-> Nota: este script taggea la rama actual (no hace git-flow `develop→main`). El comando
-> `/release` sí hace el flujo de ramas completo — preferí `/release` para releases reales.
+### Cómo obtener cada cosa (lo que más cuesta)
+
+**App Store Connect API key** (NO la de Sign in with Apple): appstoreconnect.apple.com →
+**Users and Access → Integrations → App Store Connect API → Claves del equipo**. Si "Activa (0)",
+**Generar clave** (rol *App Manager*). Descargá el `.p8` (¡una sola vez!). El **Key ID** sale del
+nombre `AuthKey_XXXX.p8`. El **Issuer ID** está arriba de la lista (UUID).
+
+**Service account de Play** (es lo más enredado — la página "Acceso a la API" a veces rebota):
+1. **Google Cloud Console** → crear proyecto (ej. `tuapp-play`).
+2. **IAM → Cuentas de servicio → Crear** (nombre `play-uploader`, sin rol) → **Listo**.
+3. Clic en la cuenta → **Claves → Agregar clave → JSON** → descarga el `.json`. Copiá su **email**.
+4. Habilitar la API: `console.cloud.google.com/apis/library/androidpublisher.googleapis.com?project=tuapp-play` → **Habilitar**.
+5. **Play Console → Usuarios y permisos → Invitar usuario** → pegá el email → permiso **Administrador**.
+
+**Apple cert + provisioning** (.p12 + .mobileprovision): exportar el cert "Apple Distribution"
+desde Xcode (Settings → Accounts → Manage Certificates → Export, con password) y bajar el
+App Store provisioning profile de developer.apple.com.
 
 ---
 
-## Paso 4 — Cargar los secrets en GitHub (lo hace el usuario, una vez)
+## Paso 4 — Verificar el track real de Play (no asumir)
 
-En el repo: **Settings → Secrets and variables → Actions → New repository secret**.
-
-**Android:**
-| Secret | Cómo |
-|---|---|
-| `PLAY_KEYSTORE_BASE64` | `base64 -i tu-release.jks \| pbcopy` |
-| `PLAY_KEYSTORE_PASSWORD` / `PLAY_KEY_PASSWORD` | passwords del keystore |
-| `PLAY_KEY_ALIAS` | alias de la clave |
-| `PLAY_SERVICE_ACCOUNT_JSON` | JSON del service account de Play Console (API access → grant: release to testing + production) |
-
-**iOS** (omitir si es solo Android):
-`APPLE_ID_CERTIFICATE_BASE64` (.p12), `APPLE_ID_CERTIFICATE_PASSWORD`,
-`APPLE_ID_PROVISIONING_PROFILE_BASE64` (.mobileprovision), `APP_STORE_CONNECT_API_KEY_ID`,
-`APP_STORE_CONNECT_API_ISSUER_ID`, `APP_STORE_CONNECT_API_KEY_BASE64` (.p8),
-`KEYCHAIN_PASSWORD` (`openssl rand -base64 32`).
-
-Detalle completo de cómo generar cada uno: copiá también el `docs/cicd_setup.md` de Finanzapp.
+Antes de elegir track, consultá qué tiene tu app realmente (con el service account JSON):
+```bash
+JSON=ruta/al/service-account.json; APPID=<APP_ID>
+python3 -c "import json;open('/tmp/k.pem','w').write(json.load(open('$JSON'))['private_key'])"
+CE=$(python3 -c "import json;print(json.load(open('$JSON'))['client_email'])")
+now=$(python3 -c "import time;print(int(time.time()))"); exp=$((now+3600))
+b64(){ openssl base64 -e -A | tr '+/' '-_' | tr -d '='; }
+jh=$(printf '%s' '{"alg":"RS256","typ":"JWT"}'|b64)
+jc=$(printf '%s' "{\"iss\":\"$CE\",\"scope\":\"https://www.googleapis.com/auth/androidpublisher\",\"aud\":\"https://oauth2.googleapis.com/token\",\"exp\":$exp,\"iat\":$now}"|b64)
+sig=$(printf '%s' "$jh.$jc"|openssl dgst -sha256 -sign /tmp/k.pem|b64)
+TK=$(curl -s -X POST https://oauth2.googleapis.com/token -d "grant_type=urn:ietf:params:oauth:grant-type:jwt-bearer&assertion=$jh.$jc.$sig"|python3 -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+EID=$(curl -s -X POST -H "Authorization: Bearer $TK" "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$APPID/edits"|python3 -c "import sys,json;print(json.load(sys.stdin)['id'])")
+curl -s -H "Authorization: Bearer $TK" "https://androidpublisher.googleapis.com/androidpublisher/v3/applications/$APPID/edits/$EID/tracks"|python3 -m json.tool; rm -f /tmp/k.pem
+```
+Mirá qué track tiene `versionCodes`. Ese es donde vive tu app → usá ese track en el workflow.
 
 ---
 
-## Paso 5 — Verificar y usar
+## Paso 5 — Usar el sistema
 
-1. Reiniciá Claude Code para que registre los comandos de `.claude/commands/`.
-2. Probá sin riesgo: `/release --dry-run` (muestra el plan, no toca nada).
-3. Flujo diario: `/flow` → "Empezar" → trabajás → `/flow` → "Terminar" → `/release`.
+1. **Reiniciá Claude Code** para que registre los comandos de `.claude/commands/`.
+2. Probá sin riesgo: `/release --dry-run`.
+3. Día a día: `/flow` → Empezar → trabajás → `/flow` → Terminar → `/release patch`.
+4. iOS: tras el deploy, entrá a App Store Connect → versión → asigná build → **Enviar a revisión**.
 
-**Checklist de que quedó bien:**
-- [ ] `packageName` del workflow Android == `applicationId` real.
-- [ ] Existe rama `develop` (local y remota).
-- [ ] `<FLUTTER_VERSION>` coincide con la que usás localmente.
-- [ ] Secrets cargados en GitHub.
-- [ ] `ExportOptions.plist` presente si hay iOS.
+### Checklist primer deploy
+- [ ] `.claude/settings.local.json` gitignored + destrackeado (gotcha #5)
+- [ ] `packageName` Android == `applicationId` real
+- [ ] Runner iOS = `macos-26`; paso de `flutterfire_cli` presente (si usás Firebase)
+- [ ] Track Android = el real (verificado con script del Paso 4), NO `production` a ciegas
+- [ ] 12 secrets cargados (`gh secret list`)
+- [ ] `ExportOptions.plist` presente (si hay iOS)
+- [ ] `dart format .` aplicado y commiteado (para que CI no quede en rojo)
+- [ ] Existe rama `develop`
+
+### Camino a producción en Play (cuenta personal)
+12+ testers en prueba cerrada / 14 días corridos → Play Console → tu app → **Producción** →
+**Solicitar acceso a producción** → cuando Google habilite, cambiá `track` a `production` en el workflow.
 ```

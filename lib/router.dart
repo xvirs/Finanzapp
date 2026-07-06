@@ -27,6 +27,7 @@ import 'features/config_settings/presentation/bloc/cards_list_bloc.dart';
 import 'features/config_settings/presentation/bloc/incomes_list_bloc.dart';
 import 'features/config_settings/presentation/cards_list_screen.dart';
 import 'features/config_settings/presentation/config_screen.dart';
+import 'features/config_settings/presentation/notification_settings_screen.dart';
 import 'features/config_settings/presentation/income_form_screen.dart';
 import 'features/config_settings/presentation/incomes_list_screen.dart';
 import 'features/month/presentation/bloc/month_bloc.dart';
@@ -161,6 +162,12 @@ class AppRouter {
                 name: 'config',
                 builder: (context, state) => const ConfigScreen(),
                 routes: [
+                  GoRoute(
+                    path: 'notifications',
+                    name: 'notification-settings',
+                    builder: (context, state) =>
+                        const NotificationSettingsScreen(),
+                  ),
                   GoRoute(
                     path: 'bills',
                     name: 'bills-list',

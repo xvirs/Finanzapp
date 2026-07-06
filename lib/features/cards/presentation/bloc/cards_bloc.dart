@@ -28,6 +28,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
        _cardsRepository = cardsRepository,
        _installmentsRepository = installmentsRepository,
        _paymentsRepository = paymentsRepository,
+       _realtimeService = realtimeService,
        super(CardsBlocState()) {
     on<CardsRequested>(_onRequested);
     on<CardsRefreshRequested>(_onRefreshRequested);
@@ -48,6 +49,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
   final CardsRepository _cardsRepository;
   final InstallmentsRepository _installmentsRepository;
   final PaymentsRepository _paymentsRepository;
+  final RealtimeService _realtimeService;
 
   StreamSubscription<RealtimeTable>? _realtimeSubscription;
   Timer? _refreshDebounce;
@@ -209,6 +211,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
         cardId: event.cardId,
         amount: event.amount,
       );
+      _realtimeService.notifyLocalChange(RealtimeTable.payments);
       await _silentRefreshAfterMutation(emit);
     } catch (error) {
       emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));
@@ -225,6 +228,7 @@ class CardsBloc extends Bloc<CardsEvent, CardsBlocState> {
     emit(state.copyWith(mutatingCardId: event.cardId, clearError: true));
     try {
       await _paymentsRepository.deletePayment(paymentId);
+      _realtimeService.notifyLocalChange(RealtimeTable.payments);
       await _silentRefreshAfterMutation(emit);
     } catch (error) {
       emit(state.copyWith(clearMutating: true, errorMessage: error.toString()));

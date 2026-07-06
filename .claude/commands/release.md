@@ -17,7 +17,8 @@ Argumentos recibidos: `$ARGUMENTS`
 
 `develop` = rama de trabajo. `main` = producción, lleva el tag `vX.Y.Z`.
 El release se prepara en develop, se mergea a main, se taggea en main, y se sincroniza develop.
-El push del tag `v*.*.*` dispara `release-android.yml` (→ Play producción) y
+El push del tag `v*.*.*` dispara `release-android.yml` (→ Play, track `alpha`/prueba
+cerrada por ahora; producción requiere acceso habilitado por Google) y
 `release-ios.yml` (→ App Store Connect/TestFlight).
 
 ## Paso 1 — Estado y precondiciones
@@ -58,7 +59,7 @@ Presentá al usuario, claro y en español:
 - Tipo de bump y por qué (qué commits lo justifican).
 - **Changelog agrupado** en Features / Fixes / Otros, a partir de los commits.
 - Las acciones git exactas que vas a ejecutar (bump, commit, merge a main, tag, pushes).
-- Recordatorio: el tag dispara deploy a **producción** en Android y subida a App Store Connect en iOS.
+- Recordatorio: el tag dispara deploy a Android (track `alpha`/prueba cerrada) y subida a App Store Connect en iOS.
 
 Si es `--dry-run`: terminá acá. No ejecutes nada más.
 Si no: **pedí confirmación explícita** ("¿Ejecuto el release vX.Y.Z? [y/N]"). No sigas sin un sí claro.
@@ -88,7 +89,9 @@ En orden, parando y reportando si algún comando falla:
 ## Paso 6 — Reportar
 
 - Link a los workflows: https://github.com/xvirs/Finanzapp/actions
-- **Android**: se publica solo en producción cuando termine el workflow (después review de Google).
+- **Android**: se publica solo en el track `alpha` (prueba cerrada) — les llega a los testers.
+  Producción requiere que Google habilite el acceso (12 testers/14 días + solicitud); cuando
+  esté, cambiar el default de track en release-android.yml a `production`.
 - **iOS**: el build llega a App Store Connect (TestFlight). Apple **obliga a revisión humana** —
   recordale al usuario entrar a https://appstoreconnect.apple.com, seleccionar el build nuevo
   y enviar la versión a revisión (~1 día). No hay forma de automatizar ese envío a producción.

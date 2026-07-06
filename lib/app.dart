@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' show Session;
 import 'core/analytics_service.dart';
 import 'core/biometric_service.dart';
 import 'core/firebase_init.dart';
+import 'core/home_widget_service.dart';
 import 'core/notification_service.dart';
 import 'core/realtime_service.dart';
 import 'data/bills_repository.dart';
@@ -49,6 +50,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
   late final InstallmentsRepository _installmentsRepository;
   late final PaymentsRepository _paymentsRepository;
   late final NotificationService _notificationService;
+  late final HomeWidgetService _homeWidgetService;
   late final AnalyticsService _analytics;
 
   StreamSubscription<AuthBlocState>? _authSubscription;
@@ -70,6 +72,14 @@ class _FinanzappAppState extends State<FinanzappApp> {
 
     _notificationService = NotificationService(
       plugin: widget.notifications,
+      billsRepository: _billsRepository,
+      cardsRepository: _cardsRepository,
+      installmentsRepository: _installmentsRepository,
+      paymentsRepository: _paymentsRepository,
+      realtimeService: _realtimeService,
+    );
+
+    _homeWidgetService = HomeWidgetService(
       billsRepository: _billsRepository,
       cardsRepository: _cardsRepository,
       installmentsRepository: _installmentsRepository,
@@ -117,10 +127,12 @@ class _FinanzappAppState extends State<FinanzappApp> {
   Future<void> _bootSession() async {
     if (!_realtimeService.isActive) await _realtimeService.start();
     await _notificationService.start();
+    await _homeWidgetService.start();
   }
 
   Future<void> _shutdownSession() async {
     await _notificationService.stop();
+    await _homeWidgetService.stop();
     if (_realtimeService.isActive) await _realtimeService.stop();
 
     // Cleanup post-signout (lo dispara cualquier camino: Config, LockScreen
@@ -138,6 +150,7 @@ class _FinanzappAppState extends State<FinanzappApp> {
   void dispose() {
     _authSubscription?.cancel();
     _notificationService.stop();
+    _homeWidgetService.stop();
     _realtimeService.dispose();
     _authBloc.close();
     super.dispose();
@@ -155,6 +168,9 @@ class _FinanzappAppState extends State<FinanzappApp> {
         RepositoryProvider.value(value: _incomesRepository),
         RepositoryProvider.value(value: _installmentsRepository),
         RepositoryProvider.value(value: _paymentsRepository),
+        // NotificationService: para la pantalla de diagnóstico de
+        // notificaciones en Ajustes (estado de permiso + pruebas).
+        RepositoryProvider.value(value: _notificationService),
         // FirebaseSetup expuesto para que cualquier screen llame
         // `context.read<FirebaseSetup>().analytics?.logEvent(...)`.
         // Si Firebase no fue configurado todavía, los nullable getters

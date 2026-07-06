@@ -110,10 +110,12 @@ class _PickerSheetState extends State<_PickerSheet> {
 
   bool _isMonthAllowed(int monthZero) {
     final candidate = PeriodKey(year: _year, month: monthZero);
-    if (widget.min != null && candidate.compareTo(widget.min!) < 0)
+    if (widget.min != null && candidate.compareTo(widget.min!) < 0) {
       return false;
-    if (widget.max != null && candidate.compareTo(widget.max!) > 0)
+    }
+    if (widget.max != null && candidate.compareTo(widget.max!) > 0) {
       return false;
+    }
     return true;
   }
 
