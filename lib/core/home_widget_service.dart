@@ -67,6 +67,7 @@ class HomeWidgetService {
 
   StreamSubscription<RealtimeTable>? _realtimeSubscription;
   Timer? _debounce;
+  Timer? _retry;
   bool _started = false;
 
   Future<void> start() async {
@@ -84,6 +85,8 @@ class HomeWidgetService {
     if (!_started) return;
     _started = false;
     _debounce?.cancel();
+    _retry?.cancel();
+    _retry = null;
     await _realtimeSubscription?.cancel();
     _realtimeSubscription = null;
   }
@@ -123,6 +126,17 @@ class HomeWidgetService {
       final upcoming = _upcoming(items, period);
       final next = upcoming.isNotEmpty ? upcoming.first : null;
 
+      // "Esta semana": ítems no pagados que vencen dentro de 7 días (incluye
+      // vencidos). Es lo accionable — mucho más útil que el total del mes.
+      final week = upcoming.where((e) => e.days <= 7).toList();
+      final weekTotal = week.fold<double>(0, (a, e) => a + e.amountValue);
+      final String weekSub;
+      if (week.isEmpty) {
+        weekSub = 'Sin vencimientos cercanos';
+      } else {
+        weekSub = '${week.first.name} · ${week.first.whenLabel}';
+      }
+
       final writes = <Future<void>>[
         HomeWidget.saveWidgetData('period', _periodLabel(period)),
         HomeWidget.saveWidgetData('falta', formatCurrency(falta.toDouble())),
@@ -131,12 +145,21 @@ class HomeWidgetService {
           '${summary.paidCount}/${summary.totalCount} pagadas',
         ),
         HomeWidget.saveWidgetData('progress_percent', percent),
-        // Próximo (widget chico + mediano)
+        // Próximo (widget chico)
         HomeWidget.saveWidgetData('has_next', next != null),
         HomeWidget.saveWidgetData('next_name', next?.name ?? ''),
         HomeWidget.saveWidgetData('next_amount', next?.amount ?? ''),
         HomeWidget.saveWidgetData('next_when', next?.whenLabel ?? ''),
         HomeWidget.saveWidgetData('next_overdue', next?.overdue ?? false),
+        HomeWidget.saveWidgetData('next_urgency', next?.urgency ?? 0),
+        // Esta semana (widget mediano)
+        HomeWidget.saveWidgetData('week_amount', formatCurrency(weekTotal)),
+        HomeWidget.saveWidgetData('week_count', week.length),
+        HomeWidget.saveWidgetData('week_sub', weekSub),
+        HomeWidget.saveWidgetData(
+          'week_urgent',
+          week.isNotEmpty && week.first.days <= 0,
+        ),
         // Lista (widget grande)
         HomeWidget.saveWidgetData(
           'upcoming_count',
@@ -149,7 +172,9 @@ class HomeWidgetService {
           HomeWidget.saveWidgetData('item${i}_name', it?.name ?? ''),
           HomeWidget.saveWidgetData('item${i}_amount', it?.amount ?? ''),
           HomeWidget.saveWidgetData('item${i}_when', it?.whenLabel ?? ''),
+          HomeWidget.saveWidgetData('item${i}_short', it?.whenShort ?? ''),
           HomeWidget.saveWidgetData('item${i}_overdue', it?.overdue ?? false),
+          HomeWidget.saveWidgetData('item${i}_urgency', it?.urgency ?? 0),
         ]);
       }
       await Future.wait(writes);
@@ -158,9 +183,18 @@ class HomeWidgetService {
         await HomeWidget.updateWidget(androidName: provider);
       }
       await HomeWidget.updateWidget(iOSName: _iosWidgetName);
+      _retry?.cancel();
+      _retry = null;
     } catch (e, st) {
       if (kDebugMode) {
         debugPrint('HomeWidgetService.update() falló: $e\n$st');
+      }
+      // Red caída en el arranque (típico: refresh de token) dejaría los
+      // widgets con datos viejos hasta el próximo cambio de Realtime.
+      // Reintentamos en 30s hasta que un update salga bien.
+      if (_started) {
+        _retry?.cancel();
+        _retry = Timer(const Duration(seconds: 30), update);
       }
     }
   }
@@ -183,6 +217,7 @@ class HomeWidgetService {
         _DueItem(
           name: item.bill?.name ?? item.card?.name ?? 'Pago',
           amount: formatCurrency(amount),
+          amountValue: amount,
           whenLabel: _whenLabel(days),
           overdue: days < 0,
           days: days,
@@ -213,6 +248,7 @@ class _DueItem {
   const _DueItem({
     required this.name,
     required this.amount,
+    required this.amountValue,
     required this.whenLabel,
     required this.overdue,
     required this.days,
@@ -220,7 +256,18 @@ class _DueItem {
 
   final String name;
   final String amount;
+  final double amountValue;
   final String whenLabel;
   final bool overdue;
   final int days;
+
+  /// 2 = vencido / vence hoy, 1 = esta semana (≤7 días), 0 = más lejano.
+  int get urgency => days <= 0 ? 2 : (days <= 7 ? 1 : 0);
+
+  /// Forma corta para la lista: "venc", "HOY", "${n}d".
+  String get whenShort => days < 0
+      ? 'venc'
+      : days == 0
+      ? 'HOY'
+      : '${days}d';
 }
