@@ -7,7 +7,11 @@ name: Release iOS (App Store / TestFlight)
 #   APPLE_ID_TEAM_ID                 - tu Team ID (developer.apple.com → Membership)
 #   APPLE_ID_CERTIFICATE_BASE64      - .p12 del cert de distribution en base64
 #   APPLE_ID_CERTIFICATE_PASSWORD    - password del .p12
-#   APPLE_ID_PROVISIONING_PROFILE_BASE64  - .mobileprovision en base64
+#   APPLE_ID_PROVISIONING_PROFILE_BASE64  - .mobileprovision del app en base64
+#                                       (REGENERADO con la capability App Groups)
+#   APPLE_ID_WIDGET_PROVISIONING_PROFILE_BASE64 - .mobileprovision de la
+#                                       extensión FinanzappWidget en base64
+#                                       (App ID app.finanzapp.client.FinanzappWidget)
 #   APP_STORE_CONNECT_API_KEY_ID     - generado en App Store Connect → Users and Access → Keys
 #   APP_STORE_CONNECT_API_ISSUER_ID  - mismo lugar
 #   APP_STORE_CONNECT_API_KEY_BASE64 - el .p8 en base64
@@ -50,15 +54,18 @@ jobs:
           CERTIFICATE_BASE64: ${{ secrets.APPLE_ID_CERTIFICATE_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.APPLE_ID_CERTIFICATE_PASSWORD }}
           PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_ID_PROVISIONING_PROFILE_BASE64 }}
+          WIDGET_PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_ID_WIDGET_PROVISIONING_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
-          # Decode cert and profile
+          # Decode cert and profiles (app + widget extension)
           CERT_PATH=$RUNNER_TEMP/cert.p12
           PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          WIDGET_PROFILE_PATH=$RUNNER_TEMP/widget_profile.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
           echo "$CERTIFICATE_BASE64" | base64 -d > $CERT_PATH
           echo "$PROVISIONING_PROFILE_BASE64" | base64 -d > $PROFILE_PATH
+          echo "$WIDGET_PROVISIONING_PROFILE_BASE64" | base64 -d > $WIDGET_PROFILE_PATH
 
           # Create temp keychain
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -72,9 +79,11 @@ jobs:
             -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security list-keychain -d user -s $KEYCHAIN_PATH
 
-          # Install provisioning profile
+          # Install both provisioning profiles. Xcode los busca por UUID en
+          # esta carpeta; el nombre de archivo no importa mientras estén ahí.
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/app.mobileprovision
+          cp $WIDGET_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/widget.mobileprovision
 
       - run: flutter pub get
 

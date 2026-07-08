@@ -34,6 +34,11 @@
     <dict>
         <key>app.finanzapp.client</key>
         <string>Finanzapp App Store</string>
+        <!-- Extensión WidgetKit. Necesita su propio App ID + profile App
+             Store en el portal (con la capability App Groups). El profile
+             del app (arriba) también debe regenerarse con App Groups. -->
+        <key>app.finanzapp.client.FinanzappWidget</key>
+        <string>Finanzapp Widget App Store</string>
     </dict>
 
     <!-- Compresión: deja que Apple Connect optimice el IPA. -->
