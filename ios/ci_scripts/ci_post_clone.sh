@@ -16,11 +16,15 @@ set -e  # Abortar al primer error
 echo "=== ci_post_clone.sh — preparando build Flutter ==="
 
 # 1. Instalar Flutter SDK fresco. Apple Cloud no lo trae preinstalado.
-#    Usamos la versión stable más reciente; si el build se rompe por
-#    incompatibilidad, podemos pinear a una versión específica con
-#    `git clone -b 3.35.7 ...`.
-echo "--- Instalando Flutter SDK ---"
-git clone --depth 1 --branch stable https://github.com/flutter/flutter.git "$HOME/flutter"
+#    PINEADO a 3.35.7 — la misma versión que usa el CI de GitHub Actions
+#    y con la que se desarrolló el proyecto. NO usar `stable`: clona la
+#    última (hoy 3.44.x), que fuerza la integración de Swift Package
+#    Manager (migra google_sign_in a SPM) y el build revienta con
+#    "a resolved file is required ... swiftpm/Package.resolved". Con
+#    3.35.7 no pasa. Si se sube la versión, sincronizar con
+#    FLUTTER_VERSION en .github/workflows/*.yml.
+echo "--- Instalando Flutter SDK (3.35.7) ---"
+git clone --depth 1 --branch 3.35.7 https://github.com/flutter/flutter.git "$HOME/flutter"
 export PATH="$PATH:$HOME/flutter/bin"
 
 # 2. Verificar Flutter funcional.
