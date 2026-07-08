@@ -85,11 +85,10 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: app.finanzapp.client
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          # La app vive en prueba cerrada (track 'alpha'); producción está
-          # vacía y la cuenta personal aún no tiene acceso a producción
-          # habilitado por Google. Tag push → alpha. Cuando Google habilite
-          # producción, cambiar el default a 'production'.
-          track: ${{ github.event.inputs.track || 'alpha' }}
+          # Acceso a producción ya habilitado por Google (14 testers/14 días
+          # cumplidos). Tag push → production. El dispatch manual puede elegir
+          # 'alpha'/'internal' para probar sin tocar producción.
+          track: ${{ github.event.inputs.track || 'production' }}
           status: completed
 
       - name: Upload AAB as artifact (backup)
