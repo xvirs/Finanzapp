@@ -26,9 +26,11 @@ extension BuildContextResponsive on BuildContext {
   /// True cuando estamos en un Fold desplegado (hinge presente y ancho >= 600).
   bool get isFoldInner {
     final features = MediaQuery.of(this).displayFeatures;
-    final hasHinge = features.any((f) =>
-        f.type == DisplayFeatureType.hinge ||
-        f.type == DisplayFeatureType.fold);
+    final hasHinge = features.any(
+      (f) =>
+          f.type == DisplayFeatureType.hinge ||
+          f.type == DisplayFeatureType.fold,
+    );
     return hasHinge && MediaQuery.sizeOf(this).width >= 600;
   }
 }

@@ -41,6 +41,12 @@ Future<FirebaseSetup> initFirebase() async {
   // ver en consola, no en el dashboard.
   await crashlytics.setCrashlyticsCollectionEnabled(!kDebugMode);
 
+  // Analytics solo en release. Esto ENCIENDE iOS (el GoogleService-Info
+  // trae IS_ANALYTICS_ENABLED=false) y a la vez evita que los builds debug
+  // ensucien las métricas con el uso de desarrollo. A futuro, para gatear
+  // por consentimiento (UE/GDPR), reemplazar por `userConsent && !kDebugMode`.
+  await analytics.setAnalyticsCollectionEnabled(!kDebugMode);
+
   // Errores de Flutter framework (RenderObject, build phase, etc).
   FlutterError.onError = (errorDetails) {
     crashlytics.recordFlutterFatalError(errorDetails);

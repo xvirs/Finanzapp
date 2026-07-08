@@ -47,11 +47,17 @@ class FzNavRail extends StatelessWidget {
       labelType: NavigationRailLabelType.all,
       destinations: const [
         NavigationRailDestination(
-            icon: Icon(Icons.calendar_today_outlined), label: Text('Mes')),
+          icon: Icon(Icons.calendar_today_outlined),
+          label: Text('Mes'),
+        ),
         NavigationRailDestination(
-            icon: Icon(Icons.credit_card_outlined), label: Text('Tarjetas')),
+          icon: Icon(Icons.credit_card_outlined),
+          label: Text('Tarjetas'),
+        ),
         NavigationRailDestination(
-            icon: Icon(Icons.settings_outlined), label: Text('Config')),
+          icon: Icon(Icons.settings_outlined),
+          label: Text('Config'),
+        ),
       ],
     );
   }

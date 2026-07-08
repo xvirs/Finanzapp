@@ -31,7 +31,9 @@ jobs:
       - run: flutter pub get
 
       - name: Verify formatting
-        run: dart format --output=none --set-exit-if-changed .
+        # Solo el código del proyecto. handoff/ y handoff-fold/ son artefactos
+        # de referencia exportados (excluidos también en analysis_options).
+        run: dart format --output=none --set-exit-if-changed lib test
 
       - name: Analyze
         run: flutter analyze --fatal-infos
