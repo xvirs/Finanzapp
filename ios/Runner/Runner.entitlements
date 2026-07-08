@@ -6,9 +6,14 @@
 	<array>
 		<string>Default</string>
 	</array>
-	<!-- NOTA (widget iOS pendiente): al crear el target FinanzappWidget en
-	     Xcode, agregar acá el App Group `group.app.finanzapp.client`. NO
-	     agregarlo antes: el provisioning actual no tiene la capability y
-	     el build de release fallaría la firma. Ver ios/FinanzappWidget/. -->
+	<!-- App Group compartido app↔widget. Debe coincidir con
+	     ios/FinanzappWidget/FinanzappWidget.entitlements y con
+	     _iosAppGroupId en lib/core/home_widget_service.dart. Requiere que
+	     el provisioning profile del app tenga habilitada la capability
+	     "App Groups" (regenerado en el portal Apple). -->
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.app.finanzapp.client</string>
+	</array>
 </dict>
 </plist>

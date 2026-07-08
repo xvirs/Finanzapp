@@ -30,6 +30,25 @@ Future<void> main() async {
     DeviceOrientation.portraitDown,
   ]);
 
+  // Edge-to-edge: en Android 15 (API 35) es obligatorio y Google penaliza
+  // el uso de las APIs viejas de color de barras (setStatusBarColor /
+  // setNavigationBarColor, deprecadas). Optamos explícitamente por el modo
+  // edge-to-edge y dejamos las barras de sistema totalmente transparentes,
+  // así el contenido dibuja por detrás (ya usamos SafeArea en cada pantalla
+  // para respetar los insets). `contrastEnforced: false` evita el scrim
+  // gris que Android agrega si detecta una nav bar transparente.
+  await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Colors.transparent,
+      systemNavigationBarIconBrightness: Brightness.light,
+      systemNavigationBarContrastEnforced: false,
+    ),
+  );
+
   await initializeDateFormatting('es_AR');
 
   // Timezone: necesario para schedulear notificaciones a una hora local
